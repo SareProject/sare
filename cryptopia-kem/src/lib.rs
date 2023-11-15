@@ -58,7 +58,7 @@ pub struct EncapsulatedSecret {
 
 pub struct Encapsulation {
     public_key: Vec<u8>,
-    algorithm: KEMAlgorithm
+    algorithm: KEMAlgorithm,
 }
 
 impl Encapsulation {
@@ -104,9 +104,7 @@ mod tests {
 
     const KYBER_PUBLIC_KEY: &str = "TEWgR4Nwy/x+SEW7pgouVOp4ttehbxQgS5OhczML+5Azv6xotKl2dAcFyaOkjGwMuzFprLB+SCCP0fNV6eN0UZRfmChwoUUzXNcRDRFsryF2/+ESB3zLeMyCLbLALlXMQ2kG+ea8EtZtTAqaompvkShJcsIa+AVMXTcGB6pp53weTBPC3fRCHAofeMqDxXYTJxzFTdiA0HYe1KZpaut9FIXH7bRJzZWrsJVKwQxJmzcDE/UAIAu/gFtWdxht41kC+xCjlUw00TbPZjabvwZFsWirbQpt9mNDa4sOldGrINSK9iRWPkwEUYx/mhmOQqCgncCXPIh1VHp6qglC0WWEMLi86NBnf1uDLJqA29Nzt4MZWTOxANC0t8hCF2ovlLFqo1cNDDilU6BNhyyBUXWAD0FUoDZ29jyQdTNwUDPPSCgpxkpGJqiIOIcjYcVlYFiWcokaEPs1EBROGGRPVDR/0VUzMZmfCkJIiMYU2SqFglka5qfJ6DQljUR2w5hauCSbRSYXs4RQQnWz36EffriOQcl97bQyWSWN3SliEOQ3PFSR8OMigFQt8TKRyUcPBgAD3bU8T6Ig4+dgsbbLUwg8EnOOCNA7mwGtIMU+/MOHwLjEjGRo0lMSSKinMyoKjKG2nFyAh7tuZGhPDLCgI/pSomSDCrIp5YnIfbrG1zQSTkuteJUDs9kqsKgg1bsoeuUehqYPzWUvjxVgF3JS2GNK7LyOBiUqDWdCmntT9ltPM/W2eMipDUNo9ERqqLClIhi9H8NjT7fMWEOdHrzIxfRT7TJrOYelEGHOo2uQOMoMGiu4MxBXwjgqrmASSSZ6kdIy6Qwz54FipcgU4deQBGdXsvs7VtVyp2s5uvVbRiVf0Wp6YMSErseFHHczk4wWcXC2keZvFIGpMlFE3nlhb4jDitdEhahQmGcPSjYW9Yu6nMceExQBehCW6RuM6EAYtOyxk8YKRnt+P9xrGguMfQJmI1UbdhyRVrMhYbXKa4PLeQUwAZepBiiL8Hx/jhDBExesjSYacgqFcgaRsOwMDAFgGdmEM8oBMXk2rAJcLoufctJ7qhKofAq/XOwjIkw4ystXpqwlKlEQAMdmn0cPaLxH1rOFwJNeRfGrmshBcmOj5dsP5jPOuUhDYWcjTddn5It+u8R3LWg86BIBxzaMsSG10PeG8rmhPhS+SzMJKyATFVCBJkE4MfuLNBol0Eu6fJE5MQiWCXxySOlJC+J9udew29J1eYrOMtKUcadcwQd5GBoAC6ggXyNNwtMJurZcvxWOOne4HaOTEQEAT8eLbPNFoQePuvCLMRDNtJiGXsxS8uUyOjsg8yUPnLWbmYNDiJV2tnOX3jGRDnqPSRCAyKJa93MfEBUqLJwwAHBdJ8uVRSt3fvqUMFtwpCWoZgJbrCdC5sUeVYu0d1UXRXN28WeqTLxwLalYrAEVe/Vm1gp2IWVPmttdhPkTfqtNx1aQjlhOggu5L4fLKqOWoiQCVkK/WBSBo5NbceUr9gvMLCW5decQ2jLHl2k7pWa+DNYWf6IKALrB1LeaQgzKzI/vJhuqjAOr28ZpE2fY23dnWT0SAwg=";
 
-
     const KYBER_CIPHER_TEXT: &str = "ZAhuT1oPh0okhWOt/+45f1cmJvHAHZE2zK8+GhlyJrmjnfZf5jDoEUV7h8vbXiXQP1BiBjyn2WuZHva3gHUV0G8EKEedhYDlYtOk6lcyHq1LtD9JZwZYnCz5cfkWiaEKGc6p6ehQxKNvWkw/+wcgDLIH8n6VAD9GIgxs3Gd6/OXifQJ8uczAUTkYbN4XT6YPMAm5MOCsSM62mjwswVhvJfdyCDaJhAOUppuTGWVNoS5yzr/8bDGFEOemMWprw3RaU7DmlvxPqdiSum8jPsB7SUPvGdWAjTnJvx4ZicsHKE9hMgY97KPh6/zQb+BVlzLMimXDZb6+UZbLDeZQanmWiVRDl8VCuJdROGmY/6bPipmSjEuvuvZaU0gz6WLHWLi2QecbA+Mej8IL522tLbkga7mMFiwqqlnUur7mkhhRSLX5DKp2NXz/OjtXwF4JmezoorYKMvsTH+FB/UXHhzlgIj4wPvYcK83x/ti9eC3B+b8MJT3vX8CxbSBuCqCLSUSlUgGJfMADo7fiGaIhGFYUoSxCzl9Yg6oiV7GBioTLKNRFG5gUuP+6oy8VC+OJcIcoDpMnt/MJuUYgvs1XgLq8pDaqyOblvK2w23+8Fkc6PLeIPSv8XVJl1B4LkxTZtQFb7FZmByS8v1jPeHPRGdPaiWDI7DphtS7+aj8THCFkjmo29gOiL29vPY1jhmG4vqPeHUsn30qQzCw91fyPtqN+sJiJ2k9axOrILixyxYRcth5J8X32xJ1clL0oRnjIWP3gXVcgEdVYfcrfetCzbKI/PuiaPQjeS1+c6rvBFvoR69GWo014ZaZ1CvfmYiW6lU1x/DIj4HES0sF0E60r+9i1ZFg63t8AOXbO+RVBCfm0ZjsnSB43fTxnO1Kdx73PlAws7bbAVcS6YVpt0QhuQdBvaAbGKR+Nmdq30NrCDKpKwYbPnsJc7L8Tl9HPVQPMSrLBrwNJOatOUOx9OKpEifqdnH15cvYd8lNJeMxEXGA+M25xtGifA/3vF49xZkx/Tu6IAV2Ega6EX4sOL0R+yD5uNlVPhW1MOOtllEs5hzptH/1neeVKHTCzAMQj1VToayt9zXt5UPApRuqKQ86gHqagl56bWFWg7MozD7ZUrGhfdll7q7xeSyfm0GePDpzHSC+F/7FTKuxNkAo2yiqNsfEud3pR/ORAQLpcrvhX5kGa0EpK23sW2pteW5So6SCC6S6GUTmN1cf7miUuFZMsYsCL9PIv8d6QAGT2XwaLkbgV6h5mTq8IS+wnv0ZS0lMnRbN/+oMxlzbXcRcOf+K4Bt2WUwi1IZELTugqJiLo5ERtNHljhPwYF1IeENwMtdMTDwX/ue4f7CNPM1/L6V5PE+LRC2J/k72I1rMc/k0DvI99Nk5Vn68WR3bnPpJCog4EDLM6kDWjDf6hixgZ/4g+qHprh7CIIK/8xuSM8lgVuVLDlCg=";
-
 
     #[test]
     fn keypair_generate() {
@@ -119,18 +117,6 @@ mod tests {
     fn keypair_from_seed() {
         let keypair = KeyPair::from_seed(&KYBER_TEST_SEED, KEMAlgorithm::Kyber).unwrap();
 
-        let byte_string: String = keypair
-            .secret_key
-            .iter()
-            .map(|&byte| format!("\\{:03o}", byte))
-            .collect();
-
-        // Create a byte string
-        let result = format!("b'{}'", byte_string);
-
-        // Print the resulting byte string
-        println!("{}", result);
-
         assert_eq!(KYBER_SECRET_KEY, base64::encode(keypair.secret_key));
 
         assert_eq!(KYBER_PUBLIC_KEY, base64::encode(keypair.public_key));
@@ -138,9 +124,11 @@ mod tests {
 
     #[test]
     fn encapsulate() {
-        let kem = Encapsulation::new(&base64::decode(KYBER_PUBLIC_KEY).unwrap(), KEMAlgorithm::Kyber);
+        let kem = Encapsulation::new(
+            &base64::decode(KYBER_PUBLIC_KEY).unwrap(),
+            KEMAlgorithm::Kyber,
+        );
 
         assert!(kem.encapsulate().is_ok());
-
     }
 }
