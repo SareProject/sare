@@ -25,6 +25,11 @@ pub enum KEMError {
     RandomBytesGeneration,
 }
 
+#[derive(Debug)]
+pub enum ECError {
+    InvalidSecretKey,
+}
+
 pub enum ECAlgorithm {
     Ed25519,
 }
@@ -37,6 +42,22 @@ pub struct ECKeyPair {
 }
 
 impl ECKeyPair {
+    pub fn from_secret_key(secret_key: &[u8], ec_algorithm: ECAlgorithm) -> Result<Self, ECError> {
+        match ec_algorithm {
+            ECAlgorithm::Ed25519 => {
+                //TODO: Needs error handling
+                let keypair = ed25519::KeyPair::from_slice(secret_key).unwrap();
+
+                Ok(ECKeyPair {
+                    public_key: keypair.pk.to_vec(),
+                    secret_key: keypair.sk.to_vec(),
+                    seed: None,
+                    algorithm: ec_algorithm,
+                })
+            }
+        }
+    }
+
     pub fn from_seed(seed: &[u8], ec_algorithm: ECAlgorithm) -> Self {
         match ec_algorithm {
             ECAlgorithm::Ed25519 => {
@@ -226,12 +247,11 @@ mod tests {
 
         let sender_shared_secret = sender_dh.calculate_shared_key();
 
-        let reciever_keypair = ECKeyPair {
-            secret_key: base64::decode(ED25519_RECV_SECRET_KEY).unwrap(),
-            public_key: base64::decode(ED25519_RECV_PUBLIC_KEY).unwrap(),
-            seed: None,
-            algorithm: ECAlgorithm::Ed25519,
-        };
+        let reciever_keypair = ECKeyPair::from_secret_key(
+            &base64::decode(ED25519_RECV_SECRET_KEY).unwrap(),
+            ECAlgorithm::Ed25519,
+        )
+        .unwrap();
 
         let reciever_dh = DiffieHellman::new(
             reciever_keypair,
