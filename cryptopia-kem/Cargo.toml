@@ -6,9 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+ed25519-compact = "2.0.4"
 pqc_kyber = { version = "0.7.1", features = ["std", "rand"] }
 rand = "0.8.5"
+sha3 = "0.10.8"
 
 [dev-dependencies]
 base64 = "0.21.5"
-base85 = "2.0.0"
