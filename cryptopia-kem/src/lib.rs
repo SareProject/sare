@@ -123,21 +123,21 @@ pub struct KEMKeyPair {
 
 impl KEMKeyPair {
     pub fn from_seed(seed: &[u8], kem_algorithm: KEMAlgorithm) -> Result<Self, KEMError> {
-        let keypair = match kem_algorithm {
+        match kem_algorithm {
             KEMAlgorithm::Kyber => {
                 let xof_seed = shake256(seed, 64);
 
                 // TODO: Convert to KEMError or handle the Error
-                pqc_kyber::derive(&xof_seed).unwrap()
-            }
-        };
+                let keypair = pqc_kyber::derive(&xof_seed).unwrap();
 
-        Ok(KEMKeyPair {
-            public_key: keypair.public.to_vec(),
-            secret_key: keypair.secret.to_vec(),
-            seed: Some(seed.to_vec()),
-            algorithm: kem_algorithm,
-        })
+                Ok(KEMKeyPair {
+                    public_key: keypair.public.to_vec(),
+                    secret_key: keypair.secret.to_vec(),
+                    seed: Some(seed.to_vec()),
+                    algorithm: kem_algorithm,
+                })
+            }
+        }
     }
 }
 
@@ -179,6 +179,37 @@ impl Encapsulation {
 
 // TODO: Implement Decapsulation
 
+pub struct DecapsulatedSecret {
+    shared_secret: Vec<u8>,
+}
+
+pub struct Decapsulation {
+    secret_key: Vec<u8>,
+    algorithm: KEMAlgorithm,
+}
+
+impl Decapsulation {
+    pub fn new(secret_key: &[u8], algorithm: KEMAlgorithm) -> Self {
+        Decapsulation {
+            secret_key: secret_key.to_vec(),
+            algorithm,
+        }
+    }
+
+    pub fn decapsulate(&self, cipher_text: &[u8]) -> Result<DecapsulatedSecret, KEMError> {
+        let shared_secret = match self.algorithm {
+            KEMAlgorithm::Kyber => {
+                //TODO: Error Handle or Convert to KEMError
+                pqc_kyber::decapsulate(cipher_text, &self.secret_key).unwrap()
+            }
+        };
+
+        Ok(DecapsulatedSecret {
+            shared_secret: shared_secret.to_vec(),
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -195,6 +226,11 @@ mod tests {
     const KYBER_PUBLIC_KEY: &str ="xKa9VZivdwuIMRdxntMvrsKf0GJR6lRwXUyLfCqZ4ftBt9lmbLWA1QmrAtwGO0JDosouh+BpudIEwzPKtUSAnLdOAEmi6uSgK1EPc7qcUHU0wtRynMqEMhxbhFqEtIYyaPMTfpsP/ZYlR5t6xGG1bBhZy1iNeqOx5HEIBgggcPKluVZZsOioCcTB2JAz20eBjWljXyI8o1nP4WxUXEh9gVVknDxjGBPPhgd2z0sO1ZSuPCMUQfxt5oQj8hlm6gFU5MdfG2O71ii3dBPK6NSAU2tBP3SI9PAgDRrMF8DBdVMKE+mfo+m0dcC6GIhUvLh4sOIBelSsSUBOs8otgUPIUdqcjbqCZSxB1huNf0J/AbCNKmi2gzDJXOt2PlQauBgvH2tweOwXZMu3n0mJ1xY8NugCzcgB2EQ11zJRBxB/eKQVbYAGFesdUYQEAhvMKJIN9ZISe8iSG4dg2Lg6y+yexLKwwaskPysWxnU9YMolZZdiVxvDbANr8phivvGeVVKDWXUhjSMF89p9YfhjMKC3qShFIxqNPaAWF9qRslWB7tc1ddEv41lLeRZ+nVKFBwUBPSiyWjWNFqcxUEFfSDRpb9QBrIrJbCFgNrZZCuJ3OIF2mBCvFAq81UBWoOOx5tuKrpqXhbK5LIxf6MOTiSivzWKej7S2K8HKqDcxrNyeR1LAarU4AUR9F9mq84mYeYM0mFzF9OgkrPa/l1A0bGNfKNcd/yeVxGC449WHJxiUqFaI1BXNefJ+gbhrpvvKG0wuNpW8orw+cFA9ghhO2tx+oHiJ8oohjmS1zeUih9gSjrDHoyOwc4mg2xUHGiu8BYbDbDWDuuhH91scmsVji4y/hWhsX+VevLwK+2kTRaZeULwnHnET7dFFJta+4qN/L9ITpnwsoIu2vMjDyZxUkBmKR7Zt/GEfK/xk4sViLCBVHHVdyIsqQqpr+wYS+VkIGPqZH3AqgZB+eJEE2jSWMEN8HaGA9zhrhsGOETmK/xQyx2hXTgyT7elxiUy/Q+POLDAehOiKIJWGiGVXmPB7BQsbadtv12OpmDVlTmWnbAO9o6nOapi7MYY0kdxkrZMaemE6BcNqc8RThJC5kMUoSEt0o4u78PSSQBg+A5J8/ENjwxEVHmgYWUyBGhCKvtC3Svu7ePaVJDyIFXBpUIIAIOi+Cop3FKB9hDgKL1pAW3CQEoJVjqdyMOxuQxSEkumynXplWjQjzrIGzkIQU1DES/XGOzCYSxMtNSOD3ql0BOVMJDqvdMo9k5QGitQP7LNN2EIt+3e7m8u5uWqc3iNq06hV8JppWox5HZhGUyGTzwcaI5LHg5UEnjZ59MkP5TfEl/mklMRuOuldfxwZtvGomWiDfwB0haN3iFSQvVtpxek6zOd2KcqoziOZYzZNgNsX52utGFVTj3Zxu1F8M7JdkKuxgeAD5TWQZIWoRswQVBMSFQe3WwYiaQB3GmuIwQm73oNN/Dp9V1l3+dK6mZYgiFZBYGfCEMGfUKXDuUFQcceKejdBsHDNcAm5eeSfL/q5n9sQn85HtidID+hgYrzhoo4jZR/rvNIE1hMA7HgTbIt/YHI=";
 
     const KYBER_CIPHER_TEXT: &str = "ZAhuT1oPh0okhWOt/+45f1cmJvHAHZE2zK8+GhlyJrmjnfZf5jDoEUV7h8vbXiXQP1BiBjyn2WuZHva3gHUV0G8EKEedhYDlYtOk6lcyHq1LtD9JZwZYnCz5cfkWiaEKGc6p6ehQxKNvWkw/+wcgDLIH8n6VAD9GIgxs3Gd6/OXifQJ8uczAUTkYbN4XT6YPMAm5MOCsSM62mjwswVhvJfdyCDaJhAOUppuTGWVNoS5yzr/8bDGFEOemMWprw3RaU7DmlvxPqdiSum8jPsB7SUPvGdWAjTnJvx4ZicsHKE9hMgY97KPh6/zQb+BVlzLMimXDZb6+UZbLDeZQanmWiVRDl8VCuJdROGmY/6bPipmSjEuvuvZaU0gz6WLHWLi2QecbA+Mej8IL522tLbkga7mMFiwqqlnUur7mkhhRSLX5DKp2NXz/OjtXwF4JmezoorYKMvsTH+FB/UXHhzlgIj4wPvYcK83x/ti9eC3B+b8MJT3vX8CxbSBuCqCLSUSlUgGJfMADo7fiGaIhGFYUoSxCzl9Yg6oiV7GBioTLKNRFG5gUuP+6oy8VC+OJcIcoDpMnt/MJuUYgvs1XgLq8pDaqyOblvK2w23+8Fkc6PLeIPSv8XVJl1B4LkxTZtQFb7FZmByS8v1jPeHPRGdPaiWDI7DphtS7+aj8THCFkjmo29gOiL29vPY1jhmG4vqPeHUsn30qQzCw91fyPtqN+sJiJ2k9axOrILixyxYRcth5J8X32xJ1clL0oRnjIWP3gXVcgEdVYfcrfetCzbKI/PuiaPQjeS1+c6rvBFvoR69GWo014ZaZ1CvfmYiW6lU1x/DIj4HES0sF0E60r+9i1ZFg63t8AOXbO+RVBCfm0ZjsnSB43fTxnO1Kdx73PlAws7bbAVcS6YVpt0QhuQdBvaAbGKR+Nmdq30NrCDKpKwYbPnsJc7L8Tl9HPVQPMSrLBrwNJOatOUOx9OKpEifqdnH15cvYd8lNJeMxEXGA+M25xtGifA/3vF49xZkx/Tu6IAV2Ega6EX4sOL0R+yD5uNlVPhW1MOOtllEs5hzptH/1neeVKHTCzAMQj1VToayt9zXt5UPApRuqKQ86gHqagl56bWFWg7MozD7ZUrGhfdll7q7xeSyfm0GePDpzHSC+F/7FTKuxNkAo2yiqNsfEud3pR/ORAQLpcrvhX5kGa0EpK23sW2pteW5So6SCC6S6GUTmN1cf7miUuFZMsYsCL9PIv8d6QAGT2XwaLkbgV6h5mTq8IS+wnv0ZS0lMnRbN/+oMxlzbXcRcOf+K4Bt2WUwi1IZELTugqJiLo5ERtNHljhPwYF1IeENwMtdMTDwX/ue4f7CNPM1/L6V5PE+LRC2J/k72I1rMc/k0DvI99Nk5Vn68WR3bnPpJCog4EDLM6kDWjDf6hixgZ/4g+qHprh7CIIK/8xuSM8lgVuVLDlCg=";
+
+    const KYBER_SHARED_SECRET: [u8; 32] = [
+        33, 131, 45, 165, 89, 124, 75, 12, 207, 80, 131, 73, 209, 140, 107, 57, 219, 207, 249, 68,
+        7, 112, 30, 168, 239, 125, 154, 176, 168, 214, 115, 9,
+    ];
 
     const ED25519_SECRET_KEY: &str =
         "EFO3S65/0uFvEVIw50nLGSmofqIy3PajIuS7ecdm3z5kFcVvrK6Mfsl/2UNSbVsemFSx6CW+3mtDazkVDXzyWQ==";
@@ -234,6 +270,20 @@ mod tests {
         );
 
         assert!(kem.encapsulate().is_ok());
+    }
+
+    #[test]
+    fn kyber_decapsulate() {
+        let kem = Decapsulation::new(
+            &base64::decode(KYBER_SECRET_KEY).unwrap(),
+            KEMAlgorithm::Kyber,
+        );
+
+        let decapsulated_secret = kem
+            .decapsulate(&base64::decode(KYBER_CIPHER_TEXT).unwrap())
+            .unwrap();
+
+        assert_eq!(decapsulated_secret.shared_secret, KYBER_SHARED_SECRET);
     }
 
     #[test]
