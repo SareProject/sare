@@ -30,10 +30,12 @@ pub enum ECError {
     InvalidSecretKey,
 }
 
+#[derive(Clone)]
 pub enum ECAlgorithm {
     Ed25519,
 }
 
+#[derive(Clone)]
 pub struct ECKeyPair {
     pub public_key: Vec<u8>,
     pub secret_key: Vec<u8>,
@@ -110,10 +112,12 @@ impl DiffieHellman {
     }
 }
 
+#[derive(Clone)]
 pub enum KEMAlgorithm {
     Kyber,
 }
 
+#[derive(Clone)]
 pub struct KEMKeyPair {
     pub public_key: Vec<u8>,
     pub secret_key: Vec<u8>,
@@ -207,6 +211,40 @@ impl Decapsulation {
         Ok(DecapsulatedSecret {
             shared_secret: shared_secret.to_vec(),
         })
+    }
+}
+
+pub struct HybridKEM {
+    pub ec_keypair: ECKeyPair,
+    pub kem_keypair: KEMKeyPair,
+}
+
+impl HybridKEM {
+    pub fn new(ec_keypair: ECKeyPair, kem_keypair: KEMKeyPair) -> Self {
+        HybridKEM {
+            ec_keypair,
+            kem_keypair,
+        }
+    }
+
+    pub fn calculate_raw_shared_key(
+        &self,
+        kem_cipher_text: &[u8],
+        ec_sender_public_key: &[u8],
+    ) -> (Vec<u8>, Vec<u8>) {
+        // TODO: Reduce Copy/Clone
+        let diffie_hellman =
+            DiffieHellman::new(self.ec_keypair.clone(), ec_sender_public_key.to_vec());
+        let kem_decapsulation = Decapsulation::new(
+            &self.kem_keypair.secret_key,
+            self.kem_keypair.algorithm.clone(),
+        );
+
+        // TODO: Needs Error Handling
+        let dh_shared_secret = diffie_hellman.calculate_shared_key();
+        let kem_shared_secret = kem_decapsulation.decapsulate(kem_cipher_text).unwrap();
+
+        (dh_shared_secret, kem_shared_secret.shared_secret)
     }
 }
 
