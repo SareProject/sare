@@ -2,10 +2,6 @@ use cryptopia_seed::Seed;
 use ed25519_compact as ed25519;
 use ed25519_compact::x25519;
 use rand::RngCore;
-use sha3::{
-    digest::{ExtendableOutput, Update, XofReader},
-    Shake256,
-};
 
 #[derive(Debug)]
 pub enum KEMError {
