@@ -1,3 +1,3 @@
-# Cryptopia-Wrapper
+# Cryptopia-Wrappers
 
 Wrappers Library for Cryptopia 
