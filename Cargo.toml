@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "cryptopia-hybridkem",
-    "cryptopia-seed"
+    "cryptopia-seed",
+    "cryptopia-sign"
 ]
 
