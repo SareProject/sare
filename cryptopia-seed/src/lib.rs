@@ -1,4 +1,5 @@
 use ring::hkdf;
+use ring::rand::{SecureRandom, SystemRandom};
 
 pub struct Seed {
     raw_seed: [u8; 128],
@@ -7,6 +8,17 @@ pub struct Seed {
 impl Seed {
     pub fn new(raw_seed: [u8; 128]) -> Self {
         Seed { raw_seed }
+    }
+
+    pub fn generate() -> Self {
+        let rng = SystemRandom::new();
+        let mut raw_seed_buffer = [0u8; 128];
+
+        rng.fill(&mut raw_seed_buffer).unwrap();
+
+        Seed {
+            raw_seed: raw_seed_buffer,
+        }
     }
 
     pub fn get_salt_part(&self) -> &[u8] {
