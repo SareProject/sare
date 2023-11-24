@@ -1,5 +1,5 @@
 [package]
-name = "cryptopia-kem"
+name = "cryptopia-hybridkem"
 version = "0.1.0"
 edition = "2021"
 

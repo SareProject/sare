@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "cryptopia-kem",
+    "cryptopia-hybridkem",
     "cryptopia-seed"
 ]
 
