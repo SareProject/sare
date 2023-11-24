@@ -7,10 +7,9 @@ edition = "2021"
 
 [dependencies]
 ed25519-compact = "2.0.4"
-pqc_kyber = { version = "0.7.1", features = ["std", "rand"] }
-rand = "0.8.5"
-ring = "0.17.5"
+pqc_kyber = { version = "0.7.1", features = ["std", "rand", "kyber768"] }
 cryptopia-seed = {path = "../cryptopia-seed"}
+rand = "0.8.5"
 
 [dev-dependencies]
 base64 = "0.21.5"
