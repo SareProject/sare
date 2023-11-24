@@ -1,5 +1,10 @@
+pub mod error;
+
+use bip39::{Language, Mnemonic};
 use ring::hkdf;
 use ring::rand::{SecureRandom, SystemRandom};
+
+use crate::error::*;
 
 pub struct Seed {
     raw_seed: [u8; 128],
@@ -19,6 +24,45 @@ impl Seed {
         Seed {
             raw_seed: raw_seed_buffer,
         }
+    }
+
+    pub fn to_mnemonic(&self) -> String {
+        let seed_chunks: Vec<&[u8]> = self.raw_seed.chunks_exact(32).collect();
+
+        let mut mnemonic_phrase: String = String::new();
+
+        for chunk in seed_chunks {
+            let mnemonic = Mnemonic::from_entropy(&chunk, Language::English).unwrap();
+            mnemonic_phrase.push_str(mnemonic.phrase());
+            mnemonic_phrase.push(' ');
+        }
+
+        mnemonic_phrase.trim_end().to_string()
+    }
+
+    pub fn from_mnemonic(seed_phrase: &str) -> Result<Self, SeedError> {
+        let phrase_seperated: Vec<&str> = seed_phrase.split_whitespace().collect();
+
+        let mut raw_seed_buffer: Vec<u8> = Vec::new();
+
+        for phrase in phrase_seperated.chunks_exact(24) {
+            let mnemonic = Mnemonic::from_phrase(&phrase.join(" "), Language::English);
+
+            if let Ok(mnemonic_parsed) = mnemonic {
+                let entropy = mnemonic_parsed.entropy();
+                raw_seed_buffer.extend(entropy);
+            } else {
+                return Err(SeedError::InvalidMnemonicPhrase);
+            }
+        }
+
+        let raw_seed = <[u8; 128]>::try_from(raw_seed_buffer.as_slice())?;
+
+        Ok(Seed { raw_seed })
+    }
+
+    pub fn get_raw_seed(&self) -> [u8; 128] {
+        self.raw_seed
     }
 
     pub fn get_salt_part(&self) -> &[u8] {
@@ -79,6 +123,9 @@ mod tests {
         202, 141, 47, 164, 50, 20, 179, 148, 89, 44, 227, 146, 61, 84, 40, 59, 176, 27, 102, 241,
         95, 81, 177, 102, 93,
     ];
+
+    const TEST_MNEMONIC_PHRASE: &str = "hero hotel jungle supreme diet random day stamp coyote dirt science fall sock pistol news crack unfold gun skirt clay van taste heart process basic burden ugly crack express beef tissue quick ugly medal squirrel install lyrics usage able subject decline tonight page eagle civil rate expand never just alcohol divert matter boy across gain trigger monitor refuse bachelor deny voyage push industry crew tail recycle casino sponsor dog same gloom phone moon explain vacant soul sense snack shell mutual poet ask ball degree exhaust release claw fitness rifle slight person mind vocal wrist shift clock";
+
     #[test]
     fn derive_child_seed() {
         let master_seed = Seed::new(TEST_RAW_SEED);
@@ -88,5 +135,21 @@ mod tests {
 
         assert_eq!(child_seed_32bytes, TEST_32BYTES_CHILD_SEED);
         assert_eq!(child_seed_64bytes, TEST_64BYTES_CHILD_SEED);
+    }
+
+    #[test]
+    fn menmonic_seed_encode() {
+        let master_seed = Seed::new(TEST_RAW_SEED);
+
+        let phrase = master_seed.to_mnemonic();
+
+        assert_eq!(phrase, TEST_MNEMONIC_PHRASE);
+    }
+
+    #[test]
+    fn menmonic_seed_decode() {
+        let master_seed = Seed::from_mnemonic(TEST_MNEMONIC_PHRASE).unwrap();
+
+        assert_eq!(master_seed.get_raw_seed(), TEST_RAW_SEED);
     }
 }
