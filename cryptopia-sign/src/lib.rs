@@ -19,6 +19,24 @@ pub struct ECKeyPair {
 }
 
 impl ECKeyPair {
+    pub fn from_secret_key(
+        secret_key: &[u8],
+        ec_algorithm: ECAlgorithm,
+    ) -> Result<Self, HybridSignError> {
+        match ec_algorithm {
+            ECAlgorithm::Ed25519 => {
+                let secret_key = ed25519::SecretKey::from_slice(&secret_key).unwrap();
+                let public_key = secret_key.public_key();
+
+                Ok(ECKeyPair {
+                    public_key: public_key.to_vec(),
+                    secret_key: secret_key.to_vec(),
+                    algorithm: ec_algorithm,
+                })
+            }
+        }
+    }
+
     pub fn from_seed(seed: &Seed, ec_algorithm: ECAlgorithm) -> Result<Self, HybridSignError> {
         match ec_algorithm {
             ECAlgorithm::Ed25519 => {
@@ -70,5 +88,16 @@ mod tests {
 
         assert_eq!(base64::encode(keypair.secret_key), ED25519_SECRET_KEY,);
         assert_eq!(base64::encode(keypair.public_key), ED25519_PUBLIC_KEY,);
+    }
+
+    #[test]
+    fn ed25519_keypair_from_secret_key() {
+        let keypair = ECKeyPair::from_secret_key(
+            &base64::decode(ED25519_SECRET_KEY).unwrap(),
+            ECAlgorithm::Ed25519,
+        )
+        .unwrap();
+
+        assert_eq!(base64::encode(keypair.public_key), ED25519_PUBLIC_KEY);
     }
 }
