@@ -122,6 +122,31 @@ impl PQKeyPair {
     }
 }
 
+pub struct PQSignature {
+    pub keypair: PQKeyPair,
+}
+
+impl PQSignature {
+    pub fn new(keypair: PQKeyPair) -> Self {
+        PQSignature { keypair }
+    }
+
+    pub fn sign(&self, message: &[u8]) -> Vec<u8> {
+        let signature_algorithm = &self.keypair.algorithm;
+
+        match signature_algorithm {
+            PQAlgorithm::Dilithium3 => {
+                let secret_key =
+                    dilithium::dilithium3::SecretKey::from_bytes(&self.keypair.secret_key);
+
+                let signature = secret_key.sign(message);
+
+                signature.to_vec()
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
