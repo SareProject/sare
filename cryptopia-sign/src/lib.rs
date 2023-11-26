@@ -1,4 +1,5 @@
 use cryptopia_seed::Seed;
+use crystals_dilithium as dilithium;
 use ed25519_compact as ed25519;
 
 const ED25519_MAGIC_BYTES: [u8; 4] = [25, 85, 210, 14]; // 0xED25519 in LittleEndian
@@ -54,13 +55,29 @@ impl ECKeyPair {
 }
 
 pub enum PQAlgorithm {
-    Falcon512,
+    Dilithium3,
 }
 
 pub struct PQKeyPair {
     pub public_key: Vec<u8>,
     pub secret_key: Vec<u8>,
     pub algorithm: PQAlgorithm,
+}
+
+impl PQKeyPair {
+    pub fn from_seed(seed: &Seed, pq_algorithm: PQAlgorithm) -> Result<Self, HybridSignError> {
+        match pq_algorithm {
+            PQAlgorithm::Dilithium3 => {
+                let child_seed = seed.derive_64bytes_child_seed(None);
+                let keypair = dilithium::dilithium3::Keypair::generate(Some(&child_seed));
+                Ok(PQKeyPair {
+                    public_key: keypair.public.to_bytes().to_vec(),
+                    secret_key: keypair.secret.to_bytes().to_vec(),
+                    algorithm: pq_algorithm,
+                })
+            }
+        }
+    }
 }
 
 #[cfg(test)]
