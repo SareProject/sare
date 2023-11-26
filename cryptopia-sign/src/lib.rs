@@ -55,6 +55,47 @@ impl ECKeyPair {
     }
 }
 
+pub struct ECSignature {
+    pub keypair: ECKeyPair,
+}
+
+impl ECSignature {
+    pub fn new(keypair: ECKeyPair) -> Self {
+        ECSignature { keypair }
+    }
+
+    pub fn sign(&self, message: &[u8]) -> Vec<u8> {
+        let signature_algorithm = &self.keypair.algorithm;
+
+        match signature_algorithm {
+            ECAlgorithm::Ed25519 => {
+                let secret_key = ed25519::SecretKey::from_slice(&self.keypair.secret_key).unwrap();
+                let signature = secret_key.sign(message, Some(ed25519::Noise::generate()));
+                signature.to_vec()
+            }
+        }
+    }
+
+    pub fn verify(
+        &self,
+        public_key: &[u8],
+        message: &[u8],
+        signature: &[u8],
+    ) -> Result<bool, HybridSignError> {
+        let signature_algorithm = &self.keypair.algorithm;
+
+        match signature_algorithm {
+            ECAlgorithm::Ed25519 => {
+                let public_key = ed25519::PublicKey::from_slice(public_key).unwrap();
+                let signature = ed25519::Signature::from_slice(signature).unwrap();
+                let does_verify = public_key.verify(message, &signature);
+
+                Ok(does_verify.is_ok())
+            }
+        }
+    }
+}
+
 pub enum PQAlgorithm {
     Dilithium3,
 }
