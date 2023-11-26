@@ -3,6 +3,10 @@ pub mod error;
 use bip39::{Language, Mnemonic};
 use ring::hkdf;
 use ring::rand::{SecureRandom, SystemRandom};
+use sha3::{
+    digest::{ExtendableOutput, Update, XofReader},
+    Shake256,
+};
 
 use crate::error::*;
 
@@ -96,6 +100,23 @@ impl Seed {
 
         child_seed
     }
+
+    pub fn derive_extended_child_key(
+        &self,
+        length: usize,
+        additional_context: Option<&[&[u8]]>,
+    ) -> Vec<u8> {
+        let child_seed = &self.derive_64bytes_child_seed(additional_context);
+
+        let mut xof = Shake256::default();
+        xof.update(child_seed);
+        let mut xof_reader = xof.finalize_xof();
+        
+        let mut child_key = vec![0u8; length];
+        xof_reader.read(&mut child_key);
+
+        child_key
+    }
 }
 
 #[cfg(test)]
@@ -124,6 +145,8 @@ mod tests {
         95, 81, 177, 102, 93,
     ];
 
+    const TEST_EXTENDED_CHILD_KEY: [u8; 96] = [229, 49, 64, 32, 189, 35, 68, 42, 184, 11, 61, 253, 67, 56, 74, 105, 120, 64, 230, 117, 162, 153, 95, 174, 18, 251, 45, 183, 255, 151, 193, 63, 116, 34, 20, 146, 83, 181, 133, 249, 135, 232, 7, 87, 177, 221, 61, 204, 175, 9, 136, 47, 57, 74, 254, 7, 33, 142, 178, 240, 210, 2, 84, 190, 227, 228, 219, 253, 144, 46, 20, 65, 198, 129, 42, 13, 213, 200, 234, 124, 153, 24, 192, 57, 176, 165, 181, 208, 48, 71, 57, 53, 96, 185, 178, 234];
+
     const TEST_MNEMONIC_PHRASE: &str = "hero hotel jungle supreme diet random day stamp coyote dirt science fall sock pistol news crack unfold gun skirt clay van taste heart process basic burden ugly crack express beef tissue quick ugly medal squirrel install lyrics usage able subject decline tonight page eagle civil rate expand never just alcohol divert matter boy across gain trigger monitor refuse bachelor deny voyage push industry crew tail recycle casino sponsor dog same gloom phone moon explain vacant soul sense snack shell mutual poet ask ball degree exhaust release claw fitness rifle slight person mind vocal wrist shift clock";
 
     #[test]
@@ -132,9 +155,11 @@ mod tests {
 
         let child_seed_32bytes = master_seed.derive_32bytes_child_seed(None);
         let child_seed_64bytes = master_seed.derive_64bytes_child_seed(None);
+        let child_key = master_seed.derive_extended_child_key(96, None);
 
         assert_eq!(child_seed_32bytes, TEST_32BYTES_CHILD_SEED);
         assert_eq!(child_seed_64bytes, TEST_64BYTES_CHILD_SEED);
+        assert_eq!(child_key, TEST_EXTENDED_CHILD_KEY);
     }
 
     #[test]
