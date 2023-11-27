@@ -127,6 +127,8 @@ pub struct PQSignature {
 }
 
 impl PQSignature {
+    //TODO: Implement hash_and_sign function using HMAC and sha3
+
     pub fn new(keypair: PQKeyPair) -> Self {
         PQSignature { keypair }
     }
@@ -180,6 +182,8 @@ mod tests {
         "9JEaadEpdYGWbEj9K4hWONQ7FxrD5bcAeZpfTMN85u3bf4hWtz+4nt6q6uqp6RU4h8BwFzRjWyMVwZDLC5BroQ==";
 
     const ED25519_PUBLIC_KEY: &str = "23+IVrc/uJ7equrqqekVOIfAcBc0Y1sjFcGQywuQa6E=";
+    const ED25519_SIGNATURE: &str =
+        "a+nEySIu4GmB5r2XPly8V5nxAPmlCXLCcntxj/CWWfcW0S+yLfYVQIyD0r7oysgjaPIP9mIBsr9HGQq4y34QCg==";
 
     #[test]
     fn ed25519_keypair_from_seed() {
@@ -198,5 +202,27 @@ mod tests {
         .unwrap();
 
         assert_eq!(base64::encode(keypair.public_key), ED25519_PUBLIC_KEY);
+    }
+
+    #[test]
+    fn ed25519_sign() {
+        let keypair = ECKeyPair::from_secret_key(
+            &base64::decode(ED25519_SECRET_KEY).unwrap(),
+            ECAlgorithm::Ed25519,
+        )
+        .unwrap();
+
+        let signature = ECSignature::new(keypair);
+
+        assert_eq!(
+            signature
+                .verify(
+                    &base64::decode(ED25519_PUBLIC_KEY).unwrap(),
+                    b"CRYPTOPIA",
+                    &base64::decode(ED25519_SIGNATURE).unwrap()
+                )
+                .unwrap(),
+            true
+        );
     }
 }
