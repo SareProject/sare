@@ -48,6 +48,42 @@ impl<'a> HKDF<'a> {
     }
 }
 
+pub enum PKDFAlgorithm {
+    Scrypt,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum PKDFWorkFactor {
+    Scrypt(usize, usize, usize),
+}
+
+pub struct PKDF<'a> {
+    input_data: &'a [u8],
+    workfactor_scale: usize,
+    algorithm: PKDFAlgorithm,
+}
+
+impl<'a> PKDF<'a> {
+    pub fn new(input_data: &'a [u8], workfactor_scale: usize, algorithm: PKDFAlgorithm) -> Self {
+        PKDF {
+            input_data,
+            workfactor_scale,
+            algorithm,
+        }
+    }
+
+    pub fn calculate_workfactor(&self) -> PKDFWorkFactor {
+        match &self.algorithm {
+            PKDFAlgorithm::Scrypt => {
+                let n: usize = (self.workfactor_scale / 4).max(2);
+                let r = 8usize;
+                let p: u64 = ((2i64.pow(n as u32) / 20).max(1).ilog2()).max(1).into();
+                PKDFWorkFactor::Scrypt(n, r, p as usize)
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -71,5 +107,14 @@ mod tests {
         hkdf.expand(None, &mut output).unwrap();
 
         assert_eq!(HKDF_SHA512_OUTPUT, output);
+    }
+
+    #[test]
+    fn scrypt_workfactor_scale() {
+        let pkdf = PKDF::new(&TEST_INPUT_DATA, 60, PKDFAlgorithm::Scrypt);
+
+        let workfactor = pkdf.calculate_workfactor();
+
+        assert_eq!(PKDFWorkFactor::Scrypt(15, 8, 10), workfactor);
     }
 }
