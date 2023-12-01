@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 ring = "0.17.6"
+scrypt = "0.11.0"

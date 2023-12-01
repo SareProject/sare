@@ -52,33 +52,52 @@ pub enum PKDFAlgorithm {
     Scrypt,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum PKDFWorkFactor {
-    Scrypt(usize, usize, usize),
-}
-
 pub struct PKDF<'a> {
     input_data: &'a [u8],
+    salt: &'a [u8],
     workfactor_scale: usize,
     algorithm: PKDFAlgorithm,
 }
 
 impl<'a> PKDF<'a> {
-    pub fn new(input_data: &'a [u8], workfactor_scale: usize, algorithm: PKDFAlgorithm) -> Self {
+    pub fn new(
+        input_data: &'a [u8],
+        salt: &'a [u8],
+        workfactor_scale: usize,
+        algorithm: PKDFAlgorithm,
+    ) -> Self {
         PKDF {
             input_data,
+            salt,
             workfactor_scale,
             algorithm,
         }
     }
 
-    pub fn calculate_workfactor(&self) -> PKDFWorkFactor {
+    pub fn calculate_scrypt_workfactor(&self) -> (usize, usize, usize) {
+        let n: usize = (self.workfactor_scale / 4).max(2);
+        let r = 8usize;
+        let p: u64 = ((2i64.pow(n as u32) / 20).max(1).ilog2()).max(1).into();
+        (n, r, p as usize)
+    }
+
+    pub fn derive_key(&self, output: &mut [u8]) -> Result<(), KDFError> {
         match &self.algorithm {
             PKDFAlgorithm::Scrypt => {
-                let n: usize = (self.workfactor_scale / 4).max(2);
-                let r = 8usize;
-                let p: u64 = ((2i64.pow(n as u32) / 20).max(1).ilog2()).max(1).into();
-                PKDFWorkFactor::Scrypt(n, r, p as usize)
+                let workfactor = self.calculate_scrypt_workfactor();
+
+                let params = scrypt::Params::new(
+                    workfactor.0.try_into().unwrap_or(255),
+                    workfactor.1 as u32,
+                    workfactor.2 as u32,
+                    output.len(),
+                )
+                .unwrap(); // TODO: Convert errors
+
+                // TODO: convert errors
+                scrypt::scrypt(&self.input_data, &self.salt, &params, output).unwrap();
+
+                Ok(())
             }
         }
     }
@@ -98,6 +117,8 @@ mod tests {
         44, 42, 8, 192, 18, 167,
     ];
 
+    const SCRYPT_OUTPUT: [u8; 10] = [172, 240, 153, 61, 124, 223, 14, 128, 130, 37];
+
     #[test]
     fn hkdf() {
         let hkdf = HKDF::new(&TEST_INPUT_DATA, &TEST_SALT, HKDFAlgorithm::SHA512);
@@ -111,10 +132,20 @@ mod tests {
 
     #[test]
     fn scrypt_workfactor_scale() {
-        let pkdf = PKDF::new(&TEST_INPUT_DATA, 60, PKDFAlgorithm::Scrypt);
+        let pkdf = PKDF::new(&TEST_INPUT_DATA, &TEST_SALT, 60, PKDFAlgorithm::Scrypt);
 
-        let workfactor = pkdf.calculate_workfactor();
+        let workfactor = pkdf.calculate_scrypt_workfactor();
 
-        assert_eq!(PKDFWorkFactor::Scrypt(15, 8, 10), workfactor);
+        assert_eq!((15, 8, 10), workfactor);
+    }
+
+    #[test]
+    fn scrypt_key_derive() {
+        let pkdf = PKDF::new(&TEST_INPUT_DATA, &TEST_SALT, 20, PKDFAlgorithm::Scrypt);
+
+        let mut output = [0u8; 10];
+        pkdf.derive_key(&mut output).unwrap();
+
+        assert_eq!(SCRYPT_OUTPUT, output);
     }
 }
