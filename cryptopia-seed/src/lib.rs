@@ -1,12 +1,13 @@
 pub mod error;
 
 use bip39::{Language, Mnemonic};
-use ring::hkdf;
 use ring::rand::{SecureRandom, SystemRandom};
 use sha3::{
     digest::{ExtendableOutput, Update, XofReader},
     Shake256,
 };
+
+use cryptopia_kdf::{HKDFAlgorithm, HKDF};
 
 use crate::error::*;
 
@@ -74,29 +75,21 @@ impl Seed {
     }
 
     pub fn derive_64bytes_child_seed(&self, additional_context: Option<&[&[u8]]>) -> [u8; 64] {
-        let salt = hkdf::Salt::new(hkdf::HKDF_SHA512, self.get_salt_part());
-        let hkdf_prk = salt.extract(&self.raw_seed);
-
-        let hkdf_okm = hkdf_prk
-            .expand(additional_context.unwrap_or(&[&[0]]), hkdf::HKDF_SHA512)
-            .unwrap();
+        let hkdf = HKDF::new(&self.raw_seed, &self.get_salt_part(), HKDFAlgorithm::SHA512);
 
         let mut child_seed = [0u8; 64];
-        hkdf_okm.fill(&mut child_seed).unwrap();
+
+        hkdf.expand(additional_context, &mut child_seed).unwrap();
 
         child_seed
     }
 
     pub fn derive_32bytes_child_seed(&self, additional_context: Option<&[&[u8]]>) -> [u8; 32] {
-        let salt = hkdf::Salt::new(hkdf::HKDF_SHA256, self.get_salt_part());
-        let hkdf_prk = salt.extract(&self.raw_seed);
-
-        let hkdf_okm = hkdf_prk
-            .expand(additional_context.unwrap_or(&[&[0]]), hkdf::HKDF_SHA256)
-            .unwrap();
+        let hkdf = HKDF::new(&self.raw_seed, &self.get_salt_part(), HKDFAlgorithm::SHA256);
 
         let mut child_seed = [0u8; 32];
-        hkdf_okm.fill(&mut child_seed).unwrap();
+
+        hkdf.expand(additional_context, &mut child_seed).unwrap();
 
         child_seed
     }
@@ -111,7 +104,7 @@ impl Seed {
         let mut xof = Shake256::default();
         xof.update(child_seed);
         let mut xof_reader = xof.finalize_xof();
-        
+
         let mut child_key = vec![0u8; length];
         xof_reader.read(&mut child_key);
 
@@ -145,7 +138,13 @@ mod tests {
         95, 81, 177, 102, 93,
     ];
 
-    const TEST_EXTENDED_CHILD_KEY: [u8; 96] = [229, 49, 64, 32, 189, 35, 68, 42, 184, 11, 61, 253, 67, 56, 74, 105, 120, 64, 230, 117, 162, 153, 95, 174, 18, 251, 45, 183, 255, 151, 193, 63, 116, 34, 20, 146, 83, 181, 133, 249, 135, 232, 7, 87, 177, 221, 61, 204, 175, 9, 136, 47, 57, 74, 254, 7, 33, 142, 178, 240, 210, 2, 84, 190, 227, 228, 219, 253, 144, 46, 20, 65, 198, 129, 42, 13, 213, 200, 234, 124, 153, 24, 192, 57, 176, 165, 181, 208, 48, 71, 57, 53, 96, 185, 178, 234];
+    const TEST_EXTENDED_CHILD_KEY: [u8; 96] = [
+        229, 49, 64, 32, 189, 35, 68, 42, 184, 11, 61, 253, 67, 56, 74, 105, 120, 64, 230, 117,
+        162, 153, 95, 174, 18, 251, 45, 183, 255, 151, 193, 63, 116, 34, 20, 146, 83, 181, 133,
+        249, 135, 232, 7, 87, 177, 221, 61, 204, 175, 9, 136, 47, 57, 74, 254, 7, 33, 142, 178,
+        240, 210, 2, 84, 190, 227, 228, 219, 253, 144, 46, 20, 65, 198, 129, 42, 13, 213, 200, 234,
+        124, 153, 24, 192, 57, 176, 165, 181, 208, 48, 71, 57, 53, 96, 185, 178, 234,
+    ];
 
     const TEST_MNEMONIC_PHRASE: &str = "hero hotel jungle supreme diet random day stamp coyote dirt science fall sock pistol news crack unfold gun skirt clay van taste heart process basic burden ugly crack express beef tissue quick ugly medal squirrel install lyrics usage able subject decline tonight page eagle civil rate expand never just alcohol divert matter boy across gain trigger monitor refuse bachelor deny voyage push industry crew tail recycle casino sponsor dog same gloom phone moon explain vacant soul sense snack shell mutual poet ask ball degree exhaust release claw fitness rifle slight person mind vocal wrist shift clock";
 
