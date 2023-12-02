@@ -1,3 +1,3 @@
-# Cryptopia-Wrappers
+# Cryptopia
 
-Wrappers Library for Cryptopia 
+A Quantum-Safe encryption tool.
