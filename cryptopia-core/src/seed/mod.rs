@@ -7,9 +7,9 @@ use sha3::{
     Shake256,
 };
 
-use cryptopia_kdf::{HKDFAlgorithm, HKDF};
+use crate::kdf::{HKDFAlgorithm, HKDF};
 
-use crate::error::*;
+use crate::seed::error::*;
 
 pub struct Seed {
     raw_seed: [u8; 128],

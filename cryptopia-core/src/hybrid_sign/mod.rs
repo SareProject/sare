@@ -1,4 +1,4 @@
-use cryptopia_seed::Seed;
+use crate::seed::Seed;
 use crystals_dilithium as dilithium;
 use ed25519_compact as ed25519;
 
