@@ -1,10 +1,13 @@
 use ring::hkdf;
 
+use serde::{Deserialize, Serialize};
+
 #[derive(Debug)]
 pub enum KDFError {
     Unexpected,
 }
 
+#[derive(Serialize, Deserialize)]
 pub enum HKDFAlgorithm {
     SHA256,
     SHA512,
@@ -48,6 +51,7 @@ impl<'a> HKDF<'a> {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub enum PKDFAlgorithm {
     Scrypt,
 }

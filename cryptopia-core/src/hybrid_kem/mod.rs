@@ -4,12 +4,14 @@ use crate::seed::Seed;
 use ed25519_compact as ed25519;
 use ed25519_compact::x25519;
 
+use serde::{Serialize, Deserialize};
+
 use crate::hybrid_kem::error::*;
 
 const X25519_MAGIC_BYTES: [u8; 4] = [25, 85, 2, 0]; // 0x25519 in LittleEndian
 const KYBER768_MAGIC_BYTES: [u8; 4] = [104, 7, 0, 0]; // 0x768 in LittleEndian
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum DHAlgorithm {
     X25519,
 }
@@ -85,7 +87,7 @@ impl DiffieHellman {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum KEMAlgorithm {
     Kyber,
 }
