@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+bson = "2.7.0"
 crystals-dilithium = "1.0.0"
 ed25519-compact = "2.0.4"
 pqc_kyber = { version = "0.7.1", features = ["std", "rand", "kyber768"] }
