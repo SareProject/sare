@@ -57,12 +57,18 @@ impl MetadataFormat {
     pub fn encode(&self) -> Vec<u8> {
         bson::to_vec(&self).unwrap()
     }
+
+    pub fn decode(bson_metadata: &[u8]) -> Result<Self, FormatError> {
+        let metadata = bson::from_slice::<MetadataFormat>(bson_metadata);
+
+        // TODO: Needs Error Handling
+        Ok(metadata.unwrap())
+    }
 }
 
-#[derive(PartialEq, Debug)]
 pub struct HeaderFormat {
     version: u32,
-    metadata: Vec<u8>,
+    metadata: MetadataFormat,
     signature: Option<Vec<u8>>,
 }
 
@@ -76,9 +82,11 @@ impl HeaderFormat {
         let version: [u8; 4] = self.version.to_le_bytes();
         header_buffer.extend(version);
 
-        let metadata_length: [u8; 8] = self.metadata.len().to_le_bytes();
+        let metadata_bson = self.metadata.encode();
+
+        let metadata_length: [u8; 8] = metadata_bson.len().to_le_bytes();
         header_buffer.extend(metadata_length);
-        header_buffer.extend(&self.metadata);
+        header_buffer.extend(metadata_bson);
 
         if let Some(signature) = &self.signature {
             let signature_length: [u8; 8] = signature.len().to_le_bytes();
@@ -99,7 +107,7 @@ impl HeaderFormat {
     pub fn decode(header: &[u8]) -> Result<Self, FormatError> {
         // TODO: Needs error handling and size checking of the header
         // TODO: Needs Optimization
-        
+
         let mut cursor = 0;
         let magic_bytes = &header[cursor..MAGIC_BYTES.len()];
         cursor = MAGIC_BYTES.len();
@@ -124,7 +132,9 @@ impl HeaderFormat {
         cursor += 8;
         let metadata_length = metadata_length_le.read_u64::<LittleEndian>().unwrap();
 
-        let metadata = &header[cursor..cursor + metadata_length as usize];
+        let metadata_bson = &header[cursor..cursor + metadata_length as usize];
+        let metadata = MetadataFormat::decode(&metadata_bson)?;
+
         cursor += metadata_length as usize;
 
         let mut signature_length_le = Cursor::new(&header[cursor..cursor + 8]);
@@ -140,7 +150,7 @@ impl HeaderFormat {
 
         Ok(HeaderFormat {
             version: version_number,
-            metadata: metadata.to_vec(),
+            metadata: metadata,
             signature,
         })
     }
@@ -180,7 +190,7 @@ mod tests {
     fn header_format_encode() {
         let header = HeaderFormat {
             version: 1,
-            metadata: base64::decode(ENCODED_METADATA).unwrap(),
+            metadata: MetadataFormat::decode(&base64::decode(ENCODED_METADATA).unwrap()).unwrap(),
             signature: None,
         };
 
@@ -191,13 +201,13 @@ mod tests {
     fn header_format_decode() {
         let expected_header = HeaderFormat {
             version: 1,
-            metadata: base64::decode(ENCODED_METADATA).unwrap(),
+            metadata: MetadataFormat::decode(&base64::decode(ENCODED_METADATA).unwrap()).unwrap(),
             signature: None,
         };
-        
+
         let decoded_header =
             HeaderFormat::decode(&base64::decode(ENCODED_HEADER).unwrap()).unwrap();
 
-        assert_eq!(expected_header, decoded_header);
+        assert_eq!(expected_header.encode(), decoded_header.encode());
     }
 }
