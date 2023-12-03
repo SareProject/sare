@@ -152,13 +152,17 @@ impl PQSignature {
         }
     }
 
-    pub fn verify(&self, message: &[u8], signature: &[u8]) -> Result<bool, HybridSignError> {
+    pub fn verify(
+        &self,
+        public_key: &[u8],
+        message: &[u8],
+        signature: &[u8],
+    ) -> Result<bool, HybridSignError> {
         let signature_algorithm = &self.keypair.algorithm;
 
         match signature_algorithm {
             PQAlgorithm::Dilithium3 => {
-                let public_key =
-                    dilithium::dilithium3::PublicKey::from_bytes(&self.keypair.public_key);
+                let public_key = dilithium::dilithium3::PublicKey::from_bytes(&public_key);
 
                 let does_verify = public_key.verify(message, signature);
 

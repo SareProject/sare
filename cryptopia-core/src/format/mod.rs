@@ -31,6 +31,7 @@ pub struct KEMMetadataFormat {
     kem_algorithm: KEMAlgorithm,
     dh_algorithm: DHAlgorithm,
     hkdf_algorithm: HKDFAlgorithm,
+    kem_ciphertext: Vec<u8>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -46,10 +47,15 @@ pub struct PKDFMetadataFormat {
 
 #[derive(Serialize, Deserialize)]
 pub struct MetadataFormat {
+    #[serde(skip_serializing_if="Option::is_none", flatten)] 
     kem_metadata: Option<KEMMetadataFormat>,
+    #[serde(skip_serializing_if="Option::is_none", flatten)] 
     signature_metadata: Option<SignatureMetadataFormat>,
+    #[serde(flatten)]
     encryption_metadata: EncryptionMetadataFormat,
+    #[serde(skip_serializing_if="Option::is_none", flatten)]
     pkdf_metadata: Option<PKDFMetadataFormat>,
+    #[serde(skip_serializing_if="Option::is_none")]
     comment: Option<String>,
 }
 
@@ -64,6 +70,17 @@ impl MetadataFormat {
         // TODO: Needs Error Handling
         Ok(metadata.unwrap())
     }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SignatureFormat {
+    #[serde(skip_serializing_if="Option::is_none", flatten)]
+    signature_metadata: Option<SignatureMetadataFormat>,
+    ec_public_key: Vec<u8>,
+    pq_public_key: Vec<u8>,
+    message: Vec<u8>,
+    ec_signature: Vec<u8>,
+    pq_signature: Vec<u8>,
 }
 
 pub struct HeaderFormat {
@@ -160,9 +177,9 @@ impl HeaderFormat {
 mod tests {
     use super::*;
 
-    const ENCODED_METADATA: &str = "zQAAAAprZW1fbWV0YWRhdGEACnNpZ25hdHVyZV9tZXRhZGF0YQADZW5jcnlwdGlvbl9tZXRhZGF0YQApAAAAAmVuY3J5cHRpb25fYWxnb3JpdGhtAAoAAABBRVMyNTZHQ00AAANwa2RmX21ldGFkYXRhAD8AAAACcGtkZl9hbGdvcml0aG0ABwAAAFNjcnlwdAAScGtkZl93b3JrZmFjdG9yX3NjYWxlADIAAAAAAAAAAAJjb21tZW50AA0AAABUZXN0IENvbW1lbnQAAA==";
+    const ENCODED_METADATA: &str = "fQAAAAJlbmNyeXB0aW9uX2FsZ29yaXRobQAKAAAAQUVTMjU2R0NNAAJwa2RmX2FsZ29yaXRobQAHAAAAU2NyeXB0ABJwa2RmX3dvcmtmYWN0b3Jfc2NhbGUAMgAAAAAAAAACY29tbWVudAANAAAAVGVzdCBDb21tZW50AAA=";
 
-    const ENCODED_HEADER: &str = "Q1JZUFRPUElB4QAAAAAAAAABAAAAzQAAAAAAAADNAAAACmtlbV9tZXRhZGF0YQAKc2lnbmF0dXJlX21ldGFkYXRhAANlbmNyeXB0aW9uX21ldGFkYXRhACkAAAACZW5jcnlwdGlvbl9hbGdvcml0aG0ACgAAAEFFUzI1NkdDTQAAA3BrZGZfbWV0YWRhdGEAPwAAAAJwa2RmX2FsZ29yaXRobQAHAAAAU2NyeXB0ABJwa2RmX3dvcmtmYWN0b3Jfc2NhbGUAMgAAAAAAAAAAAmNvbW1lbnQADQAAAFRlc3QgQ29tbWVudAAAAAAAAAAAAAA=";
+    const ENCODED_HEADER: &str = "Q1JZUFRPUElBkQAAAAAAAAABAAAAfQAAAAAAAAB9AAAAAmVuY3J5cHRpb25fYWxnb3JpdGhtAAoAAABBRVMyNTZHQ00AAnBrZGZfYWxnb3JpdGhtAAcAAABTY3J5cHQAEnBrZGZfd29ya2ZhY3Rvcl9zY2FsZQAyAAAAAAAAAAJjb21tZW50AA0AAABUZXN0IENvbW1lbnQAAAAAAAAAAAAA";
 
     #[test]
     fn metadata_format_encode() {
