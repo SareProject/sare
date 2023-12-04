@@ -1,8 +1,14 @@
+pub mod encryption;
+pub mod keys;
+pub mod signature;
+
 use bson::{bson, Bson};
 use byteorder::{LittleEndian, ReadBytesExt};
 use serde::{Deserialize, Serialize};
 use std::io::Cursor;
 
+use crate::format::encryption::*;
+use crate::format::signature::*;
 use crate::hybrid_kem::{DHAlgorithm, KEMAlgorithm};
 use crate::hybrid_sign::{ECAlgorithm, PQAlgorithm};
 use crate::kdf::{HKDFAlgorithm, PKDFAlgorithm};
@@ -21,41 +27,14 @@ pub enum EncryptionAlgorithm {
 const MAGIC_BYTES: &[u8; 9] = b"CRYPTOPIA";
 
 #[derive(Serialize, Deserialize)]
-pub struct SignatureMetadataFormat {
-    ec_algorithm: ECAlgorithm,
-    pq_algorithm: PQAlgorithm,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct KEMMetadataFormat {
-    kem_algorithm: KEMAlgorithm,
-    dh_algorithm: DHAlgorithm,
-    hkdf_algorithm: HKDFAlgorithm,
-    kem_ciphertext: Vec<u8>,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct EncryptionMetadataFormat {
-    encryption_algorithm: EncryptionAlgorithm,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct PKDFMetadataFormat {
-    pkdf_algorithm: PKDFAlgorithm,
-    pkdf_workfactor_scale: u32,
-}
-
-#[derive(Serialize, Deserialize)]
 pub struct MetadataFormat {
-    #[serde(skip_serializing_if="Option::is_none", flatten)] 
+    #[serde(skip_serializing_if = "Option::is_none", flatten)]
     kem_metadata: Option<KEMMetadataFormat>,
-    #[serde(skip_serializing_if="Option::is_none", flatten)] 
+    #[serde(skip_serializing_if = "Option::is_none", flatten)]
     signature_metadata: Option<SignatureMetadataFormat>,
     #[serde(flatten)]
     encryption_metadata: EncryptionMetadataFormat,
-    #[serde(skip_serializing_if="Option::is_none", flatten)]
-    pkdf_metadata: Option<PKDFMetadataFormat>,
-    #[serde(skip_serializing_if="Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     comment: Option<String>,
 }
 
@@ -72,21 +51,10 @@ impl MetadataFormat {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct SignatureFormat {
-    #[serde(skip_serializing_if="Option::is_none", flatten)]
-    signature_metadata: Option<SignatureMetadataFormat>,
-    ec_public_key: Vec<u8>,
-    pq_public_key: Vec<u8>,
-    message: Vec<u8>,
-    ec_signature: Vec<u8>,
-    pq_signature: Vec<u8>,
-}
-
 pub struct HeaderFormat {
     version: u32,
     metadata: MetadataFormat,
-    signature: Option<Vec<u8>>,
+    signature: Option<SignatureFormat>,
 }
 
 impl HeaderFormat {
@@ -106,6 +74,7 @@ impl HeaderFormat {
         header_buffer.extend(metadata_bson);
 
         if let Some(signature) = &self.signature {
+            let signature = signature.encode();
             let signature_length: [u8; 8] = signature.len().to_le_bytes();
             header_buffer.extend(signature_length);
             header_buffer.extend(signature);
@@ -158,10 +127,11 @@ impl HeaderFormat {
         cursor += 8;
         let signature_length = signature_length_le.read_u64::<LittleEndian>().unwrap();
 
-        let mut signature: Option<Vec<u8>> = None;
+        let mut signature: Option<SignatureFormat> = None;
 
         if signature_length > 0 {
-            signature = Some((&header[cursor..cursor + signature_length as usize]).to_vec());
+            let bson_signature = &header[cursor..cursor + signature_length as usize];
+            signature = Some(SignatureFormat::decode(bson_signature)?);
             cursor += 8;
         }
 
@@ -183,20 +153,21 @@ mod tests {
 
     #[test]
     fn metadata_format_encode() {
-        let encryption_metadata = EncryptionMetadataFormat {
-            encryption_algorithm: EncryptionAlgorithm::AES256GCM,
-        };
-
         let pkdf_metadata = PKDFMetadataFormat {
             pkdf_algorithm: PKDFAlgorithm::Scrypt,
             pkdf_workfactor_scale: 50,
+        };
+
+        let encryption_metadata = EncryptionMetadataFormat {
+            encryption_algorithm: EncryptionAlgorithm::AES256GCM,
+            pkdf_metadata: Some(pkdf_metadata),
+            kem_metadata: None,
         };
 
         let metadata = MetadataFormat {
             kem_metadata: None,
             signature_metadata: None,
             encryption_metadata,
-            pkdf_metadata: Some(pkdf_metadata),
             comment: Some("Test Comment".to_string()),
         };
 
