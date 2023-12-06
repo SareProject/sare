@@ -2,6 +2,7 @@ pub mod error;
 
 use bip39::{Language, Mnemonic};
 use ring::rand::{SecureRandom, SystemRandom};
+use secrecy::{ExposeSecret, SecretString, SecretVec};
 use sha3::{
     digest::{ExtendableOutput, Update, XofReader},
     Shake256,
@@ -12,27 +13,27 @@ use crate::kdf::{HKDFAlgorithm, HKDF};
 use crate::seed::error::*;
 
 pub struct Seed {
-    raw_seed: [u8; 128],
+    raw_seed: SecretVec<u8>,
 }
 
 impl Seed {
-    pub fn new(raw_seed: [u8; 128]) -> Self {
+    pub fn new(raw_seed: SecretVec<u8>) -> Self {
         Seed { raw_seed }
     }
 
     pub fn generate() -> Self {
         let rng = SystemRandom::new();
-        let mut raw_seed_buffer = [0u8; 128];
+        let mut raw_seed_buffer = vec![0u8; 128];
 
         rng.fill(&mut raw_seed_buffer).unwrap();
 
         Seed {
-            raw_seed: raw_seed_buffer,
+            raw_seed: SecretVec::from(raw_seed_buffer),
         }
     }
 
-    pub fn to_mnemonic(&self) -> String {
-        let seed_chunks: Vec<&[u8]> = self.raw_seed.chunks_exact(32).collect();
+    pub fn to_mnemonic(&self) -> SecretString {
+        let seed_chunks: Vec<&[u8]> = self.raw_seed.expose_secret().chunks_exact(32).collect();
 
         let mut mnemonic_phrase: String = String::new();
 
@@ -42,11 +43,11 @@ impl Seed {
             mnemonic_phrase.push(' ');
         }
 
-        mnemonic_phrase.trim_end().to_string()
+        SecretString::from(mnemonic_phrase.trim_end().to_string())
     }
 
-    pub fn from_mnemonic(seed_phrase: &str) -> Result<Self, SeedError> {
-        let phrase_seperated: Vec<&str> = seed_phrase.split_whitespace().collect();
+    pub fn from_mnemonic(seed_phrase: &SecretString) -> Result<Self, SeedError> {
+        let phrase_seperated: Vec<&str> = seed_phrase.expose_secret().split_whitespace().collect();
 
         let mut raw_seed_buffer: Vec<u8> = Vec::new();
 
@@ -63,52 +64,45 @@ impl Seed {
 
         let raw_seed = <[u8; 128]>::try_from(raw_seed_buffer.as_slice())?;
 
-        Ok(Seed { raw_seed })
+        Ok(Seed {
+            raw_seed: SecretVec::from(raw_seed.to_vec()),
+        })
     }
 
-    pub fn get_raw_seed(&self) -> [u8; 128] {
-        self.raw_seed
+    pub fn get_raw_seed(&self) -> &SecretVec<u8> {
+        &self.raw_seed
     }
 
     pub fn get_salt_part(&self) -> &[u8] {
-        &self.raw_seed[120..]
+        &self.raw_seed.expose_secret()[120..]
     }
 
-    pub fn derive_64bytes_child_seed(&self, additional_context: Option<&[&[u8]]>) -> [u8; 64] {
+    pub fn derive_64bytes_child_seed(&self, additional_context: Option<&[&[u8]]>) -> SecretVec<u8> {
         let hkdf = HKDF::new(&self.raw_seed, &self.get_salt_part(), HKDFAlgorithm::SHA512);
-
-        let mut child_seed = [0u8; 64];
-
-        hkdf.expand(additional_context, &mut child_seed).unwrap();
-
-        child_seed
+        hkdf.expand(additional_context).unwrap()
     }
 
-    pub fn derive_32bytes_child_seed(&self, additional_context: Option<&[&[u8]]>) -> [u8; 32] {
+    pub fn derive_32bytes_child_seed(&self, additional_context: Option<&[&[u8]]>) -> SecretVec<u8> {
         let hkdf = HKDF::new(&self.raw_seed, &self.get_salt_part(), HKDFAlgorithm::SHA256);
 
-        let mut child_seed = [0u8; 32];
-
-        hkdf.expand(additional_context, &mut child_seed).unwrap();
-
-        child_seed
+        hkdf.expand(additional_context).unwrap()
     }
 
     pub fn derive_extended_child_key(
         &self,
         length: usize,
         additional_context: Option<&[&[u8]]>,
-    ) -> Vec<u8> {
+    ) -> SecretVec<u8> {
         let child_seed = &self.derive_64bytes_child_seed(additional_context);
 
         let mut xof = Shake256::default();
-        xof.update(child_seed);
+        xof.update(child_seed.expose_secret());
         let mut xof_reader = xof.finalize_xof();
 
         let mut child_key = vec![0u8; length];
         xof_reader.read(&mut child_key);
 
-        child_key
+        SecretVec::from(child_key)
     }
 }
 
@@ -150,30 +144,43 @@ mod tests {
 
     #[test]
     fn derive_child_seed() {
-        let master_seed = Seed::new(TEST_RAW_SEED);
+        let master_seed = Seed::new(SecretVec::from(TEST_RAW_SEED.to_vec()));
 
         let child_seed_32bytes = master_seed.derive_32bytes_child_seed(None);
         let child_seed_64bytes = master_seed.derive_64bytes_child_seed(None);
         let child_key = master_seed.derive_extended_child_key(96, None);
 
-        assert_eq!(child_seed_32bytes, TEST_32BYTES_CHILD_SEED);
-        assert_eq!(child_seed_64bytes, TEST_64BYTES_CHILD_SEED);
-        assert_eq!(child_key, TEST_EXTENDED_CHILD_KEY);
+        assert_eq!(
+            child_seed_32bytes.expose_secret().as_slice(),
+            TEST_32BYTES_CHILD_SEED
+        );
+        assert_eq!(
+            child_seed_64bytes.expose_secret().as_slice(),
+            TEST_64BYTES_CHILD_SEED
+        );
+        assert_eq!(
+            child_key.expose_secret().as_slice(),
+            TEST_EXTENDED_CHILD_KEY
+        );
     }
 
     #[test]
     fn menmonic_seed_encode() {
-        let master_seed = Seed::new(TEST_RAW_SEED);
+        let master_seed = Seed::new(SecretVec::from(TEST_RAW_SEED.to_vec()));
 
         let phrase = master_seed.to_mnemonic();
 
-        assert_eq!(phrase, TEST_MNEMONIC_PHRASE);
+        assert_eq!(phrase.expose_secret().as_str(), TEST_MNEMONIC_PHRASE);
     }
 
     #[test]
     fn menmonic_seed_decode() {
-        let master_seed = Seed::from_mnemonic(TEST_MNEMONIC_PHRASE).unwrap();
+        let master_seed =
+            Seed::from_mnemonic(&SecretString::from(TEST_MNEMONIC_PHRASE.to_string())).unwrap();
 
-        assert_eq!(master_seed.get_raw_seed(), TEST_RAW_SEED);
+        assert_eq!(
+            master_seed.get_raw_seed().expose_secret().as_slice(),
+            TEST_RAW_SEED
+        );
     }
 }

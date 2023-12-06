@@ -1,6 +1,7 @@
 use crate::seed::Seed;
 use crystals_dilithium as dilithium;
 use ed25519_compact as ed25519;
+use secrecy::{ExposeSecret, SecretVec};
 
 use serde::{Deserialize, Serialize};
 
@@ -19,23 +20,24 @@ pub enum ECAlgorithm {
 
 pub struct ECKeyPair {
     pub public_key: Vec<u8>,
-    pub secret_key: Vec<u8>,
+    pub secret_key: SecretVec<u8>,
     pub algorithm: ECAlgorithm,
 }
 
 impl ECKeyPair {
     pub fn from_secret_key(
-        secret_key: &[u8],
+        secret_key: &SecretVec<u8>,
         ec_algorithm: ECAlgorithm,
     ) -> Result<Self, HybridSignError> {
         match ec_algorithm {
             ECAlgorithm::Ed25519 => {
-                let secret_key = ed25519::SecretKey::from_slice(&secret_key).unwrap();
+                let secret_key =
+                    ed25519::SecretKey::from_slice(&secret_key.expose_secret()).unwrap();
                 let public_key = secret_key.public_key();
 
                 Ok(ECKeyPair {
                     public_key: public_key.to_vec(),
-                    secret_key: secret_key.to_vec(),
+                    secret_key: SecretVec::from(secret_key.to_vec()),
                     algorithm: ec_algorithm,
                 })
             }
@@ -46,11 +48,13 @@ impl ECKeyPair {
         match ec_algorithm {
             ECAlgorithm::Ed25519 => {
                 let child_seed = seed.derive_32bytes_child_seed(Some(&[&ED25519_MAGIC_BYTES]));
-                let keypair = ed25519::KeyPair::from_seed(child_seed.into());
+                let keypair = ed25519::KeyPair::from_seed(
+                    ed25519::Seed::from_slice(&child_seed.expose_secret()).unwrap(),
+                );
 
                 Ok(ECKeyPair {
                     public_key: keypair.pk.to_vec(),
-                    secret_key: keypair.sk.to_vec(),
+                    secret_key: SecretVec::from(keypair.sk.to_vec()),
                     algorithm: ec_algorithm,
                 })
             }
@@ -72,7 +76,9 @@ impl ECSignature {
 
         match signature_algorithm {
             ECAlgorithm::Ed25519 => {
-                let secret_key = ed25519::SecretKey::from_slice(&self.keypair.secret_key).unwrap();
+                let secret_key =
+                    ed25519::SecretKey::from_slice(&self.keypair.secret_key.expose_secret())
+                        .unwrap();
                 let signature = secret_key.sign(message, Some(ed25519::Noise::generate()));
                 signature.to_vec()
             }
@@ -106,7 +112,7 @@ pub enum PQAlgorithm {
 
 pub struct PQKeyPair {
     pub public_key: Vec<u8>,
-    pub secret_key: Vec<u8>,
+    pub secret_key: SecretVec<u8>,
     pub algorithm: PQAlgorithm,
 }
 
@@ -115,10 +121,11 @@ impl PQKeyPair {
         match pq_algorithm {
             PQAlgorithm::Dilithium3 => {
                 let child_seed = seed.derive_64bytes_child_seed(Some(&[&DILITHIUM3_MAGIC_BYTES]));
-                let keypair = dilithium::dilithium3::Keypair::generate(Some(&child_seed));
+                let keypair =
+                    dilithium::dilithium3::Keypair::generate(Some(&child_seed.expose_secret()));
                 Ok(PQKeyPair {
                     public_key: keypair.public.to_bytes().to_vec(),
-                    secret_key: keypair.secret.to_bytes().to_vec(),
+                    secret_key: SecretVec::from(keypair.secret.to_bytes().to_vec()),
                     algorithm: pq_algorithm,
                 })
             }
@@ -142,8 +149,9 @@ impl PQSignature {
 
         match signature_algorithm {
             PQAlgorithm::Dilithium3 => {
-                let secret_key =
-                    dilithium::dilithium3::SecretKey::from_bytes(&self.keypair.secret_key);
+                let secret_key = dilithium::dilithium3::SecretKey::from_bytes(
+                    &self.keypair.secret_key.expose_secret(),
+                );
 
                 let signature = secret_key.sign(message);
 
@@ -195,16 +203,23 @@ mod tests {
 
     #[test]
     fn ed25519_keypair_from_seed() {
-        let keypair = ECKeyPair::from_seed(&Seed::new(TEST_SEED), ECAlgorithm::Ed25519).unwrap();
+        let keypair = ECKeyPair::from_seed(
+            &Seed::new(SecretVec::from(TEST_SEED.to_vec())),
+            ECAlgorithm::Ed25519,
+        )
+        .unwrap();
 
-        assert_eq!(base64::encode(keypair.secret_key), ED25519_SECRET_KEY,);
+        assert_eq!(
+            base64::encode(keypair.secret_key.expose_secret()),
+            ED25519_SECRET_KEY,
+        );
         assert_eq!(base64::encode(keypair.public_key), ED25519_PUBLIC_KEY,);
     }
 
     #[test]
     fn ed25519_keypair_from_secret_key() {
         let keypair = ECKeyPair::from_secret_key(
-            &base64::decode(ED25519_SECRET_KEY).unwrap(),
+            &SecretVec::from(base64::decode(ED25519_SECRET_KEY).unwrap()),
             ECAlgorithm::Ed25519,
         )
         .unwrap();
@@ -215,7 +230,7 @@ mod tests {
     #[test]
     fn ed25519_sign() {
         let keypair = ECKeyPair::from_secret_key(
-            &base64::decode(ED25519_SECRET_KEY).unwrap(),
+            &SecretVec::from(base64::decode(ED25519_SECRET_KEY).unwrap()),
             ECAlgorithm::Ed25519,
         )
         .unwrap();

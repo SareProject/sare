@@ -3,8 +3,9 @@ pub mod error;
 use crate::seed::Seed;
 use ed25519_compact as ed25519;
 use ed25519_compact::x25519;
+use secrecy::{ExposeSecret, SecretVec};
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::hybrid_kem::error::*;
 
@@ -16,26 +17,25 @@ pub enum DHAlgorithm {
     X25519,
 }
 
-#[derive(Clone)]
 pub struct DHKeyPair {
     pub public_key: Vec<u8>,
-    pub secret_key: Vec<u8>,
+    pub secret_key: SecretVec<u8>,
     pub algorithm: DHAlgorithm,
 }
 
 impl DHKeyPair {
     pub fn from_secret_key(
-        secret_key: &[u8],
+        secret_key: &SecretVec<u8>,
         dh_algorithm: DHAlgorithm,
     ) -> Result<Self, HybridKEMError> {
         match dh_algorithm {
             DHAlgorithm::X25519 => {
-                let secret_key = x25519::SecretKey::from_slice(&secret_key)?;
+                let secret_key = x25519::SecretKey::from_slice(&secret_key.expose_secret())?;
                 let public_key = secret_key.recover_public_key()?;
 
                 Ok(DHKeyPair {
                     public_key: public_key.to_vec(),
-                    secret_key: secret_key.to_vec(),
+                    secret_key: SecretVec::from(secret_key.to_vec()),
                     algorithm: dh_algorithm,
                 })
             }
@@ -47,12 +47,13 @@ impl DHKeyPair {
             DHAlgorithm::X25519 => {
                 let child_seed = &seed.derive_32bytes_child_seed(Some(&[&X25519_MAGIC_BYTES]));
 
-                let secret_key = x25519::SecretKey::from_slice(&child_seed.as_slice())?;
+                let secret_key =
+                    x25519::SecretKey::from_slice(&child_seed.expose_secret().as_slice())?;
                 let public_key = secret_key.recover_public_key()?;
 
                 Ok(DHKeyPair {
                     public_key: public_key.to_vec(),
-                    secret_key: secret_key.to_vec(),
+                    secret_key: SecretVec::from(secret_key.to_vec()),
                     algorithm: dh_algorithm,
                 })
             }
@@ -60,28 +61,29 @@ impl DHKeyPair {
     }
 }
 
-pub struct DiffieHellman {
-    pub sender_keypair: DHKeyPair,
-    pub reciever_public_key: Vec<u8>,
+pub struct DiffieHellman<'a> {
+    pub sender_keypair: &'a DHKeyPair,
+    pub reciever_public_key: &'a Vec<u8>,
 }
 
-impl DiffieHellman {
-    pub fn new(sender_keypair: DHKeyPair, reciever_public_key: Vec<u8>) -> Self {
+impl<'a> DiffieHellman<'a> {
+    pub fn new(sender_keypair: &'a DHKeyPair, reciever_public_key: &'a Vec<u8>) -> Self {
         DiffieHellman {
             sender_keypair,
             reciever_public_key,
         }
     }
 
-    pub fn calculate_shared_key(&self) -> Result<Vec<u8>, HybridKEMError> {
+    pub fn calculate_shared_key(&self) -> Result<SecretVec<u8>, HybridKEMError> {
         let dh_algorithm = &self.sender_keypair.algorithm;
 
         match dh_algorithm {
             DHAlgorithm::X25519 => {
-                let sender_key = x25519::SecretKey::from_slice(&self.sender_keypair.secret_key)?;
+                let sender_key =
+                    x25519::SecretKey::from_slice(&self.sender_keypair.secret_key.expose_secret())?;
                 let reciever_key = x25519::PublicKey::from_slice(&self.reciever_public_key)?;
 
-                Ok(reciever_key.dh(&sender_key)?.as_slice().to_vec())
+                Ok(reciever_key.dh(&sender_key)?.as_slice().to_vec().into())
             }
         }
     }
@@ -92,10 +94,9 @@ pub enum KEMAlgorithm {
     Kyber,
 }
 
-#[derive(Clone)]
 pub struct KEMKeyPair {
     pub public_key: Vec<u8>,
-    pub secret_key: Vec<u8>,
+    pub secret_key: SecretVec<u8>,
     pub algorithm: KEMAlgorithm,
 }
 
@@ -104,11 +105,11 @@ impl KEMKeyPair {
         match kem_algorithm {
             KEMAlgorithm::Kyber => {
                 let child_seed = seed.derive_64bytes_child_seed(Some(&[&KYBER768_MAGIC_BYTES]));
-                let keypair = pqc_kyber::derive(&child_seed)?;
+                let keypair = pqc_kyber::derive(&child_seed.expose_secret())?;
 
                 Ok(KEMKeyPair {
                     public_key: keypair.public.to_vec(),
-                    secret_key: keypair.secret.to_vec(),
+                    secret_key: SecretVec::from(keypair.secret.to_vec()),
                     algorithm: kem_algorithm,
                 })
             }
@@ -117,7 +118,7 @@ impl KEMKeyPair {
 }
 
 pub struct EncapsulatedSecret {
-    pub shared_secret: Vec<u8>,
+    pub shared_secret: SecretVec<u8>,
     pub cipher_text: Vec<u8>,
 }
 
@@ -144,25 +145,25 @@ impl Encapsulation {
         };
 
         Ok(EncapsulatedSecret {
-            shared_secret: shared_secret.to_vec(),
+            shared_secret: SecretVec::from(shared_secret.to_vec()),
             cipher_text: cipher_text.to_vec(),
         })
     }
 }
 
 pub struct DecapsulatedSecret {
-    shared_secret: Vec<u8>,
+    shared_secret: SecretVec<u8>,
 }
 
-pub struct Decapsulation {
-    secret_key: Vec<u8>,
-    algorithm: KEMAlgorithm,
+pub struct Decapsulation<'a> {
+    secret_key: &'a SecretVec<u8>,
+    algorithm: &'a KEMAlgorithm,
 }
 
-impl Decapsulation {
-    pub fn new(secret_key: &[u8], algorithm: KEMAlgorithm) -> Self {
+impl<'a> Decapsulation<'a> {
+    pub fn new(secret_key: &'a SecretVec<u8>, algorithm: &'a KEMAlgorithm) -> Self {
         Decapsulation {
-            secret_key: secret_key.to_vec(),
+            secret_key: secret_key,
             algorithm,
         }
     }
@@ -170,12 +171,12 @@ impl Decapsulation {
     pub fn decapsulate(&self, cipher_text: &[u8]) -> Result<DecapsulatedSecret, HybridKEMError> {
         let shared_secret = match self.algorithm {
             KEMAlgorithm::Kyber => {
-                pqc_kyber::decapsulate(cipher_text, &self.secret_key).unwrap()
+                pqc_kyber::decapsulate(cipher_text, &self.secret_key.expose_secret()).unwrap()
             }
         };
 
         Ok(DecapsulatedSecret {
-            shared_secret: shared_secret.to_vec(),
+            shared_secret: SecretVec::from(shared_secret.to_vec()),
         })
     }
 }
@@ -197,14 +198,11 @@ impl HybridKEM {
         &self,
         kem_cipher_text: &[u8],
         dh_sender_public_key: &[u8],
-    ) -> Result<(Vec<u8>, Vec<u8>), HybridKEMError> {
-        // TODO: Reduce Copy/Clone
-        let diffie_hellman =
-            DiffieHellman::new(self.dh_keypair.clone(), dh_sender_public_key.to_vec());
-        let kem_decapsulation = Decapsulation::new(
-            &self.kem_keypair.secret_key,
-            self.kem_keypair.algorithm.clone(),
-        );
+    ) -> Result<(SecretVec<u8>, SecretVec<u8>), HybridKEMError> {
+        let binding = dh_sender_public_key.to_vec();
+        let diffie_hellman = DiffieHellman::new(&self.dh_keypair, &binding);
+        let kem_decapsulation =
+            Decapsulation::new(&self.kem_keypair.secret_key, &self.kem_keypair.algorithm);
 
         let dh_shared_secret = diffie_hellman.calculate_shared_key()?;
         let kem_shared_secret = kem_decapsulation.decapsulate(kem_cipher_text)?;
@@ -251,18 +249,32 @@ mod tests {
 
     #[test]
     fn kyber_keypair_from_seed() {
-        let keypair = KEMKeyPair::from_seed(&Seed::new(TEST_SEED), KEMAlgorithm::Kyber).unwrap();
+        let keypair = KEMKeyPair::from_seed(
+            &Seed::new(SecretVec::from(TEST_SEED.to_vec())),
+            KEMAlgorithm::Kyber,
+        )
+        .unwrap();
 
-        assert_eq!(KYBER_SECRET_KEY, base64::encode(keypair.secret_key));
+        assert_eq!(
+            KYBER_SECRET_KEY,
+            base64::encode(keypair.secret_key.expose_secret())
+        );
 
         assert_eq!(KYBER_PUBLIC_KEY, base64::encode(keypair.public_key));
     }
 
     #[test]
     fn x25519_keypair_from_seed() {
-        let keypair = DHKeyPair::from_seed(&Seed::new(TEST_SEED), DHAlgorithm::X25519).unwrap();
+        let keypair = DHKeyPair::from_seed(
+            &Seed::new(SecretVec::from(TEST_SEED.to_vec())),
+            DHAlgorithm::X25519,
+        )
+        .unwrap();
 
-        assert_eq!(X25519_SECRET_KEY, base64::encode(keypair.secret_key));
+        assert_eq!(
+            X25519_SECRET_KEY,
+            base64::encode(keypair.secret_key.expose_secret())
+        );
 
         assert_eq!(X25519_PUBLIC_KEY, base64::encode(keypair.public_key));
     }
@@ -279,41 +291,47 @@ mod tests {
 
     #[test]
     fn kyber_decapsulate() {
-        let kem = Decapsulation::new(
-            &base64::decode(KYBER_SECRET_KEY).unwrap(),
-            KEMAlgorithm::Kyber,
-        );
+        let binding = SecretVec::from(base64::decode(KYBER_SECRET_KEY).unwrap());
+        let kem = Decapsulation::new(&binding, &KEMAlgorithm::Kyber);
 
         let decapsulated_secret = kem
             .decapsulate(&base64::decode(KYBER_CIPHER_TEXT).unwrap())
             .unwrap();
 
-        assert_eq!(decapsulated_secret.shared_secret, KYBER_SHARED_SECRET);
+        assert_eq!(
+            decapsulated_secret.shared_secret.expose_secret().as_slice(),
+            KYBER_SHARED_SECRET
+        );
     }
 
     #[test]
     fn diffie_hellman_x25519() {
-        let sender_keypair =
-            DHKeyPair::from_seed(&Seed::new(TEST_SEED), DHAlgorithm::X25519).unwrap();
-
-        let sender_dh = DiffieHellman::new(
-            sender_keypair,
-            base64::decode(X25519_RECV_PUBLIC_KEY).unwrap(),
-        );
-
-        let sender_shared_secret = sender_dh.calculate_shared_key().unwrap();
-
-        let reciever_keypair = DHKeyPair::from_secret_key(
-            &base64::decode(X25519_RECV_SECRET_KEY).unwrap(),
+        let sender_keypair = DHKeyPair::from_seed(
+            &Seed::new(SecretVec::from(TEST_SEED.to_vec())),
             DHAlgorithm::X25519,
         )
         .unwrap();
 
-        let reciever_dh =
-            DiffieHellman::new(reciever_keypair, base64::decode(X25519_PUBLIC_KEY).unwrap());
+        let binding = base64::decode(X25519_RECV_PUBLIC_KEY).unwrap();
+
+        let sender_dh = DiffieHellman::new(&sender_keypair, &binding);
+
+        let sender_shared_secret = sender_dh.calculate_shared_key().unwrap();
+
+        let reciever_keypair = DHKeyPair::from_secret_key(
+            &SecretVec::from(base64::decode(X25519_RECV_SECRET_KEY).unwrap()),
+            DHAlgorithm::X25519,
+        )
+        .unwrap();
+
+        let binding = base64::decode(X25519_PUBLIC_KEY).unwrap();
+        let reciever_dh = DiffieHellman::new(&reciever_keypair, &binding);
 
         let reciever_shared_secret = reciever_dh.calculate_shared_key().unwrap();
 
-        assert_eq!(reciever_shared_secret, sender_shared_secret);
+        assert_eq!(
+            reciever_shared_secret.expose_secret(),
+            sender_shared_secret.expose_secret()
+        );
     }
 }
