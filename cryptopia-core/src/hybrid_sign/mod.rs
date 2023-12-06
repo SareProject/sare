@@ -32,7 +32,7 @@ impl ECKeyPair {
         match ec_algorithm {
             ECAlgorithm::Ed25519 => {
                 let secret_key =
-                    ed25519::SecretKey::from_slice(&secret_key.expose_secret()).unwrap();
+                    ed25519::SecretKey::from_slice(secret_key.expose_secret()).unwrap();
                 let public_key = secret_key.public_key();
 
                 Ok(ECKeyPair {
@@ -49,7 +49,7 @@ impl ECKeyPair {
             ECAlgorithm::Ed25519 => {
                 let child_seed = seed.derive_32bytes_child_seed(Some(&[&ED25519_MAGIC_BYTES]));
                 let keypair = ed25519::KeyPair::from_seed(
-                    ed25519::Seed::from_slice(&child_seed.expose_secret()).unwrap(),
+                    ed25519::Seed::from_slice(child_seed.expose_secret()).unwrap(),
                 );
 
                 Ok(ECKeyPair {
@@ -77,7 +77,7 @@ impl ECSignature {
         match signature_algorithm {
             ECAlgorithm::Ed25519 => {
                 let secret_key =
-                    ed25519::SecretKey::from_slice(&self.keypair.secret_key.expose_secret())
+                    ed25519::SecretKey::from_slice(self.keypair.secret_key.expose_secret())
                         .unwrap();
                 let signature = secret_key.sign(message, Some(ed25519::Noise::generate()));
                 signature.to_vec()
@@ -122,7 +122,7 @@ impl PQKeyPair {
             PQAlgorithm::Dilithium3 => {
                 let child_seed = seed.derive_64bytes_child_seed(Some(&[&DILITHIUM3_MAGIC_BYTES]));
                 let keypair =
-                    dilithium::dilithium3::Keypair::generate(Some(&child_seed.expose_secret()));
+                    dilithium::dilithium3::Keypair::generate(Some(child_seed.expose_secret()));
                 Ok(PQKeyPair {
                     public_key: keypair.public.to_bytes().to_vec(),
                     secret_key: SecretVec::from(keypair.secret.to_bytes().to_vec()),
@@ -150,7 +150,7 @@ impl PQSignature {
         match signature_algorithm {
             PQAlgorithm::Dilithium3 => {
                 let secret_key = dilithium::dilithium3::SecretKey::from_bytes(
-                    &self.keypair.secret_key.expose_secret(),
+                    self.keypair.secret_key.expose_secret(),
                 );
 
                 let signature = secret_key.sign(message);
@@ -170,7 +170,7 @@ impl PQSignature {
 
         match signature_algorithm {
             PQAlgorithm::Dilithium3 => {
-                let public_key = dilithium::dilithium3::PublicKey::from_bytes(&public_key);
+                let public_key = dilithium::dilithium3::PublicKey::from_bytes(public_key);
 
                 let does_verify = public_key.verify(message, signature);
 

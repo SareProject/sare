@@ -1,7 +1,7 @@
 pub mod error;
 
 use crate::seed::Seed;
-use ed25519_compact as ed25519;
+
 use ed25519_compact::x25519;
 use secrecy::{ExposeSecret, SecretVec};
 
@@ -30,7 +30,7 @@ impl DHKeyPair {
     ) -> Result<Self, HybridKEMError> {
         match dh_algorithm {
             DHAlgorithm::X25519 => {
-                let secret_key = x25519::SecretKey::from_slice(&secret_key.expose_secret())?;
+                let secret_key = x25519::SecretKey::from_slice(secret_key.expose_secret())?;
                 let public_key = secret_key.recover_public_key()?;
 
                 Ok(DHKeyPair {
@@ -48,7 +48,7 @@ impl DHKeyPair {
                 let child_seed = &seed.derive_32bytes_child_seed(Some(&[&X25519_MAGIC_BYTES]));
 
                 let secret_key =
-                    x25519::SecretKey::from_slice(&child_seed.expose_secret().as_slice())?;
+                    x25519::SecretKey::from_slice(child_seed.expose_secret().as_slice())?;
                 let public_key = secret_key.recover_public_key()?;
 
                 Ok(DHKeyPair {
@@ -80,8 +80,8 @@ impl<'a> DiffieHellman<'a> {
         match dh_algorithm {
             DHAlgorithm::X25519 => {
                 let sender_key =
-                    x25519::SecretKey::from_slice(&self.sender_keypair.secret_key.expose_secret())?;
-                let reciever_key = x25519::PublicKey::from_slice(&self.reciever_public_key)?;
+                    x25519::SecretKey::from_slice(self.sender_keypair.secret_key.expose_secret())?;
+                let reciever_key = x25519::PublicKey::from_slice(self.reciever_public_key)?;
 
                 Ok(reciever_key.dh(&sender_key)?.as_slice().to_vec().into())
             }
@@ -105,7 +105,7 @@ impl KEMKeyPair {
         match kem_algorithm {
             KEMAlgorithm::Kyber => {
                 let child_seed = seed.derive_64bytes_child_seed(Some(&[&KYBER768_MAGIC_BYTES]));
-                let keypair = pqc_kyber::derive(&child_seed.expose_secret())?;
+                let keypair = pqc_kyber::derive(child_seed.expose_secret())?;
 
                 Ok(KEMKeyPair {
                     public_key: keypair.public.to_vec(),
@@ -163,7 +163,7 @@ pub struct Decapsulation<'a> {
 impl<'a> Decapsulation<'a> {
     pub fn new(secret_key: &'a SecretVec<u8>, algorithm: &'a KEMAlgorithm) -> Self {
         Decapsulation {
-            secret_key: secret_key,
+            secret_key,
             algorithm,
         }
     }
@@ -171,7 +171,7 @@ impl<'a> Decapsulation<'a> {
     pub fn decapsulate(&self, cipher_text: &[u8]) -> Result<DecapsulatedSecret, HybridKEMError> {
         let shared_secret = match self.algorithm {
             KEMAlgorithm::Kyber => {
-                pqc_kyber::decapsulate(cipher_text, &self.secret_key.expose_secret()).unwrap()
+                pqc_kyber::decapsulate(cipher_text, self.secret_key.expose_secret()).unwrap()
             }
         };
 

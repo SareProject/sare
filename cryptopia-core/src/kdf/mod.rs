@@ -36,7 +36,7 @@ impl<'a> HKDF<'a> {
         };
 
         let salt = hkdf::Salt::new(hash_algorithm, self.salt);
-        let hkdf_prk = salt.extract(&self.input_data.expose_secret());
+        let hkdf_prk = salt.extract(self.input_data.expose_secret());
 
         let hkdf_okm = hkdf_prk
             .expand(additional_context.unwrap_or(&[&[0]]), hash_algorithm)
@@ -100,8 +100,8 @@ impl<'a> PKDF<'a> {
                 // TODO: convert errors
                 let mut output = vec![0u8; key_length];
                 scrypt::scrypt(
-                    &self.input_data.expose_secret(),
-                    &self.salt,
+                    self.input_data.expose_secret(),
+                    self.salt,
                     &params,
                     &mut output,
                 )

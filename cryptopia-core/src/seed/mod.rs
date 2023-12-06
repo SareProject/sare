@@ -38,7 +38,7 @@ impl Seed {
         let mut mnemonic_phrase: String = String::new();
 
         for chunk in seed_chunks {
-            let mnemonic = Mnemonic::from_entropy(&chunk, Language::English).unwrap();
+            let mnemonic = Mnemonic::from_entropy(chunk, Language::English).unwrap();
             mnemonic_phrase.push_str(mnemonic.phrase());
             mnemonic_phrase.push(' ');
         }
@@ -78,12 +78,12 @@ impl Seed {
     }
 
     pub fn derive_64bytes_child_seed(&self, additional_context: Option<&[&[u8]]>) -> SecretVec<u8> {
-        let hkdf = HKDF::new(&self.raw_seed, &self.get_salt_part(), HKDFAlgorithm::SHA512);
+        let hkdf = HKDF::new(&self.raw_seed, self.get_salt_part(), HKDFAlgorithm::SHA512);
         hkdf.expand(additional_context).unwrap()
     }
 
     pub fn derive_32bytes_child_seed(&self, additional_context: Option<&[&[u8]]>) -> SecretVec<u8> {
-        let hkdf = HKDF::new(&self.raw_seed, &self.get_salt_part(), HKDFAlgorithm::SHA256);
+        let hkdf = HKDF::new(&self.raw_seed, self.get_salt_part(), HKDFAlgorithm::SHA256);
 
         hkdf.expand(additional_context).unwrap()
     }

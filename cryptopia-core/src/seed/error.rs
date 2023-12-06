@@ -1,5 +1,5 @@
 use std::array::TryFromSliceError;
-use bip39::ErrorKind;
+
 
 #[derive(Debug)]
 pub enum SeedError {

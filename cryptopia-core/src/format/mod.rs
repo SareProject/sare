@@ -2,16 +2,13 @@ pub mod encryption;
 pub mod keys;
 pub mod signature;
 
-use bson::{bson, Bson};
 use byteorder::{LittleEndian, ReadBytesExt};
 use serde::{Deserialize, Serialize};
 use std::io::Cursor;
 
 use crate::format::encryption::*;
 use crate::format::signature::*;
-use crate::hybrid_kem::{DHAlgorithm, KEMAlgorithm};
-use crate::hybrid_sign::{ECAlgorithm, PQAlgorithm};
-use crate::kdf::{HKDFAlgorithm, PKDFAlgorithm};
+use crate::kdf::PKDFAlgorithm;
 
 #[derive(Debug)]
 pub enum FormatError {
@@ -119,7 +116,7 @@ impl HeaderFormat {
         let metadata_length = metadata_length_le.read_u64::<LittleEndian>().unwrap();
 
         let metadata_bson = &header[cursor..cursor + metadata_length as usize];
-        let metadata = MetadataFormat::decode(&metadata_bson)?;
+        let metadata = MetadataFormat::decode(metadata_bson)?;
 
         cursor += metadata_length as usize;
 
@@ -137,7 +134,7 @@ impl HeaderFormat {
 
         Ok(HeaderFormat {
             version: version_number,
-            metadata: metadata,
+            metadata,
             signature,
         })
     }
