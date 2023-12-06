@@ -93,13 +93,19 @@ impl<'a> PKDF<'a> {
                     workfactor.0.try_into().unwrap_or(255),
                     workfactor.1 as u32,
                     workfactor.2 as u32,
-                    output.len(),
+                    key_length,
                 )
                 .unwrap(); // TODO: Convert errors
 
                 // TODO: convert errors
                 let mut output = vec![0u8; key_length];
-                scrypt::scrypt(&self.input_data, &self.salt, &params, &mut output).unwrap();
+                scrypt::scrypt(
+                    &self.input_data.expose_secret(),
+                    &self.salt,
+                    &params,
+                    &mut output,
+                )
+                .unwrap();
 
                 Ok(SecretVec::from(output))
             }
@@ -135,7 +141,8 @@ mod tests {
 
     #[test]
     fn scrypt_workfactor_scale() {
-        let pkdf = PKDF::new(&TEST_INPUT_DATA, &TEST_SALT, 60, PKDFAlgorithm::Scrypt);
+        let input_data = SecretVec::from(TEST_INPUT_DATA.to_vec());
+        let pkdf = PKDF::new(&input_data, &TEST_SALT, 60, PKDFAlgorithm::Scrypt);
 
         let workfactor = pkdf.calculate_scrypt_workfactor();
 
@@ -144,11 +151,11 @@ mod tests {
 
     #[test]
     fn scrypt_key_derive() {
-        let pkdf = PKDF::new(&TEST_INPUT_DATA, &TEST_SALT, 20, PKDFAlgorithm::Scrypt);
+        let input_data = SecretVec::from(TEST_INPUT_DATA.to_vec());
+        let pkdf = PKDF::new(&input_data, &TEST_SALT, 20, PKDFAlgorithm::Scrypt);
 
-        let mut output = [0u8; 10];
-        pkdf.derive_key(&mut output).unwrap();
+        let output = pkdf.derive_key(10).unwrap();
 
-        assert_eq!(SCRYPT_OUTPUT, output);
+        assert_eq!(SCRYPT_OUTPUT, output.expose_secret().as_slice());
     }
 }
