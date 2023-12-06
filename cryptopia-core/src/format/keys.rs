@@ -1,10 +1,9 @@
-
+use secrecy::SecretVec;
 use serde::{Deserialize, Serialize};
 
+use crate::format::encryption::EncryptionMetadataFormat;
 use crate::hybrid_kem::{DHAlgorithm, KEMAlgorithm};
 use crate::hybrid_sign::{ECAlgorithm, PQAlgorithm};
-use crate::format::encryption::EncryptionMetadataFormat;
-
 
 #[derive(Serialize, Deserialize)]
 pub struct SignaturePublicKeyFormat {
@@ -34,7 +33,7 @@ pub struct SecretKeyFormat {
     pq_algorithm: PQAlgorithm,
     dh_algorithm: DHAlgorithm,
     kem_algorithm: KEMAlgorithm,
+    master_seed: SecretVec<u8>,
     #[serde(skip_serializing_if = "Option::is_none", flatten)]
     encryption_metadata: Option<EncryptionMetadataFormat>,
 }
-

@@ -32,5 +32,3 @@ impl SignatureFormat  {
         Ok(metadata.unwrap())
     }
 }
-
-
