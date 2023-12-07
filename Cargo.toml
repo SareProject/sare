@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "cryptopia-core"
+    "cryptopia-core",
+    "cryptopia-lib"
 ]
 

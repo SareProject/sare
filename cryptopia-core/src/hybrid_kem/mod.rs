@@ -12,7 +12,7 @@ use crate::hybrid_kem::error::*;
 const X25519_MAGIC_BYTES: [u8; 4] = [25, 85, 2, 0]; // 0x25519 in LittleEndian
 const KYBER768_MAGIC_BYTES: [u8; 4] = [104, 7, 0, 0]; // 0x768 in LittleEndian
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub enum DHAlgorithm {
     X25519,
 }
@@ -89,7 +89,7 @@ impl<'a> DiffieHellman<'a> {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub enum KEMAlgorithm {
     Kyber,
 }

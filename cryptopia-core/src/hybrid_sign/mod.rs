@@ -1,19 +1,17 @@
+pub mod error;
+
 use crate::seed::Seed;
 use crystals_dilithium as dilithium;
 use ed25519_compact as ed25519;
 use secrecy::{ExposeSecret, SecretVec};
+use crate::hybrid_sign::error::*;
 
 use serde::{Deserialize, Serialize};
 
 const ED25519_MAGIC_BYTES: [u8; 4] = [25, 85, 210, 14]; // 0xED25519 in LittleEndian
 const DILITHIUM3_MAGIC_BYTES: [u8; 4] = [211, 12, 0, 0]; // 0xCD3 in LittleEndian
 
-#[derive(Debug)]
-pub enum HybridSignError {
-    Unexpected,
-}
-
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub enum ECAlgorithm {
     Ed25519,
 }
@@ -105,7 +103,7 @@ impl ECSignature {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub enum PQAlgorithm {
     Dilithium3,
 }

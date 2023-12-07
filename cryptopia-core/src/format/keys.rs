@@ -30,14 +30,14 @@ pub struct FullChainPublicKeyFormat {
 
 #[derive(Serialize, Deserialize)]
 pub struct SecretKeyFormat {
-    ec_algorithm: ECAlgorithm,
-    pq_algorithm: PQAlgorithm,
-    dh_algorithm: DHAlgorithm,
-    kem_algorithm: KEMAlgorithm,
+    pub ec_algorithm: ECAlgorithm,
+    pub pq_algorithm: PQAlgorithm,
+    pub dh_algorithm: DHAlgorithm,
+    pub kem_algorithm: KEMAlgorithm,
     #[serde(with = "secret_vec_serde")]
-    master_seed: SecretVec<u8>,
+    pub master_seed: SecretVec<u8>,
     #[serde(skip_serializing_if = "Option::is_none", flatten)]
-    encryption_metadata: Option<EncryptionMetadataFormat>,
+    pub encryption_metadata: Option<EncryptionMetadataFormat>,
 }
 
 impl SecretKeyFormat {
