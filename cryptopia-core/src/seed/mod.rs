@@ -73,6 +73,10 @@ impl Seed {
         &self.raw_seed
     }
 
+    pub fn clone_raw_seed(&self) -> SecretVec<u8> {
+        SecretVec::from(self.raw_seed.expose_secret().clone())
+    }
+
     pub fn get_salt_part(&self) -> &[u8] {
         &self.raw_seed.expose_secret()[120..]
     }

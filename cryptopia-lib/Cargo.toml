@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 cryptopia-core = { path = "../cryptopia-core" }
+secrecy = "0.8.0"
