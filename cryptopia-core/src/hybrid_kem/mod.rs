@@ -42,20 +42,21 @@ impl DHKeyPair {
         }
     }
 
-    pub fn from_seed(seed: &Seed, dh_algorithm: DHAlgorithm) -> Result<Self, HybridKEMError> {
+    pub fn from_seed(seed: &Seed, dh_algorithm: DHAlgorithm) -> Self {
         match dh_algorithm {
             DHAlgorithm::X25519 => {
                 let child_seed = &seed.derive_32bytes_child_seed(Some(&[&X25519_MAGIC_BYTES]));
 
+                // Because we make sure the key is 32bytes it won't return errors
                 let secret_key =
-                    x25519::SecretKey::from_slice(child_seed.expose_secret().as_slice())?;
-                let public_key = secret_key.recover_public_key()?;
+                    x25519::SecretKey::from_slice(child_seed.expose_secret().as_slice()).unwrap();
+                let public_key = secret_key.recover_public_key().unwrap();
 
-                Ok(DHKeyPair {
+                DHKeyPair {
                     public_key: public_key.to_vec(),
                     secret_key: SecretVec::from(secret_key.to_vec()),
                     algorithm: dh_algorithm,
-                })
+                }
             }
         }
     }
@@ -101,17 +102,18 @@ pub struct KEMKeyPair {
 }
 
 impl KEMKeyPair {
-    pub fn from_seed(seed: &Seed, kem_algorithm: KEMAlgorithm) -> Result<Self, HybridKEMError> {
+    pub fn from_seed(seed: &Seed, kem_algorithm: KEMAlgorithm) -> Self {
         match kem_algorithm {
             KEMAlgorithm::Kyber => {
                 let child_seed = seed.derive_64bytes_child_seed(Some(&[&KYBER768_MAGIC_BYTES]));
-                let keypair = pqc_kyber::derive(child_seed.expose_secret())?;
+                // Because the size of the child_seed is fixed it won't return errors
+                let keypair = pqc_kyber::derive(child_seed.expose_secret()).unwrap();
 
-                Ok(KEMKeyPair {
+                KEMKeyPair {
                     public_key: keypair.public.to_vec(),
                     secret_key: SecretVec::from(keypair.secret.to_vec()),
                     algorithm: kem_algorithm,
-                })
+                }
             }
         }
     }
@@ -252,8 +254,7 @@ mod tests {
         let keypair = KEMKeyPair::from_seed(
             &Seed::new(SecretVec::from(TEST_SEED.to_vec())),
             KEMAlgorithm::Kyber,
-        )
-        .unwrap();
+        );
 
         assert_eq!(
             KYBER_SECRET_KEY,
@@ -268,8 +269,7 @@ mod tests {
         let keypair = DHKeyPair::from_seed(
             &Seed::new(SecretVec::from(TEST_SEED.to_vec())),
             DHAlgorithm::X25519,
-        )
-        .unwrap();
+        );
 
         assert_eq!(
             X25519_SECRET_KEY,
@@ -309,8 +309,7 @@ mod tests {
         let sender_keypair = DHKeyPair::from_seed(
             &Seed::new(SecretVec::from(TEST_SEED.to_vec())),
             DHAlgorithm::X25519,
-        )
-        .unwrap();
+        );
 
         let binding = base64::decode(X25519_RECV_PUBLIC_KEY).unwrap();
 

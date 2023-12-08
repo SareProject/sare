@@ -1,10 +1,10 @@
 pub mod error;
 
+use crate::hybrid_sign::error::*;
 use crate::seed::Seed;
 use crystals_dilithium as dilithium;
 use ed25519_compact as ed25519;
 use secrecy::{ExposeSecret, SecretVec};
-use crate::hybrid_sign::error::*;
 
 use serde::{Deserialize, Serialize};
 
@@ -42,7 +42,7 @@ impl ECKeyPair {
         }
     }
 
-    pub fn from_seed(seed: &Seed, ec_algorithm: ECAlgorithm) -> Result<Self, HybridSignError> {
+    pub fn from_seed(seed: &Seed, ec_algorithm: ECAlgorithm) -> Self {
         match ec_algorithm {
             ECAlgorithm::Ed25519 => {
                 let child_seed = seed.derive_32bytes_child_seed(Some(&[&ED25519_MAGIC_BYTES]));
@@ -50,11 +50,11 @@ impl ECKeyPair {
                     ed25519::Seed::from_slice(child_seed.expose_secret()).unwrap(),
                 );
 
-                Ok(ECKeyPair {
+                ECKeyPair {
                     public_key: keypair.pk.to_vec(),
                     secret_key: SecretVec::from(keypair.sk.to_vec()),
                     algorithm: ec_algorithm,
-                })
+                }
             }
         }
     }
@@ -115,17 +115,17 @@ pub struct PQKeyPair {
 }
 
 impl PQKeyPair {
-    pub fn from_seed(seed: &Seed, pq_algorithm: PQAlgorithm) -> Result<Self, HybridSignError> {
+    pub fn from_seed(seed: &Seed, pq_algorithm: PQAlgorithm) -> Self {
         match pq_algorithm {
             PQAlgorithm::Dilithium3 => {
                 let child_seed = seed.derive_64bytes_child_seed(Some(&[&DILITHIUM3_MAGIC_BYTES]));
                 let keypair =
                     dilithium::dilithium3::Keypair::generate(Some(child_seed.expose_secret()));
-                Ok(PQKeyPair {
+                PQKeyPair {
                     public_key: keypair.public.to_bytes().to_vec(),
                     secret_key: SecretVec::from(keypair.secret.to_bytes().to_vec()),
                     algorithm: pq_algorithm,
-                })
+                }
             }
         }
     }
@@ -204,8 +204,7 @@ mod tests {
         let keypair = ECKeyPair::from_seed(
             &Seed::new(SecretVec::from(TEST_SEED.to_vec())),
             ECAlgorithm::Ed25519,
-        )
-        .unwrap();
+        );
 
         assert_eq!(
             base64::encode(keypair.secret_key.expose_secret()),

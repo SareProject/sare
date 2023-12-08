@@ -1,7 +1,7 @@
 pub use cryptopia_core::format::keys::*;
 use cryptopia_core::format::FormatError;
-pub use cryptopia_core::hybrid_kem::{DHAlgorithm, KEMAlgorithm};
-pub use cryptopia_core::hybrid_sign::{ECAlgorithm, PQAlgorithm};
+pub use cryptopia_core::hybrid_kem::{DHAlgorithm, DHKeyPair, KEMAlgorithm, KEMKeyPair};
+pub use cryptopia_core::hybrid_sign::{ECAlgorithm, ECKeyPair, PQAlgorithm, PQKeyPair};
 pub use cryptopia_core::seed::Seed;
 use secrecy::{ExposeSecret, SecretVec};
 use std::io::{BufReader, Read, Write};
@@ -68,12 +68,10 @@ impl MasterKey {
         SecretKeyFormat::decode(&SecretVec::from(reader.buffer().to_vec()))
     }
 
-    pub fn import<R: Read>(
-        serialized_master_key: R,
+    pub fn import(
+        decoded_master_key_format: SecretKeyFormat,
         passphrase_bytes: Option<SecretVec<u8>>,
     ) -> Result<Self, FormatError> {
-        let decoded_master_key_format = Self::decode_bson(serialized_master_key)?;
-
         let hybrid_sign_algorithm = HybridSignAlgorithm {
             ec_algorithm: decoded_master_key_format.ec_algorithm,
             pq_algorithm: decoded_master_key_format.pq_algorithm,
@@ -94,5 +92,49 @@ impl MasterKey {
                 master_seed: Seed::new(decoded_master_key_format.master_seed),
             }),
         }
+    }
+
+    pub fn get_signing_keypair(&self) -> (ECKeyPair, PQKeyPair) {
+        let ec_algorithm = self.hybrid_sign_algorithm.ec_algorithm;
+        let pq_algorithm = self.hybrid_sign_algorithm.pq_algorithm;
+
+        let ec_keypair = ECKeyPair::from_seed(&self.master_seed, ec_algorithm);
+        let pq_keypair = PQKeyPair::from_seed(&self.master_seed, pq_algorithm);
+
+        (ec_keypair, pq_keypair)
+    }
+
+    pub fn get_encryption_keypair(&self) -> (DHKeyPair, KEMKeyPair) {
+        let dh_algorithm = self.hybrid_kem_algorithm.dh_algorithm;
+        let kem_algorithm = self.hybrid_kem_algorithm.kem_algorithm;
+
+        let dh_keypair = DHKeyPair::from_seed(&self.master_seed, dh_algorithm);
+        let kem_keypair = KEMKeyPair::from_seed(&self.master_seed, kem_algorithm);
+
+        (dh_keypair, kem_keypair)
+    }
+
+    pub fn get_signing_public_key(&self) -> SignaturePublicKeyFormat {
+        let (ec_keypair, pq_keypair) = self.get_signing_keypair();
+
+        SignaturePublicKeyFormat::from_keypairs(ec_keypair, pq_keypair)
+    }
+
+    pub fn get_encryption_public_key(&self) -> EncryptionPublicKeyFormat {
+        let (dh_keypair, kem_keypair) = self.get_encryption_keypair();
+
+        EncryptionPublicKeyFormat::from_keypairs(dh_keypair, kem_keypair)
+    }
+
+    pub fn export_public<W: Write>(&self, mut output: W) {
+        let signature_public_key = self.get_signing_public_key();
+        let encryption_public_key = self.get_encryption_public_key();
+
+        let fullchain_public_key = FullChainPublicKeyFormat {
+            signature_public_key,
+            encryption_public_key,
+        };
+
+        output.write_all(&fullchain_public_key.encode());
     }
 }

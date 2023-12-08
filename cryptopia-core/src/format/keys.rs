@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::format::encryption::EncryptionMetadataFormat;
 use crate::format::FormatError;
-use crate::hybrid_kem::{DHAlgorithm, KEMAlgorithm};
-use crate::hybrid_sign::{ECAlgorithm, PQAlgorithm};
+use crate::hybrid_kem::{DHAlgorithm, DHKeyPair, KEMAlgorithm, KEMKeyPair};
+use crate::hybrid_sign::{ECAlgorithm, ECKeyPair, PQAlgorithm, PQKeyPair};
 
 #[derive(Serialize, Deserialize)]
 pub struct SignaturePublicKeyFormat {
@@ -12,6 +12,17 @@ pub struct SignaturePublicKeyFormat {
     pq_algorithm: PQAlgorithm,
     ec_public_key: Vec<u8>,
     pq_public_key: Vec<u8>,
+}
+
+impl SignaturePublicKeyFormat {
+    pub fn from_keypairs(ec_keypair: ECKeyPair, pq_keypair: PQKeyPair) -> Self {
+        SignaturePublicKeyFormat {
+            ec_algorithm: ec_keypair.algorithm,
+            pq_algorithm: pq_keypair.algorithm,
+            ec_public_key: ec_keypair.public_key,
+            pq_public_key: pq_keypair.public_key,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -22,10 +33,34 @@ pub struct EncryptionPublicKeyFormat {
     kem_public_key: Vec<u8>,
 }
 
+impl EncryptionPublicKeyFormat {
+    pub fn from_keypairs(dh_keypair: DHKeyPair, kem_keypair: KEMKeyPair) -> Self {
+        EncryptionPublicKeyFormat {
+            dh_algorithm: dh_keypair.algorithm,
+            kem_algorithm: kem_keypair.algorithm,
+            dh_public_key: dh_keypair.public_key,
+            kem_public_key: kem_keypair.public_key,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct FullChainPublicKeyFormat {
-    signature_public_key: SignaturePublicKeyFormat,
-    encryption_public_key: EncryptionPublicKeyFormat,
+    pub signature_public_key: SignaturePublicKeyFormat,
+    pub encryption_public_key: EncryptionPublicKeyFormat,
+}
+
+impl FullChainPublicKeyFormat {
+    pub fn encode(&self) -> Vec<u8> {
+        bson::to_vec(&self).unwrap()
+    }
+
+    pub fn decode(bson_public_key: &Vec<u8>) -> Result<Self, FormatError> {
+        let public_key = bson::from_slice::<FullChainPublicKeyFormat>(bson_public_key);
+
+        // TODO: Needs Error Handling
+        Ok(public_key.unwrap())
+    }
 }
 
 #[derive(Serialize, Deserialize)]
