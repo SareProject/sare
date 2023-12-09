@@ -1,10 +1,8 @@
 [package]
-name = "cryptopia-lib"
+name = "sare-cli"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cryptopia-core = { path = "../cryptopia-core" }
-secrecy = "0.8.0"

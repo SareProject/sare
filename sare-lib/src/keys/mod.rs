@@ -1,8 +1,8 @@
-pub use cryptopia_core::format::keys::*;
-use cryptopia_core::format::FormatError;
-pub use cryptopia_core::hybrid_kem::{DHAlgorithm, DHKeyPair, KEMAlgorithm, KEMKeyPair};
-pub use cryptopia_core::hybrid_sign::{ECAlgorithm, ECKeyPair, PQAlgorithm, PQKeyPair};
-pub use cryptopia_core::seed::Seed;
+pub use sare_core::format::keys::*;
+use sare_core::format::FormatError;
+pub use sare_core::hybrid_kem::{DHAlgorithm, DHKeyPair, KEMAlgorithm, KEMKeyPair};
+pub use sare_core::hybrid_sign::{ECAlgorithm, ECKeyPair, PQAlgorithm, PQKeyPair};
+pub use sare_core::seed::Seed;
 use secrecy::{ExposeSecret, SecretVec};
 use std::io::{BufReader, Read, Write};
 
@@ -37,14 +37,14 @@ impl MasterKey {
     }
 
     pub fn export<W: Write>(&self, passphrase_bytes: Option<SecretVec<u8>>, mut output: W) {
-        //TODO: Encrypt with cryptopia_core::encryption if passphrase is provided
+        //TODO: Encrypt with sare_core::encryption if passphrase is provided
 
         match passphrase_bytes {
             Some(passphrase) => {
                 todo!()
             }
             None => {
-                // TODO: impl `From` in cryptopia_core::format::keys
+                // TODO: impl `From` in sare_core::format::keys
                 let secret_key_format = SecretKeyFormat {
                     ec_algorithm: self.hybrid_sign_algorithm.ec_algorithm,
                     pq_algorithm: self.hybrid_sign_algorithm.pq_algorithm,
