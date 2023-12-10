@@ -1,6 +1,6 @@
 use ring::hkdf;
+use ring::rand::{SecureRandom, SystemRandom};
 use secrecy::{ExposeSecret, SecretVec};
-
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
@@ -12,6 +12,17 @@ pub enum KDFError {
 pub enum HKDFAlgorithm {
     SHA256,
     SHA512,
+}
+
+pub trait KDF {
+    fn generate_salt() -> [u8; 8] {
+        let rng = SystemRandom::new();
+        let mut salt_buffer = [0u8; 8];
+
+        rng.fill(&mut salt_buffer).unwrap();
+
+        salt_buffer
+    }
 }
 
 pub struct HKDF<'a> {
@@ -61,6 +72,8 @@ pub struct PKDF<'a> {
     workfactor_scale: usize,
     algorithm: PKDFAlgorithm,
 }
+
+impl KDF for PKDF<'_> {}
 
 impl<'a> PKDF<'a> {
     pub fn new(

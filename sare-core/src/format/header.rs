@@ -2,6 +2,7 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use serde::{Deserialize, Serialize};
 use std::io::Cursor;
 
+use crate::encryption::EncryptionAlgorithm;
 use crate::format::encryption::*;
 use crate::format::signature::*;
 use crate::format::FormatError;
@@ -130,13 +131,14 @@ impl HeaderFormat {
 mod tests {
     use super::*;
 
-    const ENCODED_METADATA: &str = "fQAAAAJlbmNyeXB0aW9uX2FsZ29yaXRobQAKAAAAQUVTMjU2R0NNAAJwa2RmX2FsZ29yaXRobQAHAAAAU2NyeXB0ABJwa2RmX3dvcmtmYWN0b3Jfc2NhbGUAMgAAAAAAAAACY29tbWVudAANAAAAVGVzdCBDb21tZW50AAA=";
+    const ENCODED_METADATA: &str = "wAAAAAJlbmNyeXB0aW9uX2FsZ29yaXRobQAKAAAAQUVTMjU2R0NNAARzYWx0AD0AAAAQMAAAAAAAEDEAAAAAABAyAAAAAAAQMwAAAAAAEDQAAAAAABA1AAAAAAAQNgAAAAAAEDcAAAAAAAACcGtkZl9hbGdvcml0aG0ABwAAAFNjcnlwdAAScGtkZl93b3JrZmFjdG9yX3NjYWxlADIAAAAAAAAAAmNvbW1lbnQADQAAAFRlc3QgQ29tbWVudAAA";
 
-    const ENCODED_HEADER: &str = "Q1JZUFRPUElBkQAAAAAAAAABAAAAfQAAAAAAAAB9AAAAAmVuY3J5cHRpb25fYWxnb3JpdGhtAAoAAABBRVMyNTZHQ00AAnBrZGZfYWxnb3JpdGhtAAcAAABTY3J5cHQAEnBrZGZfd29ya2ZhY3Rvcl9zY2FsZQAyAAAAAAAAAAJjb21tZW50AA0AAABUZXN0IENvbW1lbnQAAAAAAAAAAAAA";
+    const ENCODED_HEADER: &str = "Q1JZUFRPUElB1AAAAAAAAAABAAAAwAAAAAAAAADAAAAAAmVuY3J5cHRpb25fYWxnb3JpdGhtAAoAAABBRVMyNTZHQ00ABHNhbHQAPQAAABAwAAAAAAAQMQAAAAAAEDIAAAAAABAzAAAAAAAQNAAAAAAAEDUAAAAAABA2AAAAAAAQNwAAAAAAAAJwa2RmX2FsZ29yaXRobQAHAAAAU2NyeXB0ABJwa2RmX3dvcmtmYWN0b3Jfc2NhbGUAMgAAAAAAAAACY29tbWVudAANAAAAVGVzdCBDb21tZW50AAAAAAAAAAAAAA==";
 
     #[test]
     fn metadata_format_encode() {
         let pkdf_metadata = PKDFMetadataFormat {
+            salt: [0, 0, 0, 0, 0, 0, 0, 0],
             pkdf_algorithm: PKDFAlgorithm::Scrypt,
             pkdf_workfactor_scale: 50,
         };

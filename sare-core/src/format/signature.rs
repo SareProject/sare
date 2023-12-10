@@ -20,7 +20,7 @@ pub struct SignatureFormat {
     pq_signature: Vec<u8>,
 }
 
-impl SignatureFormat  {
+impl SignatureFormat {
     pub fn encode(&self) -> Vec<u8> {
         bson::to_vec(&self).unwrap()
     }

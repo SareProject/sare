@@ -11,6 +11,7 @@ bson = "2.7.0"
 byteorder = "1.5.0"
 crystals-dilithium = "1.0.0"
 ed25519-compact = "2.0.4"
+generic-array = "1.0.0"
 pqc_kyber = { version = "0.7.1", features = ["std", "rand", "kyber768"] }
 rand = "0.8.5"
 ring = "0.17.6"

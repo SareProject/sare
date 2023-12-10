@@ -1,7 +1,10 @@
+pub use sare_core::encryption::{EncryptionAlgorithm, KeyWrap};
+pub use sare_core::format::encryption::*;
 pub use sare_core::format::keys::*;
 use sare_core::format::FormatError;
 pub use sare_core::hybrid_kem::{DHAlgorithm, DHKeyPair, KEMAlgorithm, KEMKeyPair};
 pub use sare_core::hybrid_sign::{ECAlgorithm, ECKeyPair, PQAlgorithm, PQKeyPair};
+use sare_core::kdf::{PKDFAlgorithm, KDF, PKDF};
 pub use sare_core::seed::Seed;
 use secrecy::{ExposeSecret, SecretVec};
 use std::io::{BufReader, Read, Write};
@@ -37,11 +40,47 @@ impl MasterKey {
     }
 
     pub fn export<W: Write>(&self, passphrase_bytes: Option<SecretVec<u8>>, mut output: W) {
-        //TODO: Encrypt with sare_core::encryption if passphrase is provided
-
         match passphrase_bytes {
             Some(passphrase) => {
-                todo!()
+                let salt = PKDF::generate_salt();
+
+                let pkdf = PKDF::new(
+                    self.master_seed.get_raw_seed(),
+                    &salt,
+                    70,
+                    PKDFAlgorithm::Scrypt,
+                );
+
+                // TODO: Set const for workfactor scale
+                let pkdf_metadata = PKDFMetadataFormat {
+                    salt,
+                    pkdf_workfactor_scale: 70,
+                    pkdf_algorithm: PKDFAlgorithm::Scrypt,
+                };
+
+                // NOTE: Because length is exactly 32bytes and parsable into [u8; 32] KeyWrap won't return an error
+                let derived_key = pkdf.derive_key(32).unwrap();
+                let keywrap = KeyWrap::new(derived_key).unwrap();
+
+                let encrypted_seed = keywrap.encrypt(self.master_seed.get_raw_seed());
+
+                let encryption_metadata = EncryptionMetadataFormat {
+                    kem_metadata: None,
+                    encryption_algorithm: EncryptionAlgorithm::AES256KW,
+                    pkdf_metadata: Some(pkdf_metadata),
+                };
+
+                // TODO: impl `From` in sare_core::format::keys
+                let secret_key_format = SecretKeyFormat {
+                    ec_algorithm: self.hybrid_sign_algorithm.ec_algorithm,
+                    pq_algorithm: self.hybrid_sign_algorithm.pq_algorithm,
+                    dh_algorithm: self.hybrid_kem_algorithm.dh_algorithm,
+                    kem_algorithm: self.hybrid_kem_algorithm.kem_algorithm,
+                    master_seed: SecretVec::from(encrypted_seed),
+                    encryption_metadata: Some(encryption_metadata),
+                };
+
+                output.write_all(secret_key_format.encode().expose_secret());
             }
             None => {
                 // TODO: impl `From` in sare_core::format::keys

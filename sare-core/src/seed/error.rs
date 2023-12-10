@@ -1,10 +1,9 @@
 use std::array::TryFromSliceError;
 
-
 #[derive(Debug)]
 pub enum SeedError {
     InvalidMnemonicPhrase,
-    InvalidSeedLength
+    InvalidSeedLength,
 }
 
 impl From<TryFromSliceError> for SeedError {
