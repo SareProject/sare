@@ -2,11 +2,11 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use serde::{Deserialize, Serialize};
 use std::io::Cursor;
 
-use crate::encryption::EncryptionAlgorithm;
+
 use crate::format::encryption::*;
 use crate::format::signature::*;
 use crate::format::FormatError;
-use crate::kdf::PKDFAlgorithm;
+
 
 const MAGIC_BYTES: &[u8; 9] = b"CRYPTOPIA";
 
@@ -130,6 +130,8 @@ impl HeaderFormat {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::encryption::EncryptionAlgorithm;
+    use crate::kdf::PKDFAlgorithm;
 
     const ENCODED_METADATA: &str = "wAAAAAJlbmNyeXB0aW9uX2FsZ29yaXRobQAKAAAAQUVTMjU2R0NNAARzYWx0AD0AAAAQMAAAAAAAEDEAAAAAABAyAAAAAAAQMwAAAAAAEDQAAAAAABA1AAAAAAAQNgAAAAAAEDcAAAAAAAACcGtkZl9hbGdvcml0aG0ABwAAAFNjcnlwdAAScGtkZl93b3JrZmFjdG9yX3NjYWxlADIAAAAAAAAAAmNvbW1lbnQADQAAAFRlc3QgQ29tbWVudAAA";
 

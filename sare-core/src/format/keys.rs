@@ -1,6 +1,7 @@
 use secrecy::{ExposeSecret, SecretVec};
 use serde::{Deserialize, Serialize};
 
+use crate::encryption::EncryptionAlgorithm;
 use crate::format::encryption::EncryptionMetadataFormat;
 use crate::format::FormatError;
 use crate::hybrid_kem::{DHAlgorithm, DHKeyPair, KEMAlgorithm, KEMKeyPair};
@@ -55,7 +56,7 @@ impl FullChainPublicKeyFormat {
         bson::to_vec(&self).unwrap()
     }
 
-    pub fn decode(bson_public_key: &Vec<u8>) -> Result<Self, FormatError> {
+    pub fn decode(bson_public_key: &[u8]) -> Result<Self, FormatError> {
         let public_key = bson::from_slice::<FullChainPublicKeyFormat>(bson_public_key);
 
         // TODO: Needs Error Handling
@@ -96,7 +97,7 @@ mod secret_vec_serde {
     where
         S: Serializer,
     {
-        serializer.serialize_bytes(&data.expose_secret())
+        serializer.serialize_bytes(data.expose_secret())
     }
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<SecretVec<u8>, D::Error>
