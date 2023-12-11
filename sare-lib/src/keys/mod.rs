@@ -44,12 +44,7 @@ impl MasterKey {
             Some(passphrase) => {
                 let salt = PKDF::generate_salt();
 
-                let pkdf = PKDF::new(
-                    self.master_seed.get_raw_seed(),
-                    &salt,
-                    70,
-                    PKDFAlgorithm::Scrypt,
-                );
+                let pkdf = PKDF::new(&passphrase, &salt, 70, PKDFAlgorithm::Scrypt);
 
                 // TODO: Set const for workfactor scale
                 let pkdf_metadata = PKDFMetadataFormat {
