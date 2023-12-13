@@ -9,6 +9,8 @@ pub use sare_core::seed::Seed;
 use secrecy::{ExposeSecret, SecretVec};
 use std::io::{BufReader, Read, Write};
 
+pub const RECOMENDED_PKDF_PARAMS: PKDFAlgorithm = PKDFAlgorithm::Scrypt(17, 8, 12);
+
 pub struct HybridSignAlgorithm {
     ec_algorithm: ECAlgorithm,
     pq_algorithm: PQAlgorithm,
@@ -44,13 +46,12 @@ impl MasterKey {
             Some(passphrase) => {
                 let salt = PKDF::generate_salt();
 
-                let pkdf = PKDF::new(&passphrase, &salt, 70, PKDFAlgorithm::Scrypt);
+                let pkdf = PKDF::new(&passphrase, &salt, RECOMENDED_PKDF_PARAMS);
 
                 // TODO: Set const for workfactor scale
                 let pkdf_metadata = PKDFMetadataFormat {
                     salt,
-                    pkdf_workfactor_scale: 70,
-                    pkdf_algorithm: PKDFAlgorithm::Scrypt,
+                    pkdf_algorithm: RECOMENDED_PKDF_PARAMS,
                 };
 
                 // NOTE: Because length is exactly 32bytes and parsable into [u8; 32] KeyWrap won't return an error
