@@ -63,52 +63,40 @@ impl<'a> HKDF<'a> {
 
 #[derive(Serialize, Deserialize)]
 pub enum PKDFAlgorithm {
-    Scrypt,
+    Scrypt(u8, u32, u32),
 }
 
 pub struct PKDF<'a> {
     input_data: &'a SecretVec<u8>,
     salt: &'a [u8],
-    workfactor_scale: usize,
     algorithm: PKDFAlgorithm,
 }
 
 impl KDF for PKDF<'_> {}
 
 impl<'a> PKDF<'a> {
-    pub fn new(
-        input_data: &'a SecretVec<u8>,
-        salt: &'a [u8],
-        workfactor_scale: usize,
-        algorithm: PKDFAlgorithm,
-    ) -> Self {
+    pub fn new(input_data: &'a SecretVec<u8>, salt: &'a [u8], algorithm: PKDFAlgorithm) -> Self {
         PKDF {
             input_data,
             salt,
-            workfactor_scale,
             algorithm,
         }
     }
 
+    // NOTE: To be used later
+    /*
     pub fn calculate_scrypt_workfactor(&self) -> (usize, usize, usize) {
         let n: usize = (self.workfactor_scale / 4).max(2);
         let r = 8usize;
         let p: u64 = ((2i64.pow(n as u32) / 20).max(1).ilog2()).max(1).into();
         (n, r, p as usize)
     }
+    */
 
     pub fn derive_key(&self, key_length: usize) -> Result<SecretVec<u8>, KDFError> {
         match &self.algorithm {
-            PKDFAlgorithm::Scrypt => {
-                let workfactor = self.calculate_scrypt_workfactor();
-
-                let params = scrypt::Params::new(
-                    workfactor.0.try_into().unwrap_or(255),
-                    workfactor.1 as u32,
-                    workfactor.2 as u32,
-                    key_length,
-                )
-                .unwrap(); // TODO: Convert errors
+            PKDFAlgorithm::Scrypt(n, r, p) => {
+                let params = scrypt::Params::new(*n, *r, *p, key_length).unwrap(); // TODO: Convert errors
 
                 // TODO: convert errors
                 let mut output = vec![0u8; key_length];
@@ -152,6 +140,7 @@ mod tests {
         assert_eq!(HKDF_SHA512_OUTPUT, output.expose_secret().as_slice());
     }
 
+    /*
     #[test]
     fn scrypt_workfactor_scale() {
         let input_data = SecretVec::from(TEST_INPUT_DATA.to_vec());
@@ -161,11 +150,12 @@ mod tests {
 
         assert_eq!((15, 8, 10), workfactor);
     }
+    */
 
     #[test]
     fn scrypt_key_derive() {
         let input_data = SecretVec::from(TEST_INPUT_DATA.to_vec());
-        let pkdf = PKDF::new(&input_data, &TEST_SALT, 20, PKDFAlgorithm::Scrypt);
+        let pkdf = PKDF::new(&input_data, &TEST_SALT, PKDFAlgorithm::Scrypt(5, 8, 1));
 
         let output = pkdf.derive_key(10).unwrap();
 

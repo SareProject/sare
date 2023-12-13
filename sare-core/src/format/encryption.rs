@@ -25,5 +25,4 @@ pub struct EncryptionMetadataFormat {
 pub struct PKDFMetadataFormat {
     pub salt: [u8; 8],
     pub pkdf_algorithm: PKDFAlgorithm,
-    pub pkdf_workfactor_scale: usize,
 }
