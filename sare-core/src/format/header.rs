@@ -2,11 +2,9 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use serde::{Deserialize, Serialize};
 use std::io::Cursor;
 
-
 use crate::format::encryption::*;
 use crate::format::signature::*;
 use crate::format::FormatError;
-
 
 const MAGIC_BYTES: &[u8; 9] = b"CRYPTOPIA";
 
@@ -146,6 +144,7 @@ mod tests {
 
         let encryption_metadata = EncryptionMetadataFormat {
             encryption_algorithm: EncryptionAlgorithm::AES256GCM,
+            nonce: None,
             pkdf_metadata: Some(pkdf_metadata),
             kem_metadata: None,
         };

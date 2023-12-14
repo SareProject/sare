@@ -62,6 +62,7 @@ impl MasterKey {
 
                 let encryption_metadata = EncryptionMetadataFormat {
                     kem_metadata: None,
+                    nonce: None,
                     encryption_algorithm: EncryptionAlgorithm::AES256KW,
                     pkdf_metadata: Some(pkdf_metadata),
                 };

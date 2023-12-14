@@ -15,6 +15,8 @@ pub struct KEMMetadataFormat {
 #[derive(Serialize, Deserialize)]
 pub struct EncryptionMetadataFormat {
     pub encryption_algorithm: EncryptionAlgorithm,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub nonce: Option<Vec<u8>>,
     #[serde(skip_serializing_if = "Option::is_none", flatten)]
     pub kem_metadata: Option<KEMMetadataFormat>,
     #[serde(skip_serializing_if = "Option::is_none", flatten)]
