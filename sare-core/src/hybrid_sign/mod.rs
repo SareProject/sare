@@ -29,8 +29,7 @@ impl ECKeyPair {
     ) -> Result<Self, HybridSignError> {
         match ec_algorithm {
             ECAlgorithm::Ed25519 => {
-                let secret_key =
-                    ed25519::SecretKey::from_slice(secret_key.expose_secret()).unwrap();
+                let secret_key = ed25519::SecretKey::from_slice(secret_key.expose_secret())?;
                 let public_key = secret_key.public_key();
 
                 Ok(ECKeyPair {
@@ -93,8 +92,8 @@ impl ECSignature {
 
         match signature_algorithm {
             ECAlgorithm::Ed25519 => {
-                let public_key = ed25519::PublicKey::from_slice(public_key).unwrap();
-                let signature = ed25519::Signature::from_slice(signature).unwrap();
+                let public_key = ed25519::PublicKey::from_slice(public_key)?;
+                let signature = ed25519::Signature::from_slice(signature)?;
                 let does_verify = public_key.verify(message, &signature);
 
                 Ok(does_verify.is_ok())
