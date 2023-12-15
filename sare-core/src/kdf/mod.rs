@@ -7,6 +7,9 @@ use sha2::{Digest, Sha256, Sha512};
 
 #[derive(Debug)]
 pub enum KDFError {
+    InvalidKeyLength,
+    InvalidOutputLength,
+    InvalidParams,
     Unexpected,
 }
 
@@ -57,7 +60,7 @@ impl<'a> HKDF<'a> {
     ) -> Result<(), KDFError> {
         let hkdf = Hkdf::<Sha256>::new(Some(self.salt), &self.input_data.expose_secret());
         hkdf.expand(additional_context.unwrap_or(&[0]), okm)
-            .unwrap();
+            .map_err(|_| KDFError::InvalidKeyLength)?;
 
         Ok(())
     }
@@ -69,7 +72,7 @@ impl<'a> HKDF<'a> {
     ) -> Result<(), KDFError> {
         let hkdf = Hkdf::<Sha512>::new(Some(self.salt), &self.input_data.expose_secret());
         hkdf.expand(additional_context.unwrap_or(&[0]), okm)
-            .unwrap();
+            .map_err(|_| KDFError::InvalidKeyLength)?;
 
         Ok(())
     }
@@ -79,10 +82,10 @@ impl<'a> HKDF<'a> {
 
         match &self.algorithm {
             HKDFAlgorithm::SHA256 => {
-                self.expand_sha256(additional_context, &mut okm);
+                self.expand_sha256(additional_context, &mut okm)?;
             }
             HKDFAlgorithm::SHA512 => {
-                self.expand_sha512(additional_context, &mut okm);
+                self.expand_sha512(additional_context, &mut okm)?;
             }
         }
 
@@ -125,9 +128,9 @@ impl<'a> PKDF<'a> {
     pub fn derive_key(&self, key_length: usize) -> Result<SecretVec<u8>, KDFError> {
         match &self.algorithm {
             PKDFAlgorithm::Scrypt(n, r, p) => {
-                let params = scrypt::Params::new(*n, *r, *p, key_length).unwrap(); // TODO: Convert errors
+                let params = scrypt::Params::new(*n, *r, *p, key_length)
+                    .map_err(|_| KDFError::InvalidParams)?;
 
-                // TODO: convert errors
                 let mut output = vec![0u8; key_length];
                 scrypt::scrypt(
                     self.input_data.expose_secret(),
@@ -135,7 +138,7 @@ impl<'a> PKDF<'a> {
                     &params,
                     &mut output,
                 )
-                .unwrap();
+                .map_err(|_| KDFError::InvalidOutputLength)?;
 
                 Ok(SecretVec::from(output))
             }
