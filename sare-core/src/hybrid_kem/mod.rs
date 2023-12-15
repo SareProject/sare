@@ -45,7 +45,7 @@ impl DHKeyPair {
     pub fn from_seed(seed: &Seed, dh_algorithm: DHAlgorithm) -> Self {
         match dh_algorithm {
             DHAlgorithm::X25519 => {
-                let child_seed = &seed.derive_32bytes_child_seed(Some(&[&X25519_MAGIC_BYTES]));
+                let child_seed = &seed.derive_32bytes_child_seed(Some(&X25519_MAGIC_BYTES));
 
                 // Because we make sure the key is 32bytes it won't return errors
                 let secret_key =
@@ -105,7 +105,7 @@ impl KEMKeyPair {
     pub fn from_seed(seed: &Seed, kem_algorithm: KEMAlgorithm) -> Self {
         match kem_algorithm {
             KEMAlgorithm::Kyber => {
-                let child_seed = seed.derive_64bytes_child_seed(Some(&[&KYBER768_MAGIC_BYTES]));
+                let child_seed = seed.derive_64bytes_child_seed(Some(&KYBER768_MAGIC_BYTES));
                 // Because the size of the child_seed is fixed it won't return errors
                 let keypair = pqc_kyber::derive(child_seed.expose_secret()).unwrap();
 

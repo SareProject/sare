@@ -45,7 +45,7 @@ impl ECKeyPair {
     pub fn from_seed(seed: &Seed, ec_algorithm: ECAlgorithm) -> Self {
         match ec_algorithm {
             ECAlgorithm::Ed25519 => {
-                let child_seed = seed.derive_32bytes_child_seed(Some(&[&ED25519_MAGIC_BYTES]));
+                let child_seed = seed.derive_32bytes_child_seed(Some(&ED25519_MAGIC_BYTES));
                 let keypair = ed25519::KeyPair::from_seed(
                     ed25519::Seed::from_slice(child_seed.expose_secret()).unwrap(),
                 );
@@ -118,7 +118,7 @@ impl PQKeyPair {
     pub fn from_seed(seed: &Seed, pq_algorithm: PQAlgorithm) -> Self {
         match pq_algorithm {
             PQAlgorithm::Dilithium3 => {
-                let child_seed = seed.derive_64bytes_child_seed(Some(&[&DILITHIUM3_MAGIC_BYTES]));
+                let child_seed = seed.derive_64bytes_child_seed(Some(&DILITHIUM3_MAGIC_BYTES));
                 let keypair =
                     dilithium::dilithium3::Keypair::generate(Some(child_seed.expose_secret()));
                 PQKeyPair {

@@ -1,7 +1,8 @@
-use ring::hkdf;
+use hkdf::Hkdf;
 use ring::rand::{SecureRandom, SystemRandom};
 use secrecy::{ExposeSecret, SecretVec};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256, Sha512};
 
 #[derive(Debug)]
 pub enum KDFError {
@@ -12,6 +13,15 @@ pub enum KDFError {
 pub enum HKDFAlgorithm {
     SHA256,
     SHA512,
+}
+
+impl HKDFAlgorithm {
+    pub fn get_output_size(&self) -> usize {
+        match &self {
+            HKDFAlgorithm::SHA256 => 32,
+            HKDFAlgorithm::SHA512 => 64,
+        }
+    }
 }
 
 pub trait KDF {
@@ -40,24 +50,43 @@ impl<'a> HKDF<'a> {
         }
     }
 
-    pub fn expand(&self, additional_context: Option<&[&[u8]]>) -> Result<SecretVec<u8>, KDFError> {
-        let (hash_algorithm, output_key_length) = match &self.algorithm {
-            HKDFAlgorithm::SHA256 => (hkdf::HKDF_SHA256, 32),
-            HKDFAlgorithm::SHA512 => (hkdf::HKDF_SHA512, 64),
-        };
-
-        let salt = hkdf::Salt::new(hash_algorithm, self.salt);
-        let hkdf_prk = salt.extract(self.input_data.expose_secret());
-
-        let hkdf_okm = hkdf_prk
-            .expand(additional_context.unwrap_or(&[&[0]]), hash_algorithm)
+    fn expand_sha256(
+        &self,
+        additional_context: Option<&[u8]>,
+        okm: &mut [u8],
+    ) -> Result<(), KDFError> {
+        let hkdf = Hkdf::<Sha256>::new(Some(self.salt), &self.input_data.expose_secret());
+        hkdf.expand(additional_context.unwrap_or(&[0]), okm)
             .unwrap();
 
-        let mut output = vec![0u8; output_key_length];
-        //TODO: convert ther errors later
-        hkdf_okm.fill(&mut output).unwrap();
+        Ok(())
+    }
 
-        Ok(SecretVec::from(output))
+    fn expand_sha512(
+        &self,
+        additional_context: Option<&[u8]>,
+        okm: &mut [u8],
+    ) -> Result<(), KDFError> {
+        let hkdf = Hkdf::<Sha512>::new(Some(self.salt), &self.input_data.expose_secret());
+        hkdf.expand(additional_context.unwrap_or(&[0]), okm)
+            .unwrap();
+
+        Ok(())
+    }
+
+    pub fn expand(&self, additional_context: Option<&[u8]>) -> Result<SecretVec<u8>, KDFError> {
+        let mut okm = vec![0u8; self.algorithm.get_output_size()];
+
+        match &self.algorithm {
+            HKDFAlgorithm::SHA256 => {
+                self.expand_sha256(additional_context, &mut okm);
+            }
+            HKDFAlgorithm::SHA512 => {
+                self.expand_sha512(additional_context, &mut okm);
+            }
+        }
+
+        Ok(SecretVec::from(okm))
     }
 }
 
