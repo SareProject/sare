@@ -58,7 +58,7 @@ impl MasterKey {
                 let derived_key = pkdf.derive_key(32).unwrap();
                 let keywrap = KeyWrap::new(derived_key).unwrap();
 
-                let encrypted_seed = keywrap.encrypt(self.master_seed.get_raw_seed());
+                let encrypted_seed = keywrap.wrap(self.master_seed.get_raw_seed());
 
                 let encryption_metadata = EncryptionMetadataFormat {
                     kem_metadata: None,
@@ -120,7 +120,31 @@ impl MasterKey {
 
         match passphrase_bytes {
             Some(passphrase) => {
-                todo!()
+                // NOTE: We'll check if it's encrypted first in CLI or other interfaces
+                // TODO: Mention this on code docs later
+                let encryption_metadata = decoded_master_key_format.encryption_metadata.unwrap();
+                // NOTE: It will not be None if it's encrypted
+                let pkdf_metadata = encryption_metadata.pkdf_metadata.unwrap();
+
+                let pkdf = PKDF::new(
+                    &passphrase,
+                    &pkdf_metadata.salt,
+                    pkdf_metadata.pkdf_algorithm,
+                );
+
+                let derived_key = pkdf.derive_key(32).unwrap();
+
+                let keywrap = KeyWrap::new(derived_key).unwrap();
+
+                let decrypted_master_seed = keywrap
+                    .dewrap(&decoded_master_key_format.master_seed)
+                    .unwrap(); // TODO: Handle Errors
+
+                Ok(MasterKey {
+                    hybrid_sign_algorithm,
+                    hybrid_kem_algorithm,
+                    master_seed: Seed::new(decrypted_master_seed),
+                })
             }
             None => Ok(MasterKey {
                 hybrid_sign_algorithm,

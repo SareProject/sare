@@ -3,7 +3,7 @@ use rand::rngs::OsRng;
 use rand::RngCore;
 use secrecy::{ExposeSecret, SecretVec};
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256, Sha512};
+use sha2::{Sha256, Sha512};
 
 #[derive(Debug)]
 pub enum KDFError {
