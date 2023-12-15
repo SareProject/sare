@@ -1,5 +1,6 @@
 use hkdf::Hkdf;
-use ring::rand::{SecureRandom, SystemRandom};
+use rand::rngs::OsRng;
+use rand::RngCore;
 use secrecy::{ExposeSecret, SecretVec};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256, Sha512};
@@ -26,10 +27,9 @@ impl HKDFAlgorithm {
 
 pub trait KDF {
     fn generate_salt() -> [u8; 8] {
-        let rng = SystemRandom::new();
         let mut salt_buffer = [0u8; 8];
 
-        rng.fill(&mut salt_buffer).unwrap();
+        OsRng.fill_bytes(&mut salt_buffer);
 
         salt_buffer
     }

@@ -1,7 +1,8 @@
 pub mod error;
 
 use bip39::{Language, Mnemonic};
-use ring::rand::{SecureRandom, SystemRandom};
+use rand::rngs::OsRng;
+use rand::RngCore;
 use secrecy::{ExposeSecret, SecretString, SecretVec};
 use sha3::{
     digest::{ExtendableOutput, Update, XofReader},
@@ -22,10 +23,9 @@ impl Seed {
     }
 
     pub fn generate() -> Self {
-        let rng = SystemRandom::new();
         let mut raw_seed_buffer = vec![0u8; 128];
 
-        rng.fill(&mut raw_seed_buffer).unwrap();
+        OsRng.fill_bytes(&mut raw_seed_buffer);
 
         Seed {
             raw_seed: SecretVec::from(raw_seed_buffer),
