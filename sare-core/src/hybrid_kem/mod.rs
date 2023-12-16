@@ -6,6 +6,7 @@ use ed25519_compact::x25519;
 use secrecy::{ExposeSecret, SecretVec};
 
 use serde::{Deserialize, Serialize};
+use std::string::ToString;
 
 use crate::hybrid_kem::error::*;
 
@@ -15,6 +16,14 @@ const KYBER768_MAGIC_BYTES: [u8; 4] = [104, 7, 0, 0]; // 0x768 in LittleEndian
 #[derive(Clone, Copy, Serialize, Deserialize)]
 pub enum DHAlgorithm {
     X25519,
+}
+
+impl ToString for DHAlgorithm {
+    fn to_string(&self) -> String {
+        match self {
+            Self::X25519 => String::from("X25519"),
+        }
+    }
 }
 
 pub struct DHKeyPair {
@@ -92,7 +101,15 @@ impl<'a> DiffieHellman<'a> {
 
 #[derive(Clone, Copy, Serialize, Deserialize)]
 pub enum KEMAlgorithm {
-    Kyber,
+    Kyber768,
+}
+
+impl ToString for KEMAlgorithm {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Kyber768 => String::from("Kyber768"),
+        }
+    }
 }
 
 pub struct KEMKeyPair {
@@ -104,7 +121,7 @@ pub struct KEMKeyPair {
 impl KEMKeyPair {
     pub fn from_seed(seed: &Seed, kem_algorithm: KEMAlgorithm) -> Self {
         match kem_algorithm {
-            KEMAlgorithm::Kyber => {
+            KEMAlgorithm::Kyber768 => {
                 let child_seed = seed.derive_64bytes_child_seed(Some(&KYBER768_MAGIC_BYTES));
                 // Because the size of the child_seed is fixed it won't return errors
                 let keypair = pqc_kyber::derive(child_seed.expose_secret()).unwrap();
@@ -141,7 +158,7 @@ impl Encapsulation {
         let mut random_generator = rand::thread_rng();
 
         let (cipher_text, shared_secret) = match self.algorithm {
-            KEMAlgorithm::Kyber => {
+            KEMAlgorithm::Kyber768 => {
                 pqc_kyber::encapsulate(&self.public_key, &mut random_generator).unwrap()
             }
         };
@@ -172,7 +189,7 @@ impl<'a> Decapsulation<'a> {
 
     pub fn decapsulate(&self, cipher_text: &[u8]) -> Result<DecapsulatedSecret, HybridKEMError> {
         let shared_secret = match self.algorithm {
-            KEMAlgorithm::Kyber => {
+            KEMAlgorithm::Kyber768 => {
                 pqc_kyber::decapsulate(cipher_text, self.secret_key.expose_secret()).unwrap()
             }
         };
@@ -231,9 +248,12 @@ mod tests {
 
     const KYBER_PUBLIC_KEY: &str ="eoMnONCcnYSjbkNQ1oO6KJYfNwsj3LaX+keuMEGz05COI8oqzAVEQFVmtzY/sgJrg9sIG9RylBfLicnCzEet2WStYPyoTPwIyYBg6vyYTnCZfuYr/uO40FQCqXop7ihdTMe5Q+ltmQzM61wpX4t/oRK6+kG9KtBueOCerhdAJhKpo1yUgNiQAehJuesXCqdko1amBEMHq/gCDPGVNUmO5zE+NlNP0RaJT5qpdNcGh7AcFriTezAsj4QJboZ4kfB6HZl0z3OWkuzGR3ekBYdEOcC8JopoHayvcje6CYA0F5NpBSe5vSSErUwoOEEaX7By6rzIVBBMrjtVUPalICsp32W7pyBC9fOk6IVCVXlRTRu+BqEoQeVJmCtET9wTguo1hCgHNPiCpQEdcbjGJJnPeqQlN0Su8eXNzyODA5pDAYi+MqC7tFtD7SCJ71xgHCI4FuZAn6BIS1ykBnpai0tzd5xiexuf1/w5i6SjV2sQbRGEpQzIJlzHyFa/5vArfSh6xnCTg3QvkOxraGBH3zV2KilnHJOM2lFLJSc+Zkl7tmPCEblC0SAD4gdyYto+yxYD3yN3klGKhtCtrvROpdwu97yQ9jmYveZ8hhxFSHhcT3dxs4pSX5kGmLutsmsASGSqw1i+9JhOSkFx71ViM8sLUNStPSwKjkPAhqghIyAYffZ7wwKVUkwoZacxw2h8myEbdux14rt70pzDrhY2S6gRbDYVKwiwnSVtDoECcaATjjPL3mO9Y/IdTCSmi4gno9Gx4BVoMNcM92xE1HC4IagZ0RhwA7ZVZFBfpDyObnugEYDJEVscpsKZKjdbhWRWucwdGbOjsXkq8Uk+J5Eb42mrvZMEoFspSwJrN8ayWBMh8VdNzMA+UAttPyoh0aOJqPdlZWZyIEcnJ8cBWJACdFmHO4XPq9p5+kmPUPAVJcKq+lQB+2NZ79JpZXm248auAqVebAadWzJ1WiJ4rgKR7qZzCvxJHpQuprs0npoM8wJ/FrSfqLuRpzxSVmzLh6E5x/Q3huRjxSQXCAw0Csud5zuBEKLMimyrq2nH5Xi0alSkzbFBLwlWLlnDiGcKYzuQm3PDnsLFbZFi9HeF02uhWjO80RGG6jolZjpd95VgAZB5oMBW2WcM8leYvHYM/IMQODlyfmGZU2Q6igtylYt4mMQQlRAUAYWM4fopdSe/7huWK0iEUtEXO6qUVTEA4Ywv8wJMwFhYn1U/VXN/+qOtMIR65bgFzCitSsE542Eg4Xm1ZJbLF3USobtAi5CXaRaLRrNWALWTO+gNu1wFb7eZMySoHyU+03u/Lzux2ZfGPEVA/IhVJ/Qr27x4hrqY66agtno0QfUB4oxsp+IMBpS7TjieeTwdhoPFynkd93CfTEIOfJi6A1W2UsqUWUKsB5sHXuhK8kjHZxl/haa9lxMvAMO2dAp6P0gTi6qNF5JCsjvM8aNrQEiNodmeO3SPfRS3D7tTx3HBOTObmPwuEegI6IRUoAiiMsuxPLEMOpV2bihNHpRKXGtihatuo9opj3ekqxlglF/TNc/qSn3cGowhuUiBum8kK0lqA9jonDRuuUaCG1A=";
 
-        const KYBER_CIPHER_TEXT: &str = "dcZCy2qBW9KURkV2YmYvg3v35MAX2TsNMEA5m8GHws7D+m7IfOw6NWskDojrglG0s1j3pC4HGoOp7urS5SDqvsZlmW0vae//ZHMqIHStG14vRM23lIl1ElZejtkm0AWfGhYs4ZkAzeRfdPjuaYbm3UzbEm8bng0yTyifMigqEc9whQp2WKu0z6bArcFftrQsxkR2wLaK8qN+w7ARuL4infcRHSeexzyt3NvP65KK7/8lRqjMvp4rbjcyucSKr6UPaIwgIQntuRn3y90QOXbuijWduGulCK4z2eS1dFsrYnuc66JZZPz7OJTDdHyFpYMxdulNv0KFFgbC6yef7zXu984iGmdNPdRQRK5tmqdQld4eKKxQ9MZFOVB0R0xJ6FLRcImsiIMSDbjBo+C2aGyZir156XeFcIeXbSz/APxucTtciFE5sNLOYVBAz3ci7t1gnZvWr9Blw8Ew7kb0Mk1l1sh4ZONSrmpG/qQeOfyBGMiUgiszqPuMAQNwB/8I64t3QO72JMzW9jQMUIa/q4isfc3wScPFHW4Hbnmk5HpTsqbjogdxTsDYa7orcKCTkRz80+Fa0bf2n2sQW0mieph0gntlEgw6Mk/wNOZPUwljj7t+B3qy1MS2RYCALvLFCBQ06cMdyE6EJrgPUqjFh0npmFV6sdAigVYhEStWNdKftVw8A4jfHKQhR+fGcyZm3zY7ZjQailZbOGBDmZDhWnyzKajYKovvYkyNDI/6H4qtMKEmBXJ/QIOu2VvaJAeyVGFtv1kmPzfgag/Y0obOZfVyarkfwUqRsK/fi2DWURwrAVwDI+k+4+e/6Bpe4ERf5crxaYVE/THfwLh0cj8ShLR8h59FjrWYutHFqHwzE8WY6JaV01kebROK9tbbvtZn79GNuwfxrCOiB8LEM1usSbj8bdBLFgTrbsujB8XhOnSn5RJmg6BoE4Bb7wPQUujrjuF3G4x74miChX/LUjc34nJDERng2kUT0vqC2+A7uDxDqjoc48LP/muCuKqD5xJZAjXE8FH9hN2WMEdrvcj986WefCGLJCWHLkMvCzUq3WPpTcH6xwQorgR4ZoLuR+wwWRMlIJfzVsbkxQedJONGBvjKRI8jf50dldQUGVN52eV5dRW6X0hUQkhTToWSFCxw22WQF18s9iun4BMWW3pp0AjuhtptjcSnQGAW+YBw1WDtRv1OT8VFAY5O0rFUJ1rtaMEE1bd0g0NrZ1WK+F68d60xP+sGmYyEGxyx1A2Yc5lOccG5mEZRnxPOsEgGygyWM9KePFN/MO5fu09jJUSTSUuelI7UbM1r0v44ns+Wm1wWpsNfXthkLmvbdVHjXPjvTZnWp6Nr0J5pYZKdZEleLxLjuUzQRHt7obhpQX+kBlAHFrEzDCdeYrlL1HFAFYP5n5WdVDYZn0rgypan3KpCx5YS+bhSYkqYAekUub+CzW46Xek=";
+    const KYBER_CIPHER_TEXT: &str = "dcZCy2qBW9KURkV2YmYvg3v35MAX2TsNMEA5m8GHws7D+m7IfOw6NWskDojrglG0s1j3pC4HGoOp7urS5SDqvsZlmW0vae//ZHMqIHStG14vRM23lIl1ElZejtkm0AWfGhYs4ZkAzeRfdPjuaYbm3UzbEm8bng0yTyifMigqEc9whQp2WKu0z6bArcFftrQsxkR2wLaK8qN+w7ARuL4infcRHSeexzyt3NvP65KK7/8lRqjMvp4rbjcyucSKr6UPaIwgIQntuRn3y90QOXbuijWduGulCK4z2eS1dFsrYnuc66JZZPz7OJTDdHyFpYMxdulNv0KFFgbC6yef7zXu984iGmdNPdRQRK5tmqdQld4eKKxQ9MZFOVB0R0xJ6FLRcImsiIMSDbjBo+C2aGyZir156XeFcIeXbSz/APxucTtciFE5sNLOYVBAz3ci7t1gnZvWr9Blw8Ew7kb0Mk1l1sh4ZONSrmpG/qQeOfyBGMiUgiszqPuMAQNwB/8I64t3QO72JMzW9jQMUIa/q4isfc3wScPFHW4Hbnmk5HpTsqbjogdxTsDYa7orcKCTkRz80+Fa0bf2n2sQW0mieph0gntlEgw6Mk/wNOZPUwljj7t+B3qy1MS2RYCALvLFCBQ06cMdyE6EJrgPUqjFh0npmFV6sdAigVYhEStWNdKftVw8A4jfHKQhR+fGcyZm3zY7ZjQailZbOGBDmZDhWnyzKajYKovvYkyNDI/6H4qtMKEmBXJ/QIOu2VvaJAeyVGFtv1kmPzfgag/Y0obOZfVyarkfwUqRsK/fi2DWURwrAVwDI+k+4+e/6Bpe4ERf5crxaYVE/THfwLh0cj8ShLR8h59FjrWYutHFqHwzE8WY6JaV01kebROK9tbbvtZn79GNuwfxrCOiB8LEM1usSbj8bdBLFgTrbsujB8XhOnSn5RJmg6BoE4Bb7wPQUujrjuF3G4x74miChX/LUjc34nJDERng2kUT0vqC2+A7uDxDqjoc48LP/muCuKqD5xJZAjXE8FH9hN2WMEdrvcj986WefCGLJCWHLkMvCzUq3WPpTcH6xwQorgR4ZoLuR+wwWRMlIJfzVsbkxQedJONGBvjKRI8jf50dldQUGVN52eV5dRW6X0hUQkhTToWSFCxw22WQF18s9iun4BMWW3pp0AjuhtptjcSnQGAW+YBw1WDtRv1OT8VFAY5O0rFUJ1rtaMEE1bd0g0NrZ1WK+F68d60xP+sGmYyEGxyx1A2Yc5lOccG5mEZRnxPOsEgGygyWM9KePFN/MO5fu09jJUSTSUuelI7UbM1r0v44ns+Wm1wWpsNfXthkLmvbdVHjXPjvTZnWp6Nr0J5pYZKdZEleLxLjuUzQRHt7obhpQX+kBlAHFrEzDCdeYrlL1HFAFYP5n5WdVDYZn0rgypan3KpCx5YS+bhSYkqYAekUub+CzW46Xek=";
 
-    const KYBER_SHARED_SECRET: [u8; 32] = [185, 127, 166, 22, 6, 250, 76, 23, 7, 18, 145, 156, 212, 31, 147, 145, 238, 220, 219, 29, 89, 115, 86, 138, 173, 153, 147, 40, 206, 131, 51, 127]; 
+    const KYBER_SHARED_SECRET: [u8; 32] = [
+        185, 127, 166, 22, 6, 250, 76, 23, 7, 18, 145, 156, 212, 31, 147, 145, 238, 220, 219, 29,
+        89, 115, 86, 138, 173, 153, 147, 40, 206, 131, 51, 127,
+    ];
 
     const X25519_SECRET_KEY: &str = "Hce1WL1kC3XHHSH+5EyDzoyraj9+bWZTX1R4A7ZougM=";
     const X25519_PUBLIC_KEY: &str = "P07nNmiMAgt4hSh8YMwQ58yRBxErKp9VXrh74RHz7Sw=";
@@ -250,7 +270,7 @@ mod tests {
     fn kyber_keypair_from_seed() {
         let keypair = KEMKeyPair::from_seed(
             &Seed::new(SecretVec::from(TEST_SEED.to_vec())),
-            KEMAlgorithm::Kyber,
+            KEMAlgorithm::Kyber768,
         );
 
         assert_eq!(
@@ -280,7 +300,7 @@ mod tests {
     fn kyber_encapsulate() {
         let kem = Encapsulation::new(
             &base64::decode(KYBER_PUBLIC_KEY).unwrap(),
-            KEMAlgorithm::Kyber,
+            KEMAlgorithm::Kyber768,
         );
 
         assert!(kem.encapsulate().is_ok());
@@ -289,7 +309,7 @@ mod tests {
     #[test]
     fn kyber_decapsulate() {
         let binding = SecretVec::from(base64::decode(KYBER_SECRET_KEY).unwrap());
-        let kem = Decapsulation::new(&binding, &KEMAlgorithm::Kyber);
+        let kem = Decapsulation::new(&binding, &KEMAlgorithm::Kyber768);
 
         let decapsulated_secret = kem
             .decapsulate(&base64::decode(KYBER_CIPHER_TEXT).unwrap())

@@ -7,6 +7,8 @@ use crate::format::FormatError;
 use crate::hybrid_kem::{DHAlgorithm, DHKeyPair, KEMAlgorithm, KEMKeyPair};
 use crate::hybrid_sign::{ECAlgorithm, ECKeyPair, PQAlgorithm, PQKeyPair};
 
+use sha2::{Digest, Sha256};
+
 #[derive(Serialize, Deserialize)]
 pub struct SignaturePublicKeyFormat {
     ec_algorithm: ECAlgorithm,
@@ -62,6 +64,34 @@ impl FullChainPublicKeyFormat {
         // TODO: Needs Error Handling
         Ok(public_key.unwrap())
     }
+
+    pub fn calculate_fingerprint(&self) -> [u8; 32] {
+        let mut hasher = Sha256::new();
+        let ec_algorithm = &self.signature_public_key.ec_algorithm.to_string();
+        hasher.update(ec_algorithm.as_bytes());
+        let ec_public_key = &self.signature_public_key.ec_public_key;
+        hasher.update(ec_public_key);
+
+        let pq_algorithm = &self.signature_public_key.pq_algorithm.to_string();
+        hasher.update(pq_algorithm.as_bytes());
+        let pq_public_key = &self.signature_public_key.pq_public_key;
+        hasher.update(pq_public_key);
+
+        let dh_algorithm = &self.encryption_public_key.dh_algorithm.to_string();
+        hasher.update(dh_algorithm.as_bytes());
+        let dh_public_key = &self.encryption_public_key.dh_public_key;
+        hasher.update(dh_public_key);
+
+        let kem_algorithm = &self.encryption_public_key.kem_algorithm.to_string();
+        hasher.update(kem_algorithm.as_bytes());
+        let kem_public_key = &self.encryption_public_key.kem_public_key;
+        hasher.update(kem_public_key);
+
+        let fingerprint: [u8; 32] = hasher.finalize().into();
+
+        fingerprint
+    }
+
 }
 
 #[derive(Serialize, Deserialize)]

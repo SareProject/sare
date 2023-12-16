@@ -16,6 +16,14 @@ pub enum ECAlgorithm {
     Ed25519,
 }
 
+impl ToString for ECAlgorithm {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Ed25519 => String::from("Ed25519"),
+        }
+    }
+}
+
 pub struct ECKeyPair {
     pub public_key: Vec<u8>,
     pub secret_key: SecretVec<u8>,
@@ -105,6 +113,14 @@ impl ECSignature {
 #[derive(Clone, Copy, Serialize, Deserialize)]
 pub enum PQAlgorithm {
     Dilithium3,
+}
+
+impl ToString for PQAlgorithm {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Dilithium3 => String::from("Dilithium3"),
+        }
+    }
 }
 
 pub struct PQKeyPair {
