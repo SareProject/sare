@@ -8,6 +8,7 @@ use crate::kdf::{HKDFAlgorithm, PKDFAlgorithm};
 pub struct KEMMetadataFormat {
     kem_algorithm: KEMAlgorithm,
     dh_algorithm: DHAlgorithm,
+    dh_sender_public_key: Vec<u8>,
     hkdf_algorithm: HKDFAlgorithm,
     kem_ciphertext: Vec<u8>,
     kem_salt: [u8; 8],
