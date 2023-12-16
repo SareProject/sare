@@ -10,6 +10,7 @@ pub struct KEMMetadataFormat {
     dh_algorithm: DHAlgorithm,
     hkdf_algorithm: HKDFAlgorithm,
     kem_ciphertext: Vec<u8>,
+    kem_salt: [u8; 8],
 }
 
 #[derive(Serialize, Deserialize)]
@@ -25,6 +26,6 @@ pub struct EncryptionMetadataFormat {
 
 #[derive(Serialize, Deserialize)]
 pub struct PKDFMetadataFormat {
-    pub salt: [u8; 8],
+    pub pkdf_salt: [u8; 8],
     pub pkdf_algorithm: PKDFAlgorithm,
 }

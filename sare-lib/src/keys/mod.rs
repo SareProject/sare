@@ -44,13 +44,13 @@ impl MasterKey {
     pub fn export<W: Write>(&self, passphrase_bytes: Option<SecretVec<u8>>, mut output: W) {
         match passphrase_bytes {
             Some(passphrase) => {
-                let salt = PKDF::generate_salt();
+                let pkdf_salt = PKDF::generate_salt();
 
-                let pkdf = PKDF::new(&passphrase, &salt, RECOMENDED_PKDF_PARAMS);
+                let pkdf = PKDF::new(&passphrase, &pkdf_salt, RECOMENDED_PKDF_PARAMS);
 
                 // TODO: Set const for workfactor scale
                 let pkdf_metadata = PKDFMetadataFormat {
-                    salt,
+                    pkdf_salt,
                     pkdf_algorithm: RECOMENDED_PKDF_PARAMS,
                 };
 
@@ -128,7 +128,7 @@ impl MasterKey {
 
                 let pkdf = PKDF::new(
                     &passphrase,
-                    &pkdf_metadata.salt,
+                    &pkdf_metadata.pkdf_salt,
                     pkdf_metadata.pkdf_algorithm,
                 );
 
