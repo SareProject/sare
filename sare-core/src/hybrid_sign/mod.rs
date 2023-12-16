@@ -192,11 +192,11 @@ mod tests {
     ];
 
     const ED25519_SECRET_KEY: &str =
-        "9JEaadEpdYGWbEj9K4hWONQ7FxrD5bcAeZpfTMN85u3bf4hWtz+4nt6q6uqp6RU4h8BwFzRjWyMVwZDLC5BroQ==";
+        "pVgbNU6QXuHBvsCKHZHE4yrViux9PCUf5XMznd9MYBNyVnUzMutKA/o7/WgEtu5P+aJWJ3MxXLyq+VvnwKC/ew==";
 
-    const ED25519_PUBLIC_KEY: &str = "23+IVrc/uJ7equrqqekVOIfAcBc0Y1sjFcGQywuQa6E=";
+    const ED25519_PUBLIC_KEY: &str = "clZ1MzLrSgP6O/1oBLbuT/miVidzMVy8qvlb58Cgv3s=";
     const ED25519_SIGNATURE: &str =
-        "a+nEySIu4GmB5r2XPly8V5nxAPmlCXLCcntxj/CWWfcW0S+yLfYVQIyD0r7oysgjaPIP9mIBsr9HGQq4y34QCg==";
+        "fwzNIUJZdlUfd81dyxFhpRU1ePtnhx3KuQzaUYRmYfc5vkU1S+7cgI/A9v7W7jE1SNp1DpX2YwF8K3Ef0RujCA==";
 
     #[test]
     fn ed25519_keypair_from_seed() {
@@ -237,7 +237,7 @@ mod tests {
             signature
                 .verify(
                     &base64::decode(ED25519_PUBLIC_KEY).unwrap(),
-                    b"CRYPTOPIA",
+                    b"SARE",
                     &base64::decode(ED25519_SIGNATURE).unwrap()
                 )
                 .unwrap(),

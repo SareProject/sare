@@ -77,17 +77,13 @@ impl Seed {
         SecretVec::from(self.raw_seed.expose_secret().clone())
     }
 
-    pub fn get_salt_part(&self) -> &[u8] {
-        &self.raw_seed.expose_secret()[120..]
-    }
-
     pub fn derive_64bytes_child_seed(&self, additional_context: Option<&[u8]>) -> SecretVec<u8> {
-        let hkdf = HKDF::new(&self.raw_seed, self.get_salt_part(), HKDFAlgorithm::SHA512);
+        let hkdf = HKDF::new(&self.raw_seed, &[], HKDFAlgorithm::SHA512);
         hkdf.expand(additional_context).unwrap()
     }
 
     pub fn derive_32bytes_child_seed(&self, additional_context: Option<&[u8]>) -> SecretVec<u8> {
-        let hkdf = HKDF::new(&self.raw_seed, self.get_salt_part(), HKDFAlgorithm::SHA256);
+        let hkdf = HKDF::new(&self.raw_seed, &[], HKDFAlgorithm::SHA256);
 
         hkdf.expand(additional_context).unwrap()
     }
@@ -125,23 +121,23 @@ mod tests {
     ];
 
     const TEST_32BYTES_CHILD_SEED: [u8; 32] = [
-        146, 250, 163, 138, 246, 233, 76, 112, 125, 255, 167, 171, 59, 186, 57, 138, 182, 2, 176,
-        201, 65, 160, 156, 171, 32, 150, 151, 115, 91, 24, 95, 158,
+        106, 137, 246, 68, 110, 39, 182, 234, 60, 243, 135, 137, 167, 244, 248, 126, 41, 208, 235,
+        107, 32, 28, 184, 60, 200, 190, 32, 129, 158, 163, 166, 236,
     ];
 
     const TEST_64BYTES_CHILD_SEED: [u8; 64] = [
-        221, 150, 172, 70, 198, 156, 116, 157, 56, 39, 195, 187, 19, 54, 164, 187, 81, 127, 95, 50,
-        11, 31, 117, 247, 62, 237, 165, 150, 201, 237, 197, 223, 152, 14, 217, 220, 237, 57, 252,
-        202, 141, 47, 164, 50, 20, 179, 148, 89, 44, 227, 146, 61, 84, 40, 59, 176, 27, 102, 241,
-        95, 81, 177, 102, 93,
+        87, 50, 246, 51, 43, 11, 34, 202, 167, 240, 188, 167, 254, 136, 161, 214, 144, 235, 6, 136,
+        38, 39, 148, 139, 161, 176, 171, 75, 119, 36, 232, 42, 65, 123, 155, 69, 106, 94, 37, 179,
+        71, 135, 196, 93, 18, 24, 237, 111, 81, 122, 84, 1, 135, 36, 74, 77, 142, 207, 245, 94,
+        223, 170, 164, 155,
     ];
 
     const TEST_EXTENDED_CHILD_KEY: [u8; 96] = [
-        229, 49, 64, 32, 189, 35, 68, 42, 184, 11, 61, 253, 67, 56, 74, 105, 120, 64, 230, 117,
-        162, 153, 95, 174, 18, 251, 45, 183, 255, 151, 193, 63, 116, 34, 20, 146, 83, 181, 133,
-        249, 135, 232, 7, 87, 177, 221, 61, 204, 175, 9, 136, 47, 57, 74, 254, 7, 33, 142, 178,
-        240, 210, 2, 84, 190, 227, 228, 219, 253, 144, 46, 20, 65, 198, 129, 42, 13, 213, 200, 234,
-        124, 153, 24, 192, 57, 176, 165, 181, 208, 48, 71, 57, 53, 96, 185, 178, 234,
+        66, 77, 213, 45, 109, 239, 140, 74, 253, 233, 246, 97, 182, 102, 112, 208, 187, 129, 108,
+        251, 125, 149, 192, 191, 222, 56, 116, 221, 217, 102, 76, 119, 63, 120, 108, 143, 169, 64,
+        15, 220, 217, 176, 29, 81, 158, 0, 23, 82, 57, 208, 164, 177, 89, 197, 99, 252, 84, 253,
+        56, 110, 16, 75, 76, 147, 112, 123, 41, 230, 148, 25, 21, 235, 250, 43, 233, 71, 191, 212,
+        175, 145, 78, 198, 51, 82, 157, 188, 117, 201, 21, 66, 134, 77, 179, 68, 223, 37,
     ];
 
     const TEST_MNEMONIC_PHRASE: &str = "hero hotel jungle supreme diet random day stamp coyote dirt science fall sock pistol news crack unfold gun skirt clay van taste heart process basic burden ugly crack express beef tissue quick ugly medal squirrel install lyrics usage able subject decline tonight page eagle civil rate expand never just alcohol divert matter boy across gain trigger monitor refuse bachelor deny voyage push industry crew tail recycle casino sponsor dog same gloom phone moon explain vacant soul sense snack shell mutual poet ask ball degree exhaust release claw fitness rifle slight person mind vocal wrist shift clock";
