@@ -1,4 +1,4 @@
-use secrecy::{ExposeSecret, SecretVec};
+use secrecy::{ExposeSecret, SecretString, SecretVec};
 use serde::{Deserialize, Serialize};
 
 use crate::encryption::EncryptionAlgorithm;
@@ -8,6 +8,11 @@ use crate::hybrid_kem::{DHAlgorithm, DHKeyPair, KEMAlgorithm, KEMKeyPair};
 use crate::hybrid_sign::{ECAlgorithm, ECKeyPair, PQAlgorithm, PQKeyPair};
 
 use sha2::{Digest, Sha256};
+
+const FULLCHAIN_PUBLIC_KEY_PEM_TAG: &str = "SARE FULLCHAIN PUBLIC KEY";
+const SIGNATURE_PUBLIC_KEY_PEM_TAG: &str = "SARE SIGNATURE PUBLIC KEY";
+const ENCRYPTION_PUBLIC_KEY_PEM_TAG: &str = "SARE ENCRYPTION PUBLIC KEY";
+const MASTER_KEY_PEM_TAG: &str = "SARE MASTER KEY";
 
 #[derive(Serialize, Deserialize)]
 pub struct SignaturePublicKeyFormat {
@@ -54,15 +59,33 @@ pub struct FullChainPublicKeyFormat {
 }
 
 impl FullChainPublicKeyFormat {
-    pub fn encode(&self) -> Vec<u8> {
+    pub fn encode_bson(&self) -> Vec<u8> {
         bson::to_vec(&self).unwrap()
     }
 
-    pub fn decode(bson_public_key: &[u8]) -> Result<Self, FormatError> {
+    pub fn decode_bson(bson_public_key: &[u8]) -> Result<Self, FormatError> {
         let public_key = bson::from_slice::<FullChainPublicKeyFormat>(bson_public_key);
 
         // TODO: Needs Error Handling
         Ok(public_key.unwrap())
+    }
+
+    pub fn encode_pem(&self) -> String {
+        let pem = pem::Pem::new(FULLCHAIN_PUBLIC_KEY_PEM_TAG, self.encode_bson().as_slice());
+
+        pem::encode(&pem)
+    }
+
+    pub fn decode_pem(pem_public_key: String) -> Result<Self, FormatError> {
+        let pem = pem::parse(pem_public_key).unwrap();
+
+        if pem.tag() != FULLCHAIN_PUBLIC_KEY_PEM_TAG {
+            return Err(FormatError::FailedToDecode); //TODO: Replace with another error
+        }
+
+        let bson_data = pem.contents();
+
+        Self::decode_bson(bson_data)
     }
 
     pub fn calculate_fingerprint(&self) -> [u8; 32] {
@@ -91,7 +114,6 @@ impl FullChainPublicKeyFormat {
 
         fingerprint
     }
-
 }
 
 #[derive(Serialize, Deserialize)]
@@ -107,15 +129,36 @@ pub struct SecretKeyFormat {
 }
 
 impl SecretKeyFormat {
-    pub fn encode(&self) -> SecretVec<u8> {
+    pub fn encode_bson(&self) -> SecretVec<u8> {
         SecretVec::from(bson::to_vec(&self).unwrap())
     }
 
-    pub fn decode(bson_secretkey: &SecretVec<u8>) -> Result<Self, FormatError> {
+    pub fn decode_bson(bson_secretkey: &SecretVec<u8>) -> Result<Self, FormatError> {
         let secret_key = bson::from_slice::<SecretKeyFormat>(bson_secretkey.expose_secret());
 
         // TODO: Needs Error Handling
         Ok(secret_key.unwrap())
+    }
+
+    pub fn encode_pem(&self) -> SecretString {
+        let pem = pem::Pem::new(
+            MASTER_KEY_PEM_TAG,
+            self.encode_bson().expose_secret().as_slice(),
+        );
+
+        SecretString::from(pem::encode(&pem))
+    }
+
+    pub fn decode_pem(pem_master_key: SecretString) -> Result<Self, FormatError> {
+        let pem = pem::parse(pem_master_key.expose_secret()).unwrap();
+
+        if pem.tag() != MASTER_KEY_PEM_TAG {
+            return Err(FormatError::FailedToDecode); //TODO: Replace with another error
+        }
+
+        let bson_data = SecretVec::from(pem.into_contents());
+
+        Self::decode_bson(&bson_data)
     }
 }
 

@@ -6,8 +6,8 @@ pub use sare_core::hybrid_kem::{DHAlgorithm, DHKeyPair, KEMAlgorithm, KEMKeyPair
 pub use sare_core::hybrid_sign::{ECAlgorithm, ECKeyPair, PQAlgorithm, PQKeyPair};
 use sare_core::kdf::{PKDFAlgorithm, KDF, PKDF};
 pub use sare_core::seed::Seed;
-use secrecy::{ExposeSecret, SecretVec};
-use std::io::{BufReader, Read, Write};
+use secrecy::{ExposeSecret, SecretString, SecretVec};
+use std::io::{BufRead, BufReader, Read, Write};
 
 pub const RECOMENDED_PKDF_PARAMS: PKDFAlgorithm = PKDFAlgorithm::Scrypt(17, 8, 12);
 
@@ -77,7 +77,7 @@ impl MasterKey {
                     encryption_metadata: Some(encryption_metadata),
                 };
 
-                output.write_all(secret_key_format.encode().expose_secret());
+                output.write_all(secret_key_format.encode_pem().expose_secret().as_bytes());
             }
             None => {
                 // TODO: impl `From` in sare_core::format::keys
@@ -90,7 +90,7 @@ impl MasterKey {
                     encryption_metadata: None,
                 };
 
-                output.write_all(secret_key_format.encode().expose_secret());
+                output.write_all(secret_key_format.encode_pem().expose_secret().as_bytes());
             }
         }
     }
@@ -99,9 +99,12 @@ impl MasterKey {
         secret_key_format.encryption_metadata.is_some()
     }
 
-    pub fn decode_bson<R: Read>(serialized_master_key: R) -> Result<SecretKeyFormat, FormatError> {
-        let reader = BufReader::new(serialized_master_key);
-        SecretKeyFormat::decode(&SecretVec::from(reader.buffer().to_vec()))
+    pub fn decode_pem<R: Read>(serialized_master_key: R) -> Result<SecretKeyFormat, FormatError> {
+        let mut reader = BufReader::new(serialized_master_key);
+
+        let mut string_buf = String::new();
+        reader.read_to_string(&mut string_buf);
+        SecretKeyFormat::decode_pem(SecretString::from(string_buf))
     }
 
     pub fn import(
@@ -160,6 +163,7 @@ impl MasterKey {
 
         let ec_keypair = ECKeyPair::from_seed(&self.master_seed, ec_algorithm);
         let pq_keypair = PQKeyPair::from_seed(&self.master_seed, pq_algorithm);
+        const ENCRYPTION_PUBLIC_KEY_PEM_TAG: &str = "SARE ENCRYPTION PUBLIC KEY";
 
         (ec_keypair, pq_keypair)
     }
@@ -195,6 +199,6 @@ impl MasterKey {
             encryption_public_key,
         };
 
-        output.write_all(&fullchain_public_key.encode());
+        output.write_all(&fullchain_public_key.encode_pem().as_bytes());
     }
 }
