@@ -6,3 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+argh = "0.1.12"
+dirs = "5.0.1"
+sare-lib = { path = "../sare-lib" }
