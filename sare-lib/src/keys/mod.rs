@@ -163,7 +163,6 @@ impl MasterKey {
 
         let ec_keypair = ECKeyPair::from_seed(&self.master_seed, ec_algorithm);
         let pq_keypair = PQKeyPair::from_seed(&self.master_seed, pq_algorithm);
-        const ENCRYPTION_PUBLIC_KEY_PEM_TAG: &str = "SARE ENCRYPTION PUBLIC KEY";
 
         (ec_keypair, pq_keypair)
     }
