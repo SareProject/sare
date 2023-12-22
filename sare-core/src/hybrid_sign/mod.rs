@@ -8,6 +8,8 @@ use secrecy::{ExposeSecret, SecretVec};
 
 use serde::{Deserialize, Serialize};
 
+use crate::PublicKey;
+
 const ED25519_MAGIC_BYTES: [u8; 4] = [25, 85, 210, 14]; // 0xED25519 in LittleEndian
 const DILITHIUM3_MAGIC_BYTES: [u8; 4] = [211, 12, 0, 0]; // 0xCD3 in LittleEndian
 
@@ -25,7 +27,7 @@ impl ToString for ECAlgorithm {
 }
 
 pub struct ECKeyPair {
-    pub public_key: Vec<u8>,
+    pub public_key: PublicKey,
     pub secret_key: SecretVec<u8>,
     pub algorithm: ECAlgorithm,
 }
@@ -41,7 +43,7 @@ impl ECKeyPair {
                 let public_key = secret_key.public_key();
 
                 Ok(ECKeyPair {
-                    public_key: public_key.to_vec(),
+                    public_key: PublicKey::Ed25519(*public_key),
                     secret_key: SecretVec::from(secret_key.to_vec()),
                     algorithm: ec_algorithm,
                 })
@@ -58,7 +60,7 @@ impl ECKeyPair {
                 );
 
                 ECKeyPair {
-                    public_key: keypair.pk.to_vec(),
+                    public_key: PublicKey::Ed25519(*keypair.pk),
                     secret_key: SecretVec::from(keypair.sk.to_vec()),
                     algorithm: ec_algorithm,
                 }
@@ -92,7 +94,7 @@ impl ECSignature {
 
     pub fn verify(
         &self,
-        public_key: &[u8],
+        public_key: &PublicKey,
         message: &[u8],
         signature: &[u8],
     ) -> Result<bool, HybridSignError> {
@@ -100,7 +102,7 @@ impl ECSignature {
 
         match signature_algorithm {
             ECAlgorithm::Ed25519 => {
-                let public_key = ed25519::PublicKey::from_slice(public_key)?;
+                let public_key = ed25519::PublicKey::from_slice(&public_key.to_vec())?;
                 let signature = ed25519::Signature::from_slice(signature)?;
                 let does_verify = public_key.verify(message, &signature);
 
@@ -252,7 +254,12 @@ mod tests {
         assert_eq!(
             signature
                 .verify(
-                    &base64::decode(ED25519_PUBLIC_KEY).unwrap(),
+                    &PublicKey::Ed25519(
+                        base64::decode(ED25519_PUBLIC_KEY)
+                            .unwrap()
+                            .try_into()
+                            .unwrap()
+                    ),
                     b"SARE",
                     &base64::decode(ED25519_SIGNATURE).unwrap()
                 )

@@ -27,8 +27,8 @@ impl SignaturePublicKeyFormat {
         SignaturePublicKeyFormat {
             ec_algorithm: ec_keypair.algorithm,
             pq_algorithm: pq_keypair.algorithm,
-            ec_public_key: ec_keypair.public_key,
-            pq_public_key: pq_keypair.public_key,
+            ec_public_key: ec_keypair.public_key.to_vec(),
+            pq_public_key: pq_keypair.public_key.to_vec(),
         }
     }
 }
@@ -46,8 +46,8 @@ impl EncryptionPublicKeyFormat {
         EncryptionPublicKeyFormat {
             dh_algorithm: dh_keypair.algorithm,
             kem_algorithm: kem_keypair.algorithm,
-            dh_public_key: dh_keypair.public_key,
-            kem_public_key: kem_keypair.public_key,
+            dh_public_key: dh_keypair.public_key.to_vec(),
+            kem_public_key: kem_keypair.public_key.to_vec(),
         }
     }
 }
