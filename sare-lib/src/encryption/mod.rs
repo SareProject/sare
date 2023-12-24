@@ -1,4 +1,4 @@
-use crate::keys::{MasterKey, HybridKEMAlgorithm};
+use crate::keys::{HybridKEMAlgorithm, MasterKey};
 use sare_core::hybrid_kem::{DHKeyPair, KEMKeyPair};
 use sare_core::kdf::PKDF;
 
@@ -9,16 +9,14 @@ pub struct Recipient {
                                    // compatible with ours
 }
 
-pub enum EncryptionType {
-    Symmetric(PKDF),
-    Asymmetric(MasterKey),
-}
-
-pub struct Encryptor(EncryptionType);
+pub struct Encryptor(MasterKey);
 
 impl Encryptor {
-    pub fn new() {}
+    pub fn new(master_key: MasterKey) -> Self {
+        Encryptor(master_key)
+    }
+
+    pub fn encrypt_with_passphrase() {}
 
     pub fn encrypt_with_recipient() {}
-    pub fn encrypt_with_passphrase() {}
 }
