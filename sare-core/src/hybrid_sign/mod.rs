@@ -43,7 +43,7 @@ impl ECKeyPair {
                 let public_key = secret_key.public_key();
 
                 Ok(ECKeyPair {
-                    public_key: PublicKey::Ed25519(public_key.to_vec()),
+                    public_key: PublicKey::Ed25519(*public_key),
                     secret_key: SecretVec::from(secret_key.to_vec()),
                     algorithm: ec_algorithm,
                 })
@@ -60,7 +60,7 @@ impl ECKeyPair {
                 );
 
                 ECKeyPair {
-                    public_key: PublicKey::Ed25519(keypair.pk.to_vec()),
+                    public_key: PublicKey::Ed25519(*keypair.pk),
                     secret_key: SecretVec::from(keypair.sk.to_vec()),
                     algorithm: ec_algorithm,
                 }
@@ -102,7 +102,7 @@ impl ECSignature {
 
         match signature_algorithm {
             ECAlgorithm::Ed25519 => {
-                let public_key = ed25519::PublicKey::from_slice(public_key.as_ref())?;
+                let public_key = ed25519::PublicKey::from_slice(&public_key.to_vec())?;
                 let signature = ed25519::Signature::from_slice(signature)?;
                 let does_verify = public_key.verify(message, &signature);
 
@@ -126,7 +126,7 @@ impl ToString for PQAlgorithm {
 }
 
 pub struct PQKeyPair {
-    pub public_key: PublicKey,
+    pub public_key: Vec<u8>,
     pub secret_key: SecretVec<u8>,
     pub algorithm: PQAlgorithm,
 }
@@ -139,7 +139,7 @@ impl PQKeyPair {
                 let keypair =
                     dilithium::dilithium3::Keypair::generate(Some(child_seed.expose_secret()));
                 PQKeyPair {
-                    public_key: PublicKey::Dilithium3(keypair.public.to_bytes().to_vec()),
+                    public_key: keypair.public.to_bytes().to_vec(),
                     secret_key: SecretVec::from(keypair.secret.to_bytes().to_vec()),
                     algorithm: pq_algorithm,
                 }
@@ -177,7 +177,7 @@ impl PQSignature {
 
     pub fn verify(
         &self,
-        public_key: PublicKey,
+        public_key: &[u8],
         message: &[u8],
         signature: &[u8],
     ) -> Result<bool, HybridSignError> {
@@ -185,7 +185,7 @@ impl PQSignature {
 
         match signature_algorithm {
             PQAlgorithm::Dilithium3 => {
-                let public_key = dilithium::dilithium3::PublicKey::from_bytes(public_key.as_ref());
+                let public_key = dilithium::dilithium3::PublicKey::from_bytes(public_key);
 
                 let does_verify = public_key.verify(message, signature);
 

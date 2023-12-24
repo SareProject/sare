@@ -5,23 +5,21 @@ pub mod hybrid_sign;
 pub mod kdf;
 pub mod seed;
 
-use serde::{Deserialize, Serialize};
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug)]
 pub enum PublicKey {
-    X25519(Vec<u8>),
-    Kyber768(Vec<u8>),
-    Ed25519(Vec<u8>),
-    Dilithium3(Vec<u8>),
+    X25519([u8; 32]),
+    Kyber768([u8; 1184]),
+    Ed25519([u8; 32]),
+    Dilithium3([u8; 1952]),
 }
 
 impl PublicKey {
-    pub fn get_algorithm(&self) -> String {
+    fn to_vec(&self) -> Vec<u8> {
         match self {
-            Self::Kyber768(_) => hybrid_kem::DHAlgorithm::X25519.to_string(),
-            Self::X25519(_) => hybrid_kem::KEMAlgorithm::Kyber768.to_string(),
-            Self::Ed25519(_) => hybrid_sign::ECAlgorithm::Ed25519.to_string(),
-            Self::Dilithium3(_) => hybrid_sign::PQAlgorithm::Dilithium3.to_string(),
+            Self::Kyber768(pk) => pk.to_vec(),
+            Self::X25519(pk) => pk.to_vec(),
+            Self::Ed25519(pk) => pk.to_vec(),
+            Self::Dilithium3(pk) => pk.to_vec(),
         }
     }
 }
