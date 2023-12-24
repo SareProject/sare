@@ -10,8 +10,6 @@ use std::string::ToString;
 
 use crate::hybrid_kem::error::*;
 
-use crate::PublicKey;
-
 const X25519_MAGIC_BYTES: [u8; 4] = [25, 85, 2, 0]; // 0x25519 in LittleEndian
 const KYBER768_MAGIC_BYTES: [u8; 4] = [104, 7, 0, 0]; // 0x768 in LittleEndian
 
@@ -29,7 +27,7 @@ impl ToString for DHAlgorithm {
 }
 
 pub struct DHKeyPair {
-    pub public_key: PublicKey,
+    pub public_key: Vec<u8>,
     pub secret_key: SecretVec<u8>,
     pub algorithm: DHAlgorithm,
 }
@@ -45,7 +43,7 @@ impl DHKeyPair {
                 let public_key = secret_key.recover_public_key()?;
 
                 Ok(DHKeyPair {
-                    public_key: PublicKey::X25519(*public_key),
+                    public_key: public_key.to_vec(),
                     secret_key: SecretVec::from(secret_key.to_vec()),
                     algorithm: dh_algorithm,
                 })
@@ -64,7 +62,7 @@ impl DHKeyPair {
                 let public_key = secret_key.recover_public_key().unwrap();
 
                 DHKeyPair {
-                    public_key: PublicKey::X25519(*public_key),
+                    public_key: public_key.to_vec(),
                     secret_key: SecretVec::from(secret_key.to_vec()),
                     algorithm: dh_algorithm,
                 }
@@ -115,7 +113,7 @@ impl ToString for KEMAlgorithm {
 }
 
 pub struct KEMKeyPair {
-    pub public_key: PublicKey,
+    pub public_key: Vec<u8>,
     pub secret_key: SecretVec<u8>,
     pub algorithm: KEMAlgorithm,
 }
@@ -129,7 +127,7 @@ impl KEMKeyPair {
                 let keypair = pqc_kyber::derive(child_seed.expose_secret()).unwrap();
 
                 KEMKeyPair {
-                    public_key: PublicKey::Kyber768(keypair.public),
+                    public_key: keypair.public.to_vec(),
                     secret_key: SecretVec::from(keypair.secret.to_vec()),
                     algorithm: kem_algorithm,
                 }
@@ -144,14 +142,14 @@ pub struct EncapsulatedSecret {
 }
 
 pub struct Encapsulation {
-    public_key: PublicKey,
+    public_key: Vec<u8>,
     algorithm: KEMAlgorithm,
 }
 
 impl Encapsulation {
-    pub fn new(public_key: PublicKey, algorithm: KEMAlgorithm) -> Self {
+    pub fn new(public_key: &[u8], algorithm: KEMAlgorithm) -> Self {
         Encapsulation {
-            public_key: public_key,
+            public_key: public_key.to_vec(),
             algorithm,
         }
     }
@@ -161,7 +159,7 @@ impl Encapsulation {
 
         let (cipher_text, shared_secret) = match self.algorithm {
             KEMAlgorithm::Kyber768 => {
-                pqc_kyber::encapsulate(&self.public_key.to_vec(), &mut random_generator).unwrap()
+                pqc_kyber::encapsulate(&self.public_key, &mut random_generator).unwrap()
             }
         };
 
@@ -218,7 +216,7 @@ impl HybridKEM {
     pub fn calculate_raw_shared_key(
         &self,
         kem_cipher_text: &[u8],
-        dh_sender_public_key: PublicKey,
+        dh_sender_public_key: &[u8],
     ) -> Result<(SecretVec<u8>, SecretVec<u8>), HybridKEMError> {
         let binding = dh_sender_public_key.to_vec();
         let diffie_hellman = DiffieHellman::new(&self.dh_keypair, &binding);
@@ -280,10 +278,7 @@ mod tests {
             base64::encode(keypair.secret_key.expose_secret())
         );
 
-        assert_eq!(
-            KYBER_PUBLIC_KEY,
-            base64::encode(keypair.public_key.to_vec())
-        );
+        assert_eq!(KYBER_PUBLIC_KEY, base64::encode(keypair.public_key));
     }
 
     #[test]
@@ -298,15 +293,15 @@ mod tests {
             base64::encode(keypair.secret_key.expose_secret())
         );
 
-        assert_eq!(
-            X25519_PUBLIC_KEY,
-            base64::encode(keypair.public_key.to_vec())
-        );
+        assert_eq!(X25519_PUBLIC_KEY, base64::encode(keypair.public_key));
     }
 
     #[test]
     fn kyber_encapsulate() {
-        let kem = Encapsulation::new(PublicKey::Kyber768([0x6u8; 1184]), KEMAlgorithm::Kyber768);
+        let kem = Encapsulation::new(
+            &base64::decode(KYBER_PUBLIC_KEY).unwrap(),
+            KEMAlgorithm::Kyber768,
+        );
 
         assert!(kem.encapsulate().is_ok());
     }
