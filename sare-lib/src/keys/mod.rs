@@ -1,6 +1,7 @@
 pub use sare_core::encryption::{EncryptionAlgorithm, KeyWrap};
 pub use sare_core::format::encryption::*;
 pub use sare_core::format::keys::*;
+pub use sare_core::format::{EncodablePublic, EncodableSecret};
 use sare_core::format::FormatError;
 pub use sare_core::hybrid_kem::{DHAlgorithm, DHKeyPair, KEMAlgorithm, KEMKeyPair};
 pub use sare_core::hybrid_sign::{ECAlgorithm, ECKeyPair, PQAlgorithm, PQKeyPair};
