@@ -1,3 +1,5 @@
+use bson::de::Error as BsonError;
+use pem::{Pem, PemError};
 use secrecy::{SecretString, SecretVec};
 
 pub mod encryption;
@@ -7,8 +9,27 @@ pub mod revocation;
 pub mod signature;
 
 #[derive(Debug)]
+pub enum ErrSection {
+    PEM(PemError),
+    BSON(BsonError),
+    HEADER,
+}
+
+#[derive(Debug)]
 pub enum FormatError {
-    FailedToDecode,
+    FailedToDecode(ErrSection),
+}
+
+impl From<BsonError> for FormatError {
+    fn from(err: BsonError) -> Self {
+        FormatError::FailedToDecode(ErrSection::BSON(err))
+    }
+}
+
+impl From<PemError> for FormatError {
+    fn from(err: PemError) -> Self {
+        FormatError::FailedToDecode(ErrSection::PEM(err))
+    }
 }
 
 pub trait EncodablePublic {

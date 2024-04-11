@@ -4,7 +4,7 @@ use std::io::Cursor;
 
 use crate::format::encryption::*;
 use crate::format::signature::*;
-use crate::format::FormatError;
+use crate::format::{ErrSection, FormatError};
 
 const MAGIC_BYTES: &[u8; 9] = b"CRYPTOPIA";
 
@@ -81,7 +81,7 @@ impl HeaderFormat {
         cursor = MAGIC_BYTES.len();
 
         if magic_bytes != MAGIC_BYTES {
-            return Err(FormatError::FailedToDecode);
+            return Err(FormatError::FailedToDecode(ErrSection::HEADER));
         }
 
         let mut header_length_le = Cursor::new(&header[cursor..cursor + 8]);
@@ -89,7 +89,7 @@ impl HeaderFormat {
         let header_length = header_length_le.read_u64::<LittleEndian>().unwrap();
 
         if header.len() < header_length as usize + MAGIC_BYTES.len() + 8 {
-            return Err(FormatError::FailedToDecode);
+            return Err(FormatError::FailedToDecode(ErrSection::HEADER));
         }
 
         let mut version_le = Cursor::new(&header[cursor..cursor + 4]);

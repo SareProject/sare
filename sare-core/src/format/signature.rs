@@ -29,6 +29,6 @@ impl SignatureFormat {
         let metadata = bson::from_slice::<SignatureFormat>(bson_signature);
 
         // TODO: Needs Error Handling
-        Ok(metadata.unwrap())
+        Ok(metadata?)
     }
 }

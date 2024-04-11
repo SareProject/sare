@@ -1,8 +1,8 @@
 pub use sare_core::encryption::{EncryptionAlgorithm, KeyWrap};
 pub use sare_core::format::encryption::*;
 pub use sare_core::format::keys::*;
-pub use sare_core::format::{EncodablePublic, EncodableSecret};
 use sare_core::format::FormatError;
+pub use sare_core::format::{EncodablePublic, EncodableSecret};
 pub use sare_core::hybrid_kem::{DHAlgorithm, DHKeyPair, KEMAlgorithm, KEMKeyPair};
 pub use sare_core::hybrid_sign::{ECAlgorithm, ECKeyPair, PQAlgorithm, PQKeyPair};
 use sare_core::kdf::{PKDFAlgorithm, KDF, PKDF};
@@ -49,7 +49,6 @@ impl MasterKey {
 
                 let pkdf = PKDF::new(&passphrase, &pkdf_salt, RECOMENDED_PKDF_PARAMS);
 
-                // TODO: Set const for workfactor scale
                 let pkdf_metadata = PKDFMetadataFormat {
                     pkdf_salt,
                     pkdf_algorithm: RECOMENDED_PKDF_PARAMS,

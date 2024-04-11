@@ -76,11 +76,7 @@ impl EncodablePublic for FullChainPublicKeyFormat {
     }
 
     fn decode_pem(pem_public_key: &str) -> Result<Self, FormatError> {
-        let pem = pem::parse(pem_public_key).unwrap();
-
-        if pem.tag() != FULLCHAIN_PUBLIC_KEY_PEM_TAG {
-            return Err(FormatError::FailedToDecode); //TODO: Replace with another error
-        }
+        let pem = pem::parse(pem_public_key)?;
 
         let bson_data = pem.contents();
         Self::decode_bson(bson_data)
@@ -136,8 +132,7 @@ impl EncodableSecret for SecretKeyFormat {
     fn decode_bson(bson_secretkey: &SecretVec<u8>) -> Result<Self, FormatError> {
         let secret_key = bson::from_slice::<SecretKeyFormat>(bson_secretkey.expose_secret());
 
-        // TODO: Needs Error Handling
-        Ok(secret_key.unwrap())
+        Ok(secret_key?)
     }
 
     fn encode_pem(&self) -> SecretString {
@@ -150,11 +145,7 @@ impl EncodableSecret for SecretKeyFormat {
     }
 
     fn decode_pem(pem_master_key: SecretString) -> Result<Self, FormatError> {
-        let pem = pem::parse(pem_master_key.expose_secret()).unwrap();
-
-        if pem.tag() != MASTER_KEY_PEM_TAG {
-            return Err(FormatError::FailedToDecode); //TODO: Replace with another error
-        }
+        let pem = pem::parse(pem_master_key.expose_secret())?;
 
         let bson_data = SecretVec::from(pem.into_contents());
 
