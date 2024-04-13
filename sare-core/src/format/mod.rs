@@ -32,6 +32,8 @@ impl From<PemError> for FormatError {
     }
 }
 
+pub trait PublicKeyFormat {}
+
 pub trait EncodablePublic {
     fn encode_bson(&self) -> Vec<u8>;
     fn decode_bson(bson_data: &[u8]) -> Result<Self, FormatError>
