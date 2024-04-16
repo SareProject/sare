@@ -6,6 +6,8 @@ use crate::format::encryption::*;
 use crate::format::signature::*;
 use crate::format::{ErrSection, FormatError};
 
+use super::EncodablePublic;
+
 const MAGIC_BYTES: &[u8; 9] = b"CRYPTOPIA";
 
 #[derive(Serialize, Deserialize)]
@@ -56,7 +58,7 @@ impl HeaderFormat {
         header_buffer.extend(metadata_bson);
 
         if let Some(signature) = &self.signature {
-            let signature = signature.encode();
+            let signature = signature.encode_bson();
             let signature_length: [u8; 8] = signature.len().to_le_bytes();
             header_buffer.extend(signature_length);
             header_buffer.extend(signature);
@@ -113,7 +115,7 @@ impl HeaderFormat {
 
         if signature_length > 0 {
             let bson_signature = &header[cursor..cursor + signature_length as usize];
-            signature = Some(SignatureFormat::decode(bson_signature)?);
+            signature = Some(SignatureFormat::decode_bson(bson_signature)?);
             cursor += 8;
         }
 

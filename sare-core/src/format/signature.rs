@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
 
+use crate::format::EncodablePublic;
 use crate::format::FormatError;
 use crate::hybrid_sign::{ECAlgorithm, PQAlgorithm};
+
+const SIGNATURE_TAG: &str = "SARE MESSAGE";
 
 #[derive(Serialize, Deserialize)]
 pub struct SignatureMetadataFormat {
@@ -20,14 +23,26 @@ pub struct SignatureFormat {
     pq_signature: Vec<u8>,
 }
 
-impl SignatureFormat {
-    pub fn encode(&self) -> Vec<u8> {
+impl EncodablePublic for SignatureFormat {
+    fn encode_bson(&self) -> Vec<u8> {
         bson::to_vec(&self).unwrap()
     }
 
-    pub fn decode(bson_signature: &[u8]) -> Result<Self, FormatError> {
-        let metadata = bson::from_slice::<SignatureFormat>(bson_signature);
+    fn decode_bson(data: &[u8]) -> Result<Self, FormatError> {
+        let metadata = bson::from_slice::<SignatureFormat>(data);
 
         Ok(metadata?)
+    }
+
+    fn encode_pem(&self) -> String {
+        let pem = pem::Pem::new(SIGNATURE_TAG, self.encode_bson().as_slice());
+        pem::encode(&pem)
+    }
+
+    fn decode_pem(pem_data: &str) -> Result<Self, FormatError> {
+        let pem = pem::parse(pem_data)?;
+
+        let bson_data = pem.contents();
+        Self::decode_bson(bson_data)
     }
 }
