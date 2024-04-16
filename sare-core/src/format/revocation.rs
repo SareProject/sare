@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
-
-use super::PublicKeyFormat;
+use sha2::{Digest, Sha256};
 
 #[derive(Serialize, Deserialize)]
 pub enum FingerprintAlgo {
@@ -15,8 +14,11 @@ pub struct Fingerprint {
 }
 
 impl Fingerprint {
-    pub fn calculate_fingerprint(public_key: impl PublicKeyFormat) -> Self {
-        todo!()
+    pub fn from_hash(fingerprint_hash: &[u8], algorithm: FingerprintAlgo) -> Self {
+        Fingerprint {
+            algorithm,
+            fingerprint_hash: fingerprint_hash.to_vec(),
+        }
     }
 }
 

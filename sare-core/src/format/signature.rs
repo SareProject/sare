@@ -28,7 +28,6 @@ impl SignatureFormat {
     pub fn decode(bson_signature: &[u8]) -> Result<Self, FormatError> {
         let metadata = bson::from_slice::<SignatureFormat>(bson_signature);
 
-        // TODO: Needs Error Handling
         Ok(metadata?)
     }
 }
