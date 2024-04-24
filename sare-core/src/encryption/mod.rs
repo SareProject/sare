@@ -51,8 +51,7 @@ impl KeyWrap {
 
         let kek = KekAes256::from(input_key);
 
-        kek.unwrap(wrapped_data.expose_secret(), &mut output)
-            .map_err(|_| EncryptionError::FailedToDecrypt)?;
+        kek.unwrap(wrapped_data.expose_secret(), &mut output)?;
 
         Ok(SecretVec::from(output))
     }
