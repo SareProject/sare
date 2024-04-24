@@ -1,4 +1,7 @@
+pub mod error;
+
 use serde::{Deserialize, Serialize};
+use crate::encryption::error::*;
 
 use aead::stream;
 use aes_kw::KekAes256;
@@ -14,13 +17,6 @@ pub enum EncryptionAlgorithm {
     AES256GCM,
     AES256KW,
     XCHACHA20POLY1305,
-}
-
-#[derive(Debug)]
-pub enum EncryptionError {
-    InvalidKeyLength,
-    FailedToDecrypt,
-    Unexpected,
 }
 
 pub struct KeyWrap {
@@ -95,18 +91,18 @@ impl Encryptor {
         let mut data_buffer = [0u8; AEAD_BUFFER_LEN];
 
         loop {
-            let read_count = data.read(&mut data_buffer).unwrap();
+            let read_count = data.read(&mut data_buffer)?;
 
             if read_count == AEAD_BUFFER_LEN {
                 let encrypted_data = stream_aead.encrypt_next(data_buffer.as_slice()).unwrap();
 
-                output.write(&encrypted_data).unwrap();
+                output.write(&encrypted_data)?;
             } else {
                 let encrypted_data = stream_aead
                     .encrypt_last(&data_buffer[..read_count])
                     .unwrap();
 
-                output.write(&encrypted_data).unwrap();
+                output.write(&encrypted_data)?;
                 break;
             }
         }
@@ -151,20 +147,20 @@ impl Decryptor {
         let mut encrypted_buffer = [0u8; AEAD_BUFFER_LEN + 16]; // 16bytes for AEAD tag
 
         loop {
-            let read_count = encrypted_data.read(&mut encrypted_buffer).unwrap();
+            let read_count = encrypted_data.read(&mut encrypted_buffer)?;
 
             if read_count == AEAD_BUFFER_LEN {
                 let decrypted_data = stream_aead
                     .decrypt_next(encrypted_buffer.as_slice())
                     .unwrap();
 
-                output.write(&decrypted_data).unwrap();
+                output.write(&decrypted_data)?;
             } else {
                 let decrypted_data = stream_aead
                     .decrypt_last(&encrypted_buffer[..read_count])
                     .unwrap();
 
-                output.write(&decrypted_data).unwrap();
+                output.write(&decrypted_data)?;
                 break;
             }
         }
