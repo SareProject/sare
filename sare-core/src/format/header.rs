@@ -129,6 +129,7 @@ impl HeaderFormat {
 
 #[cfg(test)]
 mod tests {
+    use base64::prelude::*;
     use super::*;
     use crate::encryption::EncryptionAlgorithm;
     use crate::kdf::PKDFAlgorithm;
@@ -158,32 +159,32 @@ mod tests {
             comment: Some("Test Comment".to_string()),
         };
 
-        assert_eq!(ENCODED_METADATA, &base64::encode(metadata.encode()));
+        assert_eq!(ENCODED_METADATA, &BASE64_STANDARD.encode(metadata.encode()));
     }
 
     #[test]
     fn header_format_encode() {
         let header = HeaderFormat {
             version: 1,
-            metadata: HeaderMetadataFormat::decode(&base64::decode(ENCODED_METADATA).unwrap())
+            metadata: HeaderMetadataFormat::decode(&BASE64_STANDARD.decode(ENCODED_METADATA).unwrap())
                 .unwrap(),
             signature: None,
         };
 
-        assert_eq!(ENCODED_HEADER, base64::encode(header.encode()));
+        assert_eq!(ENCODED_HEADER, BASE64_STANDARD.encode(header.encode()));
     }
 
     #[test]
     fn header_format_decode() {
         let expected_header = HeaderFormat {
             version: 1,
-            metadata: HeaderMetadataFormat::decode(&base64::decode(ENCODED_METADATA).unwrap())
+            metadata: HeaderMetadataFormat::decode(&BASE64_STANDARD.decode(ENCODED_METADATA).unwrap())
                 .unwrap(),
             signature: None,
         };
 
         let decoded_header =
-            HeaderFormat::decode(&base64::decode(ENCODED_HEADER).unwrap()).unwrap();
+            HeaderFormat::decode(&BASE64_STANDARD.decode(ENCODED_HEADER).unwrap()).unwrap();
 
         assert_eq!(expected_header.encode(), decoded_header.encode());
     }
