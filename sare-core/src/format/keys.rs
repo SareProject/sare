@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{EncodablePublic, EncodableSecret};
 
-use crate::encryption::EncryptionAlgorithm;
+
 use crate::format::encryption::EncryptionMetadataFormat;
 use crate::format::FormatError;
 use crate::hybrid_kem::{DHAlgorithm, DHKeyPair, KEMAlgorithm, KEMKeyPair};

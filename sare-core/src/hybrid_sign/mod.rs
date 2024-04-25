@@ -249,15 +249,14 @@ mod tests {
 
         let signature = ECSignature::new(keypair);
 
-        assert_eq!(
+        assert!(
             signature
                 .verify(
                     &base64::decode(ED25519_PUBLIC_KEY).unwrap(),
                     b"SARE",
                     &base64::decode(ED25519_SIGNATURE).unwrap()
                 )
-                .unwrap(),
-            true
+                .unwrap()
         );
     }
 }

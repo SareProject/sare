@@ -72,7 +72,7 @@ impl Encryptor {
         }
     }
 
-    pub fn encrypt<R: Read, W: Write>(&self, data: R, output: W) -> Result<(), EncryptionError> {
+    pub fn encrypt<R: Read, W: Write>(&self, _data: R, _output: W) -> Result<(), EncryptionError> {
         todo!();
     }
 
@@ -126,8 +126,8 @@ impl Decryptor {
 
     pub fn decrypt<R: Read, W: Write>(
         &self,
-        encrypted_data: R,
-        output: W,
+        _encrypted_data: R,
+        _output: W,
     ) -> Result<(), EncryptionError> {
         todo!();
     }

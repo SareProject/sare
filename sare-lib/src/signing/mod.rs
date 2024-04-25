@@ -1,6 +1,6 @@
 use sare_core::{
     format::signature::{SignatureFormat, SignatureMetadataFormat},
-    hybrid_sign::{error::HybridSignError, ECSignature, PQSignature},
+    hybrid_sign::{ECSignature, PQSignature},
 };
 
 use crate::keys::MasterKey;
@@ -26,19 +26,19 @@ impl Signing {
         let pq_signature = PQSignature::new(signing_keypair.1).sign(message);
 
         let signature_metadata = SignatureMetadataFormat {
-            pq_algorithm: pq_algorithm,
-            ec_algorithm: ec_algorithm,
+            pq_algorithm,
+            ec_algorithm,
         };
 
-        let signature_format = SignatureFormat {
+        
+
+        SignatureFormat {
             signature_metadata: Some(signature_metadata),
-            ec_public_key: ec_public_key,
-            pq_public_key: pq_public_key,
+            ec_public_key,
+            pq_public_key,
             message: message.to_vec(),
-            ec_signature: ec_signature,
-            pq_signature: pq_signature,
-        };
-
-        signature_format
+            ec_signature,
+            pq_signature,
+        }
     }
 }

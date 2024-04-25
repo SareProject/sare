@@ -58,7 +58,7 @@ impl<'a> HKDF<'a> {
         additional_context: Option<&[u8]>,
         okm: &mut [u8],
     ) -> Result<(), KDFError> {
-        let hkdf = Hkdf::<Sha256>::new(Some(self.salt), &self.input_data.expose_secret());
+        let hkdf = Hkdf::<Sha256>::new(Some(self.salt), self.input_data.expose_secret());
         hkdf.expand(additional_context.unwrap_or(&[0]), okm)
             .map_err(|_| KDFError::InvalidKeyLength)?;
 
@@ -70,7 +70,7 @@ impl<'a> HKDF<'a> {
         additional_context: Option<&[u8]>,
         okm: &mut [u8],
     ) -> Result<(), KDFError> {
-        let hkdf = Hkdf::<Sha512>::new(Some(self.salt), &self.input_data.expose_secret());
+        let hkdf = Hkdf::<Sha512>::new(Some(self.salt), self.input_data.expose_secret());
         hkdf.expand(additional_context.unwrap_or(&[0]), okm)
             .map_err(|_| KDFError::InvalidKeyLength)?;
 

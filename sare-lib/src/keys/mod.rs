@@ -8,7 +8,7 @@ pub use sare_core::hybrid_sign::{ECAlgorithm, ECKeyPair, PQAlgorithm, PQKeyPair}
 use sare_core::kdf::{PKDFAlgorithm, KDF, PKDF};
 pub use sare_core::seed::Seed;
 use secrecy::{ExposeSecret, SecretString, SecretVec};
-use std::io::{BufRead, BufReader, Read, Write};
+use std::io::{BufReader, Read, Write};
 
 pub const RECOMENDED_PKDF_PARAMS: PKDFAlgorithm = PKDFAlgorithm::Scrypt(17, 8, 12);
 
@@ -38,7 +38,7 @@ impl MasterKey {
         MasterKey {
             hybrid_kem_algorithm,
             hybrid_sign_algorithm,
-            master_seed: master_seed,
+            master_seed,
         }
     }
 
@@ -198,6 +198,6 @@ impl MasterKey {
             encryption_public_key,
         };
 
-        output.write_all(&fullchain_public_key.encode_pem().as_bytes());
+        output.write_all(fullchain_public_key.encode_pem().as_bytes());
     }
 }
