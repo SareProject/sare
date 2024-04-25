@@ -8,19 +8,19 @@ const SIGNATURE_TAG: &str = "SARE MESSAGE";
 
 #[derive(Serialize, Deserialize)]
 pub struct SignatureMetadataFormat {
-    ec_algorithm: ECAlgorithm,
-    pq_algorithm: PQAlgorithm,
+    pub ec_algorithm: ECAlgorithm,
+    pub pq_algorithm: PQAlgorithm,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct SignatureFormat {
     #[serde(skip_serializing_if = "Option::is_none", flatten)]
-    signature_metadata: Option<SignatureMetadataFormat>,
-    ec_public_key: Vec<u8>,
-    pq_public_key: Vec<u8>,
-    message: Vec<u8>,
-    ec_signature: Vec<u8>,
-    pq_signature: Vec<u8>,
+    pub signature_metadata: Option<SignatureMetadataFormat>,
+    pub ec_public_key: Vec<u8>,
+    pub pq_public_key: Vec<u8>,
+    pub message: Vec<u8>,
+    pub ec_signature: Vec<u8>,
+    pub pq_signature: Vec<u8>,
 }
 
 impl EncodablePublic for SignatureFormat {

@@ -1,7 +1,7 @@
 pub mod error;
 
-use serde::{Deserialize, Serialize};
 use crate::encryption::error::*;
+use serde::{Deserialize, Serialize};
 
 use aead::stream;
 use aes_kw::KekAes256;

@@ -1,6 +1,6 @@
-use std::io::Error as IOError;
 use aead::Error as AeadError;
 use aes_kw::Error as KekError;
+use std::io::Error as IOError;
 
 #[derive(Debug)]
 pub enum ErrSection {
@@ -16,7 +16,6 @@ pub enum EncryptionError {
     FailedToEncryptOrDecrypt(ErrSection),
     Unexpected,
 }
-
 
 impl From<IOError> for EncryptionError {
     fn from(err: IOError) -> Self {
