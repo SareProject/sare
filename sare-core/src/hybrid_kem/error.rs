@@ -26,7 +26,6 @@ impl From<KyberError> for HybridKEMError {
             }
             KyberError::Decapsulation => HybridKEMError::Decapsulation(ErrSection::KEM),
             KyberError::InvalidInput => HybridKEMError::InvalidInput(ErrSection::KEM),
-            _ => HybridKEMError::Unexpected,
         }
     }
 }

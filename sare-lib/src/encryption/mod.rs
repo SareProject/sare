@@ -1,7 +1,5 @@
 use crate::keys::{HybridKEMAlgorithm, MasterKey};
 
-
-
 pub struct Recipient {
     dh_public_key: Vec<u8>,
     kem_public_key: Vec<u8>,

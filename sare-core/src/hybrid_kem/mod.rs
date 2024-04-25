@@ -233,6 +233,7 @@ impl HybridKEM {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use base64::prelude::*;
 
     const TEST_SEED: [u8; 128] = [
         198, 44, 204, 124, 44, 49, 54, 122, 236, 122, 174, 6, 50, 107, 65, 214, 47, 51, 12, 251,
@@ -261,7 +262,7 @@ mod tests {
     const X25519_RECV_SECRET_KEY: &str = "OCsYVt7xwPf11E8chbtRa+IRYgYsoEpbfRY8+R0hcEc=";
     const X25519_RECV_PUBLIC_KEY: &str = "3Yic3lphqfixI+rSbOiB91SCpEh0vPCrWu6n2YxzMn0=";
 
-    const X25519_SHARED_SECRET: [u8; 32] = [
+    const _X25519_SHARED_SECRET: [u8; 32] = [
         71, 141, 13, 166, 215, 13, 144, 138, 183, 233, 237, 240, 88, 255, 7, 135, 238, 98, 67, 21,
         233, 9, 99, 125, 193, 122, 201, 224, 41, 51, 100, 25,
     ];
@@ -275,10 +276,10 @@ mod tests {
 
         assert_eq!(
             KYBER_SECRET_KEY,
-            base64::encode(keypair.secret_key.expose_secret())
+            BASE64_STANDARD.encode(keypair.secret_key.expose_secret())
         );
 
-        assert_eq!(KYBER_PUBLIC_KEY, base64::encode(keypair.public_key));
+        assert_eq!(KYBER_PUBLIC_KEY, BASE64_STANDARD.encode(keypair.public_key));
     }
 
     #[test]
@@ -290,16 +291,19 @@ mod tests {
 
         assert_eq!(
             X25519_SECRET_KEY,
-            base64::encode(keypair.secret_key.expose_secret())
+            BASE64_STANDARD.encode(keypair.secret_key.expose_secret())
         );
 
-        assert_eq!(X25519_PUBLIC_KEY, base64::encode(keypair.public_key));
+        assert_eq!(
+            X25519_PUBLIC_KEY,
+            BASE64_STANDARD.encode(keypair.public_key)
+        );
     }
 
     #[test]
     fn kyber_encapsulate() {
         let kem = Encapsulation::new(
-            &base64::decode(KYBER_PUBLIC_KEY).unwrap(),
+            &BASE64_STANDARD.decode(KYBER_PUBLIC_KEY).unwrap(),
             KEMAlgorithm::Kyber768,
         );
 
@@ -308,11 +312,11 @@ mod tests {
 
     #[test]
     fn kyber_decapsulate() {
-        let binding = SecretVec::from(base64::decode(KYBER_SECRET_KEY).unwrap());
+        let binding = SecretVec::from(BASE64_STANDARD.decode(KYBER_SECRET_KEY).unwrap());
         let kem = Decapsulation::new(&binding, &KEMAlgorithm::Kyber768);
 
         let decapsulated_secret = kem
-            .decapsulate(&base64::decode(KYBER_CIPHER_TEXT).unwrap())
+            .decapsulate(&BASE64_STANDARD.decode(KYBER_CIPHER_TEXT).unwrap())
             .unwrap();
 
         assert_eq!(
@@ -328,19 +332,19 @@ mod tests {
             DHAlgorithm::X25519,
         );
 
-        let binding = base64::decode(X25519_RECV_PUBLIC_KEY).unwrap();
+        let binding = BASE64_STANDARD.decode(X25519_RECV_PUBLIC_KEY).unwrap();
 
         let sender_dh = DiffieHellman::new(&sender_keypair, &binding);
 
         let sender_shared_secret = sender_dh.calculate_shared_key().unwrap();
 
         let reciever_keypair = DHKeyPair::from_secret_key(
-            &SecretVec::from(base64::decode(X25519_RECV_SECRET_KEY).unwrap()),
+            &SecretVec::from(BASE64_STANDARD.decode(X25519_RECV_SECRET_KEY).unwrap()),
             DHAlgorithm::X25519,
         )
         .unwrap();
 
-        let binding = base64::decode(X25519_PUBLIC_KEY).unwrap();
+        let binding = BASE64_STANDARD.decode(X25519_PUBLIC_KEY).unwrap();
         let reciever_dh = DiffieHellman::new(&reciever_keypair, &binding);
 
         let reciever_shared_secret = reciever_dh.calculate_shared_key().unwrap();

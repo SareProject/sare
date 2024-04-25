@@ -196,6 +196,7 @@ impl PQSignature {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use base64::prelude::*;
 
     const TEST_SEED: [u8; 128] = [
         198, 44, 204, 124, 44, 49, 54, 122, 236, 122, 174, 6, 50, 107, 65, 214, 47, 51, 12, 251,
@@ -222,41 +223,45 @@ mod tests {
         );
 
         assert_eq!(
-            base64::encode(keypair.secret_key.expose_secret()),
+            BASE64_STANDARD.encode(keypair.secret_key.expose_secret()),
             ED25519_SECRET_KEY,
         );
-        assert_eq!(base64::encode(keypair.public_key), ED25519_PUBLIC_KEY,);
+        assert_eq!(
+            BASE64_STANDARD.encode(keypair.public_key),
+            ED25519_PUBLIC_KEY,
+        );
     }
 
     #[test]
     fn ed25519_keypair_from_secret_key() {
         let keypair = ECKeyPair::from_secret_key(
-            &SecretVec::from(base64::decode(ED25519_SECRET_KEY).unwrap()),
+            &SecretVec::from(BASE64_STANDARD.decode(ED25519_SECRET_KEY).unwrap()),
             ECAlgorithm::Ed25519,
         )
         .unwrap();
 
-        assert_eq!(base64::encode(keypair.public_key), ED25519_PUBLIC_KEY);
+        assert_eq!(
+            BASE64_STANDARD.encode(keypair.public_key),
+            ED25519_PUBLIC_KEY
+        );
     }
 
     #[test]
     fn ed25519_sign() {
         let keypair = ECKeyPair::from_secret_key(
-            &SecretVec::from(base64::decode(ED25519_SECRET_KEY).unwrap()),
+            &SecretVec::from(BASE64_STANDARD.decode(ED25519_SECRET_KEY).unwrap()),
             ECAlgorithm::Ed25519,
         )
         .unwrap();
 
         let signature = ECSignature::new(keypair);
 
-        assert!(
-            signature
-                .verify(
-                    &base64::decode(ED25519_PUBLIC_KEY).unwrap(),
-                    b"SARE",
-                    &base64::decode(ED25519_SIGNATURE).unwrap()
-                )
-                .unwrap()
-        );
+        assert!(signature
+            .verify(
+                &BASE64_STANDARD.decode(ED25519_PUBLIC_KEY).unwrap(),
+                b"SARE",
+                &BASE64_STANDARD.decode(ED25519_SIGNATURE).unwrap()
+            )
+            .unwrap());
     }
 }

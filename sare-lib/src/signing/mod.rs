@@ -30,8 +30,6 @@ impl Signing {
             ec_algorithm,
         };
 
-        
-
         SignatureFormat {
             signature_metadata: Some(signature_metadata),
             ec_public_key,

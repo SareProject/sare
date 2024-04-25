@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sha2::{Digest};
+use sha2::Digest;
 
 use super::{EncodablePublic, FormatError};
 

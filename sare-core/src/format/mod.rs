@@ -1,5 +1,5 @@
 use bson::de::Error as BsonError;
-use pem::{PemError};
+use pem::PemError;
 use secrecy::{SecretString, SecretVec};
 
 pub mod encryption;

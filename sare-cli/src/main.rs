@@ -1,10 +1,5 @@
 use argh::FromArgs;
 
-
-
-
-
-
 #[derive(FromArgs)]
 /// Safe At Rest Encryption. A tool to stay Safe in the Quantum Age
 struct SareCli {
