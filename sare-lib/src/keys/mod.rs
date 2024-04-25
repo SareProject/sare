@@ -58,7 +58,7 @@ impl MasterKey {
                 let derived_key = pkdf.derive_key(32).unwrap();
                 let keywrap = KeyWrap::new(derived_key).unwrap();
 
-                let encrypted_seed = keywrap.wrap(self.master_seed.get_raw_seed());
+                let encrypted_seed = keywrap.wrap(self.master_seed.get_raw_seed()).unwrap();
 
                 let encryption_metadata = EncryptionMetadataFormat {
                     kem_metadata: None,

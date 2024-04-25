@@ -32,16 +32,16 @@ impl KeyWrap {
         Ok(KeyWrap { input_key })
     }
 
-    pub fn wrap(&self, data: &SecretVec<u8>) -> Vec<u8> {
+    pub fn wrap(&self, data: &SecretVec<u8>) -> Result<Vec<u8>, EncryptionError> {
         let mut output: Vec<u8> = Vec::with_capacity(data.expose_secret().len() + 8);
 
         let input_key = <[u8; 32]>::try_from(self.input_key.expose_secret().as_slice()).unwrap();
 
         let kek = KekAes256::from(input_key);
 
-        kek.wrap(data.expose_secret(), &mut output);
+        kek.wrap(data.expose_secret(), &mut output)?;
 
-        output
+        Ok(output)
     }
 
     pub fn dewrap(&self, wrapped_data: &SecretVec<u8>) -> Result<SecretVec<u8>, EncryptionError> {
