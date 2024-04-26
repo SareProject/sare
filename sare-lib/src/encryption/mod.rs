@@ -1,3 +1,7 @@
+use std::io::{Read, Write};
+
+use sare_core::{encryption::{EncryptionAlgorithm, Encryptor as CoreEncryptor}, kdf::PKDF};
+
 use crate::keys::{HybridKEMAlgorithm, MasterKey};
 
 pub struct Recipient {
@@ -14,7 +18,18 @@ impl Encryptor {
         Encryptor(master_key)
     }
 
-    pub fn encrypt_with_passphrase() {}
+    // TODO: Covert Errors to SareError and return
+    pub fn encrypt_with_passphrase<R: Read, W: Write>(&self, mut data: R, mut output: W ,pkdf: PKDF, algorithm: EncryptionAlgorithm) {
+        let encryption_key = pkdf.derive_key(32).unwrap();
+
+        // TODO: generate nonce in sare-core::encryption when calling `new` function
+        let encryptor = CoreEncryptor::new(encryption_key, vec![0,0,0], algorithm);
+
+        match algorithm {
+            EncryptionAlgorithm::XCHACHA20POLY1305 => encryptor.encrypt_xchacha20poly1305(&mut data, &mut output).unwrap(),
+            _ => unimplemented!(),
+        };
+    }
 
     pub fn encrypt_with_recipient() {}
 }

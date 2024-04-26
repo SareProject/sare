@@ -12,7 +12,7 @@ use std::io::{Read, Write};
 
 const AEAD_BUFFER_LEN: usize = 2048;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Copy, Clone,Serialize, Deserialize)]
 pub enum EncryptionAlgorithm {
     AES256GCM,
     AES256KW,
