@@ -26,6 +26,8 @@ impl Fingerprint {
     }
 }
 
+// TODO: this format needs to be replaced with Certificate format, to allow more flexibility
+// in the future
 #[derive(Serialize, Deserialize)]
 pub struct RevocationCertificateFormat {
     pub name: Option<String>,
