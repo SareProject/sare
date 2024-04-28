@@ -2,10 +2,10 @@ use bson::de::Error as BsonError;
 use pem::PemError;
 use secrecy::{SecretString, SecretVec};
 
+pub mod certificate;
 pub mod encryption;
 pub mod header;
 pub mod keys;
-pub mod revocation;
 pub mod signature;
 
 #[derive(Debug)]

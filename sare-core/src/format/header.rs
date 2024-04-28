@@ -129,10 +129,10 @@ impl HeaderFormat {
 
 #[cfg(test)]
 mod tests {
-    use base64::prelude::*;
     use super::*;
     use crate::encryption::EncryptionAlgorithm;
     use crate::kdf::PKDFAlgorithm;
+    use base64::prelude::*;
 
     const ENCODED_METADATA: &str = "ygAAAAJlbmNyeXB0aW9uX2FsZ29yaXRobQAKAAAAQUVTMjU2R0NNAARwa2RmX3NhbHQAPQAAABAwAAAAAAAQMQAAAAAAEDIAAAAAABAzAAAAAAAQNAAAAAAAEDUAAAAAABA2AAAAAAAQNwAAAAAAAANwa2RmX2FsZ29yaXRobQAvAAAABFNjcnlwdAAiAAAAEDAACgAAABIxAAgAAAAAAAAAEjIACgAAAAAAAAAAAAJjb21tZW50AA0AAABUZXN0IENvbW1lbnQAAA==";
 
@@ -166,8 +166,10 @@ mod tests {
     fn header_format_encode() {
         let header = HeaderFormat {
             version: 1,
-            metadata: HeaderMetadataFormat::decode(&BASE64_STANDARD.decode(ENCODED_METADATA).unwrap())
-                .unwrap(),
+            metadata: HeaderMetadataFormat::decode(
+                &BASE64_STANDARD.decode(ENCODED_METADATA).unwrap(),
+            )
+            .unwrap(),
             signature: None,
         };
 
@@ -178,8 +180,10 @@ mod tests {
     fn header_format_decode() {
         let expected_header = HeaderFormat {
             version: 1,
-            metadata: HeaderMetadataFormat::decode(&BASE64_STANDARD.decode(ENCODED_METADATA).unwrap())
-                .unwrap(),
+            metadata: HeaderMetadataFormat::decode(
+                &BASE64_STANDARD.decode(ENCODED_METADATA).unwrap(),
+            )
+            .unwrap(),
             signature: None,
         };
 

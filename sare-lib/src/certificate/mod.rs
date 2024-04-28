@@ -1,17 +1,3 @@
-use sare_core::format::revocation::RevocationCertificateFormat;
+use sare_core::format::certificate::CertificateFormat;
 
-enum CertificateType {
-    Revocation(RevocationCertificateFormat),
-}
-
-impl CertificateType {
-    pub fn new_revocation_certificate() -> Self{
-        unimplemented!()
-    }
-}
-
-pub struct Certificate{
-    issuer: String,
-    expiry_date: Option<i64>,
-    certificate_type: CertificateType,
-}
+pub struct Cerificate(CertificateFormat);

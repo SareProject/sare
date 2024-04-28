@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use super::{EncodablePublic, FormatError};
+use serde::{Deserialize, Serialize};
 
 const CERTIFICATE_PEM_TAG: &str = "SARE CERTIFICATE";
 
@@ -18,7 +18,7 @@ pub enum CertificateType {
 pub struct CertificateFormat {
     issuer: String,
     expiry_date: Option<i64>,
-    certificate_type: CertificateType
+    certificate_type: CertificateType,
 }
 
 impl EncodablePublic for CertificateFormat {
@@ -32,10 +32,7 @@ impl EncodablePublic for CertificateFormat {
     }
 
     fn encode_pem(&self) -> String {
-        let pem = pem::Pem::new(
-            CERTIFICATE_PEM_TAG,
-            self.encode_bson().as_slice(),
-        );
+        let pem = pem::Pem::new(CERTIFICATE_PEM_TAG, self.encode_bson().as_slice());
         pem::encode(&pem)
     }
 

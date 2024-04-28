@@ -1,7 +1,7 @@
+pub mod certificate;
 pub mod encryption;
 pub mod keys;
 pub mod signing;
-pub mod certificate;
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right
