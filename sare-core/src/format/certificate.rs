@@ -1,4 +1,4 @@
-use super::{signature::SignatureFormat, EncodablePublic, FormatError};
+use super::{EncodablePublic, FormatError};
 use serde::{Deserialize, Serialize};
 
 const CERTIFICATE_PEM_TAG: &str = "SARE CERTIFICATE";

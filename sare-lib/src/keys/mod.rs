@@ -18,8 +18,8 @@ pub struct HybridSignAlgorithm {
 }
 
 pub struct HybridKEMAlgorithm {
-    dh_algorithm: DHAlgorithm,
-    kem_algorithm: KEMAlgorithm,
+    pub dh_algorithm: DHAlgorithm,
+    pub kem_algorithm: KEMAlgorithm,
 }
 
 pub struct MasterKey {
