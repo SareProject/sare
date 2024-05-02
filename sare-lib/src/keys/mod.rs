@@ -1,7 +1,6 @@
 pub use sare_core::encryption::{EncryptionAlgorithm, KeyWrap};
 pub use sare_core::format::encryption::*;
 pub use sare_core::format::keys::*;
-use sare_core::format::FormatError;
 pub use sare_core::format::{EncodablePublic, EncodableSecret};
 pub use sare_core::hybrid_kem::{DHAlgorithm, DHKeyPair, KEMAlgorithm, KEMKeyPair};
 pub use sare_core::hybrid_sign::{ECAlgorithm, ECKeyPair, PQAlgorithm, PQKeyPair};
@@ -9,6 +8,8 @@ use sare_core::kdf::{PKDFAlgorithm, KDF, PKDF};
 pub use sare_core::seed::Seed;
 use secrecy::{ExposeSecret, SecretString, SecretVec};
 use std::io::{BufReader, Read, Write};
+
+use crate::SareError;
 
 pub const RECOMENDED_PKDF_PARAMS: PKDFAlgorithm = PKDFAlgorithm::Scrypt(17, 8, 12);
 
@@ -42,7 +43,7 @@ impl MasterKey {
         }
     }
 
-    pub fn export<W: Write>(&self, passphrase_bytes: Option<SecretVec<u8>>, mut output: W) {
+    pub fn export<W: Write>(&self, passphrase_bytes: Option<SecretVec<u8>>, mut output: W) -> Result<(), SareError> {
         match passphrase_bytes {
             Some(passphrase) => {
                 let pkdf_salt = PKDF::generate_salt();
@@ -77,7 +78,7 @@ impl MasterKey {
                     encryption_metadata: Some(encryption_metadata),
                 };
 
-                output.write_all(secret_key_format.encode_pem().expose_secret().as_bytes());
+                output.write_all(secret_key_format.encode_pem().expose_secret().as_bytes())?;
             }
             None => {
                 // TODO: impl `From` in sare_core::format::keys
@@ -90,27 +91,29 @@ impl MasterKey {
                     encryption_metadata: None,
                 };
 
-                output.write_all(secret_key_format.encode_pem().expose_secret().as_bytes());
+                output.write_all(secret_key_format.encode_pem().expose_secret().as_bytes())?;
             }
         }
+
+        Ok(())
     }
 
     pub fn is_encrypted(secret_key_format: &SecretKeyFormat) -> bool {
         secret_key_format.encryption_metadata.is_some()
     }
 
-    pub fn decode_pem<R: Read>(serialized_master_key: R) -> Result<SecretKeyFormat, FormatError> {
+    pub fn decode_pem<R: Read>(serialized_master_key: R) -> Result<SecretKeyFormat, SareError> {
         let mut reader = BufReader::new(serialized_master_key);
 
         let mut string_buf = String::new();
-        reader.read_to_string(&mut string_buf);
-        SecretKeyFormat::decode_pem(SecretString::from(string_buf))
+        reader.read_to_string(&mut string_buf)?;
+        Ok(SecretKeyFormat::decode_pem(SecretString::from(string_buf))?)
     }
 
     pub fn import(
         decoded_master_key_format: SecretKeyFormat,
         passphrase_bytes: Option<SecretVec<u8>>,
-    ) -> Result<Self, FormatError> {
+    ) -> Result<Self, SareError> {
         let hybrid_sign_algorithm = HybridSignAlgorithm {
             ec_algorithm: decoded_master_key_format.ec_algorithm,
             pq_algorithm: decoded_master_key_format.pq_algorithm,
@@ -189,7 +192,7 @@ impl MasterKey {
         EncryptionPublicKeyFormat::from_keypairs(dh_keypair, kem_keypair)
     }
 
-    pub fn export_public<W: Write>(&self, mut output: W) {
+    pub fn export_public<W: Write>(&self, mut output: W) -> Result<(), SareError> {
         let signature_public_key = self.get_signing_public_key();
         let encryption_public_key = self.get_encryption_public_key();
 
@@ -198,6 +201,7 @@ impl MasterKey {
             encryption_public_key,
         };
 
-        output.write_all(fullchain_public_key.encode_pem().as_bytes());
+        output.write_all(fullchain_public_key.encode_pem().as_bytes())?;
+        Ok(())
     }
 }
