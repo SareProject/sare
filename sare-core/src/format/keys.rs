@@ -34,6 +34,29 @@ impl SignaturePublicKeyFormat {
     }
 }
 
+impl EncodablePublic for SignaturePublicKeyFormat {
+    fn encode_bson(&self) -> Vec<u8> {
+        bson::to_vec(&self).unwrap()
+    }
+
+    fn decode_bson(bson_data: &[u8]) -> Result<Self, FormatError> {
+        let public_key = bson::from_slice::<SignaturePublicKeyFormat>(bson_data).unwrap();
+        Ok(public_key)
+    }
+
+    fn encode_pem(&self) -> String {
+        let pem = pem::Pem::new(SIGNATURE_PUBLIC_KEY_PEM_TAG, self.encode_bson().as_slice());
+        pem::encode(&pem)
+    }
+
+    fn decode_pem(pem_public_key: &str) -> Result<Self, FormatError> {
+        let pem = pem::parse(pem_public_key)?;
+
+        let bson_data = pem.contents();
+        Self::decode_bson(bson_data)
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct EncryptionPublicKeyFormat {
     dh_algorithm: DHAlgorithm,
@@ -50,6 +73,29 @@ impl EncryptionPublicKeyFormat {
             dh_public_key: dh_keypair.public_key,
             kem_public_key: kem_keypair.public_key,
         }
+    }
+}
+
+impl EncodablePublic for EncryptionPublicKeyFormat {
+    fn encode_bson(&self) -> Vec<u8> {
+        bson::to_vec(&self).unwrap()
+    }
+
+    fn decode_bson(bson_data: &[u8]) -> Result<Self, FormatError> {
+        let public_key = bson::from_slice::<EncryptionPublicKeyFormat>(bson_data).unwrap();
+        Ok(public_key)
+    }
+
+    fn encode_pem(&self) -> String {
+        let pem = pem::Pem::new(ENCRYPTION_PUBLIC_KEY_PEM_TAG, self.encode_bson().as_slice());
+        pem::encode(&pem)
+    }
+
+    fn decode_pem(pem_public_key: &str) -> Result<Self, FormatError> {
+        let pem = pem::parse(pem_public_key)?;
+
+        let bson_data = pem.contents();
+        Self::decode_bson(bson_data)
     }
 }
 
