@@ -43,7 +43,11 @@ impl MasterKey {
         }
     }
 
-    pub fn export<W: Write>(&self, passphrase_bytes: Option<SecretVec<u8>>, mut output: W) -> Result<(), SareError> {
+    pub fn export<W: Write>(
+        &self,
+        passphrase_bytes: Option<SecretVec<u8>>,
+        mut output: W,
+    ) -> Result<(), SareError> {
         match passphrase_bytes {
             Some(passphrase) => {
                 let pkdf_salt = PKDF::generate_salt();

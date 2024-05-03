@@ -5,9 +5,15 @@ pub mod hybrid_sign;
 pub mod kdf;
 pub mod seed;
 
+use encryption::error::EncryptionError;
 use format::FormatError;
+use hybrid_kem::{error::HybridKEMError, HybridKEM};
+use kdf::KDFError;
 pub use pem;
 
 pub enum CoreErrorKind {
-    FormatError(FormatError),
+    Format(FormatError),
+    Encryption(EncryptionError),
+    KDF(KDFError),
+    HybridKEM(HybridKEMError),
 }

@@ -1,13 +1,16 @@
 use std::io::{Read, Write};
 
 use sare_core::{
-    encryption::{self, EncryptionAlgorithm, Encryptor as CoreEncryptor},
-    hybrid_kem::{self, Encapsulation, HybridKEM},
+    encryption::{EncryptionAlgorithm, Encryptor as CoreEncryptor},
+    hybrid_kem::{Encapsulation, HybridKEM},
     kdf::{HKDFAlgorithm, HKDF, KDF, PKDF},
 };
 use secrecy::{ExposeSecret, SecretVec};
 
-use crate::keys::{HybridKEMAlgorithm, MasterKey};
+use crate::{
+    keys::{HybridKEMAlgorithm, MasterKey},
+    SareError,
+};
 
 pub struct Recipient {
     dh_public_key: Vec<u8>,
@@ -23,25 +26,26 @@ impl Encryptor {
         Encryptor(master_key)
     }
 
-    // TODO: Covert Errors to SareError and return
     pub fn encrypt_with_passphrase<R: Read, W: Write>(
         &self,
         mut data: R,
         mut output: W,
         pkdf: PKDF,
         algorithm: EncryptionAlgorithm,
-    ) {
-        let encryption_key = pkdf.derive_key(32).unwrap();
+    ) -> Result<(), SareError> {
+        let encryption_key = pkdf.derive_key(32)?;
 
         // TODO: generate nonce in sare-core::encryption when calling `new` function
         let encryptor = CoreEncryptor::new(encryption_key, vec![0, 0, 0], algorithm);
 
         match algorithm {
-            EncryptionAlgorithm::XCHACHA20POLY1305 => encryptor
-                .encrypt_xchacha20poly1305(&mut data, &mut output)
-                .unwrap(),
+            EncryptionAlgorithm::XCHACHA20POLY1305 => {
+                encryptor.encrypt_xchacha20poly1305(&mut data, &mut output)?
+            }
             _ => unimplemented!(),
         };
+
+        Ok(())
     }
 
     // TODO: needs error handling
@@ -51,16 +55,15 @@ impl Encryptor {
         mut output: W,
         recipient: &Recipient,
         algorithm: EncryptionAlgorithm,
-    ) {
+    ) -> Result<(), SareError> {
         let (dh_keypair, kem_keypair) = self.0.get_encryption_keypair();
         let kem = Encapsulation::new(&recipient.kem_public_key, recipient.algorithm.kem_algorithm);
-        let kem_cipher_text = kem.encapsulate().unwrap().cipher_text;
+        let kem_cipher_text = kem.encapsulate()?.cipher_text;
 
         let hybrid_kem = HybridKEM::new(dh_keypair, kem_keypair);
 
-        let shared_secret = hybrid_kem
-            .calculate_raw_shared_key(&kem_cipher_text, &recipient.dh_public_key)
-            .unwrap();
+        let shared_secret =
+            hybrid_kem.calculate_raw_shared_key(&kem_cipher_text, &recipient.dh_public_key)?;
 
         let concated_shared_secrets = SecretVec::new(
             [
@@ -74,16 +77,16 @@ impl Encryptor {
             &PKDF::generate_salt(),
             HKDFAlgorithm::SHA256,
         )
-        .expand(None)
-        .unwrap();
+        .expand(None)?;
         // TODO: generate nonce in sare-core::encryption when calling `new` function
         let encryptor = CoreEncryptor::new(encryption_key, vec![0, 0, 0], algorithm);
 
         match algorithm {
-            EncryptionAlgorithm::XCHACHA20POLY1305 => encryptor
-                .encrypt_xchacha20poly1305(&mut data, &mut output)
-                .unwrap(),
+            EncryptionAlgorithm::XCHACHA20POLY1305 => {
+                encryptor.encrypt_xchacha20poly1305(&mut data, &mut output)?
+            }
             _ => unimplemented!(),
         };
+        Ok(())
     }
 }
