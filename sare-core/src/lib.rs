@@ -7,7 +7,7 @@ pub mod seed;
 
 use encryption::error::EncryptionError;
 use format::FormatError;
-use hybrid_kem::{error::HybridKEMError, HybridKEM};
+use hybrid_kem::error::HybridKEMError;
 use kdf::KDFError;
 pub use pem;
 

@@ -6,11 +6,8 @@ pub mod signing;
 use std::io::Error as IoError;
 
 use sare_core::{
-    encryption::error::EncryptionError,
-    format::FormatError,
-    hybrid_kem::{error::HybridKEMError, HybridKEM},
-    kdf::KDFError,
-    CoreErrorKind,
+    encryption::error::EncryptionError, format::FormatError, hybrid_kem::error::HybridKEMError,
+    kdf::KDFError, CoreErrorKind,
 };
 
 pub enum SareError {

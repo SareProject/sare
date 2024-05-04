@@ -6,7 +6,7 @@ use sare_core::format::{
 
 const CERTIFICATE_PEM_TAG: &str = "SARE CERTIFICATE";
 
-use crate::keys::MasterKey;
+use crate::{keys::MasterKey, SareError};
 
 pub struct Cerificate(SignatureFormat);
 
@@ -23,9 +23,10 @@ impl Cerificate {
         sare_core::pem::encode(&pem)
     }
 
-    pub fn export<W: Write>(&self, mut output: W) {
+    pub fn export<W: Write>(&self, mut output: W) -> Result<(), SareError> {
         let pem_encoded_certificate = self.encode_pem();
 
-        output.write_all(pem_encoded_certificate.as_bytes());
+        output.write_all(pem_encoded_certificate.as_bytes())?;
+        Ok(())
     }
 }
