@@ -196,6 +196,20 @@ impl MasterKey {
         EncryptionPublicKeyFormat::from_keypairs(dh_keypair, kem_keypair)
     }
 
+    pub fn export_signature_public<W: Write>(&self, mut output: W) -> Result<(), SareError> {
+        let signature_public_key = self.get_signing_public_key();
+
+        output.write_all(signature_public_key.encode_pem().as_bytes())?;
+        Ok(())
+    }
+
+    pub fn export_encryption_public<W: Write>(&self, mut output: W) -> Result<(), SareError> {
+        let encryption_public_key = self.get_signing_public_key();
+
+        output.write_all(encryption_public_key.encode_pem().as_bytes())?;
+        Ok(())
+    }
+
     pub fn export_public<W: Write>(&self, mut output: W) -> Result<(), SareError> {
         let signature_public_key = self.get_signing_public_key();
         let encryption_public_key = self.get_encryption_public_key();
