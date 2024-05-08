@@ -18,11 +18,28 @@ pub struct HybridSignAlgorithm {
     pq_algorithm: PQAlgorithm,
 }
 
+impl Default for HybridSignAlgorithm {
+    fn default() -> Self {
+        HybridSignAlgorithm {
+            ec_algorithm: ECAlgorithm::Ed25519,
+            pq_algorithm: PQAlgorithm::Dilithium3,
+        }
+    }
+}
+
 pub struct HybridKEMAlgorithm {
     pub dh_algorithm: DHAlgorithm,
     pub kem_algorithm: KEMAlgorithm,
 }
 
+impl Default for HybridKEMAlgorithm {
+    fn default() -> Self {
+        HybridKEMAlgorithm {
+            dh_algorithm: DHAlgorithm::X25519,
+            kem_algorithm: KEMAlgorithm::Kyber768,
+        }
+    }
+}
 pub struct MasterKey {
     hybrid_kem_algorithm: HybridKEMAlgorithm,
     hybrid_sign_algorithm: HybridSignAlgorithm,
