@@ -67,12 +67,12 @@ impl ECKeyPair {
     }
 }
 
-pub struct ECSignature {
-    pub keypair: ECKeyPair,
+pub struct ECSignature<'a> {
+    pub keypair: &'a ECKeyPair,
 }
 
-impl ECSignature {
-    pub fn new(keypair: ECKeyPair) -> Self {
+impl<'a> ECSignature<'a> {
+    pub fn new(keypair: &'a ECKeyPair) -> Self {
         ECSignature { keypair }
     }
 
@@ -146,14 +146,14 @@ impl PQKeyPair {
     }
 }
 
-pub struct PQSignature {
-    pub keypair: PQKeyPair,
+pub struct PQSignature<'a> {
+    pub keypair: &'a PQKeyPair,
 }
 
-impl PQSignature {
+impl<'a> PQSignature<'a> {
     //TODO: Implement hash_and_sign function using HMAC and sha3
 
-    pub fn new(keypair: PQKeyPair) -> Self {
+    pub fn new(keypair: &'a PQKeyPair) -> Self {
         PQSignature { keypair }
     }
 
@@ -254,7 +254,7 @@ mod tests {
         )
         .unwrap();
 
-        let signature = ECSignature::new(keypair);
+        let signature = ECSignature::new(&keypair);
 
         assert!(signature
             .verify(
