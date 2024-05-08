@@ -1,6 +1,7 @@
 pub mod error;
 
 use crate::encryption::error::*;
+use rand::RngCore;
 use serde::{Deserialize, Serialize};
 
 use aead::stream;
@@ -9,6 +10,7 @@ use chacha20poly1305::KeyInit;
 use chacha20poly1305::XChaCha20Poly1305;
 use secrecy::{ExposeSecret, SecretVec};
 use std::io::{Read, Write};
+use std::vec;
 
 const AEAD_BUFFER_LEN: usize = 2048;
 
@@ -64,7 +66,12 @@ pub struct Encryptor {
 }
 
 impl Encryptor {
-    pub fn new(input_key: SecretVec<u8>, nonce: Vec<u8>, algorithm: EncryptionAlgorithm) -> Self {
+    pub fn new(input_key: SecretVec<u8>, algorithm: EncryptionAlgorithm) -> Self {
+        // TODO: Implement get_nonce_length() function for EncryptionAlgorithm enum
+        let mut nonce = vec![0; 19];
+        let mut rng = rand::thread_rng();
+        rng.fill_bytes(&mut nonce);
+
         Encryptor {
             input_key,
             nonce,

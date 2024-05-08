@@ -35,8 +35,7 @@ impl Encryptor {
     ) -> Result<(), SareError> {
         let encryption_key = pkdf.derive_key(32)?;
 
-        // TODO: generate nonce in sare-core::encryption when calling `new` function
-        let encryptor = CoreEncryptor::new(encryption_key, vec![0, 0, 0], algorithm);
+        let encryptor = CoreEncryptor::new(encryption_key, algorithm);
 
         match algorithm {
             EncryptionAlgorithm::XCHACHA20POLY1305 => {
@@ -78,8 +77,8 @@ impl Encryptor {
             HKDFAlgorithm::SHA256,
         )
         .expand(None)?;
-        // TODO: generate nonce in sare-core::encryption when calling `new` function
-        let encryptor = CoreEncryptor::new(encryption_key, vec![0, 0, 0], algorithm);
+
+        let encryptor = CoreEncryptor::new(encryption_key, algorithm);
 
         match algorithm {
             EncryptionAlgorithm::XCHACHA20POLY1305 => {
