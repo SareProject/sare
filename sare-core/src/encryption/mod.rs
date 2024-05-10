@@ -35,13 +35,13 @@ impl KeyWrap {
     }
 
     pub fn wrap(&self, data: &SecretVec<u8>) -> Result<Vec<u8>, EncryptionError> {
-        let mut output: Vec<u8> = Vec::with_capacity(data.expose_secret().len() + 8);
+        let mut output: Vec<u8> = vec![0; data.expose_secret().len() + 8];
 
         let input_key = <[u8; 32]>::try_from(self.input_key.expose_secret().as_slice()).unwrap();
 
         let kek = KekAes256::from(input_key);
 
-        kek.wrap(data.expose_secret(), &mut output)?;
+        kek.wrap_with_padding(data.expose_secret(), &mut output)?;
 
         Ok(output)
     }
@@ -53,7 +53,7 @@ impl KeyWrap {
 
         let kek = KekAes256::from(input_key);
 
-        kek.unwrap(wrapped_data.expose_secret(), &mut output)?;
+        kek.unwrap_with_padding(wrapped_data.expose_secret(), &mut output)?;
 
         Ok(SecretVec::from(output))
     }
