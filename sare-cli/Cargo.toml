@@ -8,4 +8,6 @@ edition = "2021"
 [dependencies]
 argh = "0.1.12"
 dirs = "5.0.1"
+read-stdin = "1.1.1"
 sare-lib = { path = "../sare-lib" }
+secrecy = "0.8.0"
