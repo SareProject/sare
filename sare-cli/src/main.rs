@@ -1,10 +1,12 @@
-use std::fs::File;
+use std::{error::Error, fs::File};
 
 use argh::FromArgs;
+
 use sare_lib::{
     keys::{HybridKEMAlgorithm, HybridSignAlgorithm, MasterKey},
     SareError,
 };
+use secrecy::{ExposeSecret, SecretString, SecretVec};
 
 // TODO: Use a crate to create and check if the directory exists, this is for testing purposes only
 const DEFAULT_KEY_PATH: &str = ".sare";
@@ -28,17 +30,25 @@ enum SubCommand {
 struct KeyGen {}
 
 // TODO: Implement Display to SareError so it can be returned here and shown to the user
-fn generate_key_pair() -> Result<(), String> {
+fn generate_key_pair() -> Result<(), Box<dyn Error>> {
     // TODO: Take algorithms as input and if they're None use default
     let masterkey = MasterKey::generate(
         HybridKEMAlgorithm::default(),
         HybridSignAlgorithm::default(),
     );
 
+    // TODO: passphrase must not be visible when entering
+    let passphrase: SecretString = read_stdin::prompt::<SecretString>("Enter your passphrase: ")?;
+
     let mut masterkey_file = File::create("sare_masterkey.pem").unwrap();
     let mut publickey_file = File::create("sare_publickey.pem").unwrap();
-    // TODO: Take passphrase as input later
-    masterkey.export(None, &mut masterkey_file);
+
+    masterkey.export(
+        Some(SecretVec::<u8>::from(
+            passphrase.expose_secret().as_bytes().to_vec(),
+        )),
+        &mut masterkey_file,
+    );
     masterkey.export_public(&mut publickey_file);
     todo!();
     //let output_file = File::create(output_path);
