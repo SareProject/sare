@@ -121,8 +121,7 @@ impl<'a> PKDF<'a> {
     pub fn derive_key(&self, key_length: usize) -> Result<SecretVec<u8>, KDFError> {
         match &self.algorithm {
             PKDFAlgorithm::Scrypt(n, r, p) => {
-                let params = scrypt::Params::new(*n, *r, *p, key_length)
-                    .map_err(|_| KDFError::InvalidParams)?;
+                let params = scrypt::Params::new(*n, *r, *p, key_length)?;
 
                 let mut output = vec![0u8; key_length];
                 scrypt::scrypt(
@@ -130,8 +129,7 @@ impl<'a> PKDF<'a> {
                     self.salt,
                     &params,
                     &mut output,
-                )
-                .map_err(|_| KDFError::InvalidOutputLength)?;
+                )?;
 
                 Ok(SecretVec::from(output))
             }
