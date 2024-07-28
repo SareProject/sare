@@ -38,6 +38,8 @@ impl Seed {
         let mut mnemonic_phrase: String = String::new();
 
         for chunk in seed_chunks {
+            // NOTE: Because the chunck sizes are known and in the valid range there will be no errors here
+            // and it can be unwraped without having to handle errors
             let mnemonic = Mnemonic::from_entropy(chunk, Language::English).unwrap();
             mnemonic_phrase.push_str(mnemonic.phrase());
             mnemonic_phrase.push(' ');
