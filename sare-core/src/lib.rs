@@ -8,7 +8,7 @@ pub mod seed;
 use encryption::error::EncryptionError;
 use format::FormatError;
 use hybrid_kem::error::HybridKEMError;
-use kdf::KDFError;
+use kdf::error::KDFError;
 pub use pem;
 
 pub enum CoreErrorKind {

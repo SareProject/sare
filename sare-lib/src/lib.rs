@@ -7,7 +7,7 @@ use std::io::Error as IoError;
 
 use sare_core::{
     encryption::error::EncryptionError, format::FormatError, hybrid_kem::error::HybridKEMError,
-    kdf::KDFError, CoreErrorKind,
+    kdf::error::KDFError, CoreErrorKind,
 };
 
 pub enum SareError {

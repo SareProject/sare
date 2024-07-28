@@ -4,14 +4,9 @@ use rand::RngCore;
 use secrecy::{ExposeSecret, SecretVec};
 use serde::{Deserialize, Serialize};
 use sha2::{Sha256, Sha512};
+pub mod error;
 
-#[derive(Debug)]
-pub enum KDFError {
-    InvalidKeyLength,
-    InvalidOutputLength,
-    InvalidParams,
-    Unexpected,
-}
+use error::*;
 
 #[derive(Serialize, Deserialize)]
 pub enum HKDFAlgorithm {
@@ -59,8 +54,7 @@ impl<'a> HKDF<'a> {
         okm: &mut [u8],
     ) -> Result<(), KDFError> {
         let hkdf = Hkdf::<Sha256>::new(Some(self.salt), self.input_data.expose_secret());
-        hkdf.expand(additional_context.unwrap_or(&[0]), okm)
-            .map_err(|_| KDFError::InvalidKeyLength)?;
+        hkdf.expand(additional_context.unwrap_or(&[0]), okm)?;
 
         Ok(())
     }
@@ -71,8 +65,7 @@ impl<'a> HKDF<'a> {
         okm: &mut [u8],
     ) -> Result<(), KDFError> {
         let hkdf = Hkdf::<Sha512>::new(Some(self.salt), self.input_data.expose_secret());
-        hkdf.expand(additional_context.unwrap_or(&[0]), okm)
-            .map_err(|_| KDFError::InvalidKeyLength)?;
+        hkdf.expand(additional_context.unwrap_or(&[0]), okm)?;
 
         Ok(())
     }
