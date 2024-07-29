@@ -42,85 +42,81 @@ pub struct HeaderFormat {
 }
 
 impl HeaderFormat {
+    fn verify_magic_bytes(header: &[u8], cursor: &mut usize) -> Result<bool, FormatError> {
+        let magic_bytes = &header[*cursor..*cursor + MAGIC_BYTES.len()];
+        *cursor += MAGIC_BYTES.len();
+        Ok(magic_bytes == MAGIC_BYTES)
+    }
+
+    fn read_u64(header: &[u8], cursor: &mut usize) -> Result<u64, FormatError> {
+        let mut rdr = Cursor::new(&header[*cursor..*cursor + 8]);
+        *cursor += 8;
+        rdr.read_u64::<LittleEndian>().map_err(|_| FormatError::FailedToDecode(ErrSection::HEADER))
+    }
+
+    fn read_u32(header: &[u8], cursor: &mut usize) -> Result<u32, FormatError> {
+        let mut rdr = Cursor::new(&header[*cursor..*cursor + 4]);
+        *cursor += 4;
+        rdr.read_u32::<LittleEndian>().map_err(|_| FormatError::FailedToDecode(ErrSection::HEADER))
+    }
+
     pub fn encode(&self) -> Vec<u8> {
         let mut header: Vec<u8> = Vec::new();
         header.extend(MAGIC_BYTES);
 
         let mut header_buffer: Vec<u8> = Vec::new();
 
-        let version: [u8; 4] = self.version.to_le_bytes();
-        header_buffer.extend(version);
+        header_buffer.extend(&self.version.to_le_bytes());
 
         let metadata_bson = self.metadata.encode();
-
-        let metadata_length: [u8; 8] = metadata_bson.len().to_le_bytes();
-        header_buffer.extend(metadata_length);
+        header_buffer.extend(&(metadata_bson.len() as u64).to_le_bytes());
         header_buffer.extend(metadata_bson);
 
         if let Some(signature) = &self.signature {
-            let signature = signature.encode_bson();
-            let signature_length: [u8; 8] = signature.len().to_le_bytes();
-            header_buffer.extend(signature_length);
-            header_buffer.extend(signature);
+            let signature_bson = signature.encode_bson();
+            header_buffer.extend(&(signature_bson.len() as u64).to_le_bytes());
+            header_buffer.extend(signature_bson);
         } else {
-            let signature_length: [u8; 8] = 0_usize.to_le_bytes();
-            header_buffer.extend(signature_length)
+            header_buffer.extend(&0u64.to_le_bytes());
         }
 
-        let header_length: [u8; 8] = header_buffer.len().to_le_bytes();
-        header.extend(header_length);
+        header.extend(&(header_buffer.len() as u64).to_le_bytes());
         header.extend(header_buffer);
 
         header
     }
 
     pub fn decode(header: &[u8]) -> Result<Self, FormatError> {
-        // TODO: Needs error handling and size checking of the header
-        // TODO: Needs Optimization
-
         let mut cursor = 0;
-        let magic_bytes = &header[cursor..MAGIC_BYTES.len()];
-        cursor = MAGIC_BYTES.len();
 
-        if magic_bytes != MAGIC_BYTES {
+        if !Self::verify_magic_bytes(header, &mut cursor)? {
             return Err(FormatError::FailedToDecode(ErrSection::HEADER));
         }
 
-        let mut header_length_le = Cursor::new(&header[cursor..cursor + 8]);
-        cursor += 8;
-        let header_length = header_length_le.read_u64::<LittleEndian>().unwrap();
+        let header_length = Self::read_u64(header, &mut cursor)?;
 
-        if header.len() < header_length as usize + MAGIC_BYTES.len() + 8 {
+        if header.len() < (MAGIC_BYTES.len() + 8 + header_length as usize) {
             return Err(FormatError::FailedToDecode(ErrSection::HEADER));
         }
 
-        let mut version_le = Cursor::new(&header[cursor..cursor + 4]);
-        cursor += 4;
-        let version_number = version_le.read_u32::<LittleEndian>().unwrap();
-
-        let mut metadata_length_le = Cursor::new(&header[cursor..cursor + 8]);
-        cursor += 8;
-        let metadata_length = metadata_length_le.read_u64::<LittleEndian>().unwrap();
+        let version = Self::read_u32(header, &mut cursor)?;
+        let metadata_length = Self::read_u64(header, &mut cursor)?;
 
         let metadata_bson = &header[cursor..cursor + metadata_length as usize];
         let metadata = HeaderMetadataFormat::decode(metadata_bson)?;
-
         cursor += metadata_length as usize;
 
-        let mut signature_length_le = Cursor::new(&header[cursor..cursor + 8]);
-        cursor += 8;
-        let signature_length = signature_length_le.read_u64::<LittleEndian>().unwrap();
-
-        let mut signature: Option<SignatureFormat> = None;
-
-        if signature_length > 0 {
-            let bson_signature = &header[cursor..cursor + signature_length as usize];
-            signature = Some(SignatureFormat::decode_bson(bson_signature)?);
-            cursor += 8;
-        }
+        let signature_length = Self::read_u64(header, &mut cursor)?;
+        let signature = if signature_length > 0 {
+            let signature_bson = &header[cursor..cursor + signature_length as usize];
+            cursor += signature_length as usize;
+            Some(SignatureFormat::decode_bson(signature_bson)?)
+        } else {
+            None
+        };
 
         Ok(HeaderFormat {
-            version: version_number,
+            version,
             metadata,
             signature,
         })
