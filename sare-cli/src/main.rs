@@ -1,4 +1,5 @@
 use std::{error::Error, fs::File};
+use lib::common;
 
 use argh::FromArgs;
 
@@ -37,8 +38,7 @@ fn generate_key_pair() -> Result<(), Box<dyn Error>> {
         HybridSignAlgorithm::default(),
     );
 
-    // TODO: passphrase must not be visible when entering
-    let passphrase: SecretString = read_stdin::prompt::<SecretString>("Enter your passphrase: ")?;
+    let passphrase = common::read_cli_secret("Enter your passphrase: ")?;
 
     let mut masterkey_file = File::create("sare_masterkey.pem").unwrap();
     let mut publickey_file = File::create("sare_publickey.pem").unwrap();
