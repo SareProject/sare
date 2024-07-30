@@ -33,11 +33,19 @@ impl fmt::Display for HybridKEMError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             HybridKEMError::InvalidInput(section) => write!(f, "Invalid input in {}", section),
-            HybridKEMError::Decapsulation(section) => write!(f, "Decapsulation error in {}", section),
-            HybridKEMError::RandomBytesGeneration(section) => write!(f, "Random bytes generation error in {}", section),
+            HybridKEMError::Decapsulation(section) => {
+                write!(f, "Decapsulation error in {}", section)
+            }
+            HybridKEMError::RandomBytesGeneration(section) => {
+                write!(f, "Random bytes generation error in {}", section)
+            }
             HybridKEMError::InvalidSeed(section) => write!(f, "Invalid seed in {}", section),
-            HybridKEMError::InvalidSecretKey(section) => write!(f, "Invalid secret key in {}", section),
-            HybridKEMError::InvalidPublicKey(section) => write!(f, "Invalid public key in {}", section),
+            HybridKEMError::InvalidSecretKey(section) => {
+                write!(f, "Invalid secret key in {}", section)
+            }
+            HybridKEMError::InvalidPublicKey(section) => {
+                write!(f, "Invalid public key in {}", section)
+            }
             HybridKEMError::Unexpected => write!(f, "Unexpected error"),
         }
     }

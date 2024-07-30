@@ -27,8 +27,12 @@ pub enum HybridSignError {
 impl fmt::Display for HybridSignError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            HybridSignError::InvalidSecretKey(section) => write!(f, "Invalid secret key in {}", section),
-            HybridSignError::InvalidPublicKey(section) => write!(f, "Invalid public key in {}", section),
+            HybridSignError::InvalidSecretKey(section) => {
+                write!(f, "Invalid secret key in {}", section)
+            }
+            HybridSignError::InvalidPublicKey(section) => {
+                write!(f, "Invalid public key in {}", section)
+            }
             HybridSignError::Unexpected => write!(f, "Unexpected error"),
         }
     }

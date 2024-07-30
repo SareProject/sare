@@ -91,7 +91,8 @@ impl Encryptor {
         mut output: W,
     ) -> Result<(), EncryptionError> {
         let input_key = <[u8; 32]>::try_from(self.input_key.expose_secret().as_slice()).unwrap();
-        let nonce = <[u8; XCHACHA20POLY1305_NONCE_LENGTH]>::try_from(self.nonce.as_slice()).unwrap();
+        let nonce =
+            <[u8; XCHACHA20POLY1305_NONCE_LENGTH]>::try_from(self.nonce.as_slice()).unwrap();
 
         let aead = XChaCha20Poly1305::new(input_key.as_ref().into());
         let mut stream_aead = stream::EncryptorBE32::from_aead(aead, nonce.as_ref().into());
@@ -147,7 +148,8 @@ impl Decryptor {
         mut output: W,
     ) -> Result<(), EncryptionError> {
         let input_key = <[u8; 32]>::try_from(self.input_key.expose_secret().as_slice()).unwrap();
-        let nonce = <[u8; XCHACHA20POLY1305_NONCE_LENGTH]>::try_from(self.nonce.as_slice()).unwrap();
+        let nonce =
+            <[u8; XCHACHA20POLY1305_NONCE_LENGTH]>::try_from(self.nonce.as_slice()).unwrap();
 
         let aead = XChaCha20Poly1305::new(input_key.as_ref().into());
         let mut stream_aead = stream::DecryptorBE32::from_aead(aead, nonce.as_ref().into());

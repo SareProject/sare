@@ -48,9 +48,13 @@ impl From<KekError> for EncryptionError {
 impl fmt::Display for EncryptionError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            EncryptionError::FailedToReadOrWrite(err) => write!(f, "Failed to read or write: {}", err),
+            EncryptionError::FailedToReadOrWrite(err) => {
+                write!(f, "Failed to read or write: {}", err)
+            }
             EncryptionError::InvalidKeyLength => write!(f, "Invalid key length"),
-            EncryptionError::FailedToEncryptOrDecrypt(err) => write!(f, "Failed to encrypt or decrypt: {}", err),
+            EncryptionError::FailedToEncryptOrDecrypt(err) => {
+                write!(f, "Failed to encrypt or decrypt: {}", err)
+            }
             EncryptionError::Unexpected => write!(f, "Unexpected error"),
         }
     }

@@ -56,12 +56,7 @@ fn generate_key_pair(options: &KeyGen) -> Result<(), SareCLIError> {
                 &mut masterkey_file,
             )
         }
-        Some(_) => {
-            masterkey.export(
-                None,
-                &mut masterkey_file,
-            )
-        }
+        Some(_) => masterkey.export(None, &mut masterkey_file),
     }?;
 
     masterkey.export_public(&mut publickey_file)?;

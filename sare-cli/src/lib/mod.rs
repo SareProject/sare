@@ -4,11 +4,10 @@ use std::fmt;
 use std::io::Error as IoError;
 
 #[derive(Debug)]
-pub enum 
-    SareCLIError{
-        IoError(String),
-        Unexpected(String),
-        SareLibError(SareError)
+pub enum SareCLIError {
+    IoError(String),
+    Unexpected(String),
+    SareLibError(SareError),
 }
 impl From<String> for SareCLIError {
     fn from(err: String) -> Self {

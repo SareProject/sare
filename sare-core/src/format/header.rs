@@ -51,13 +51,15 @@ impl HeaderFormat {
     fn read_u64(header: &[u8], cursor: &mut usize) -> Result<u64, FormatError> {
         let mut rdr = Cursor::new(&header[*cursor..*cursor + 8]);
         *cursor += 8;
-        rdr.read_u64::<LittleEndian>().map_err(|_| FormatError::FailedToDecode(ErrSection::HEADER))
+        rdr.read_u64::<LittleEndian>()
+            .map_err(|_| FormatError::FailedToDecode(ErrSection::HEADER))
     }
 
     fn read_u32(header: &[u8], cursor: &mut usize) -> Result<u32, FormatError> {
         let mut rdr = Cursor::new(&header[*cursor..*cursor + 4]);
         *cursor += 4;
-        rdr.read_u32::<LittleEndian>().map_err(|_| FormatError::FailedToDecode(ErrSection::HEADER))
+        rdr.read_u32::<LittleEndian>()
+            .map_err(|_| FormatError::FailedToDecode(ErrSection::HEADER))
     }
 
     pub fn encode(&self) -> Vec<u8> {
