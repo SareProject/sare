@@ -1,3 +1,5 @@
+use std::fmt;
+
 use bson::de::Error as BsonError;
 use pem::PemError;
 use secrecy::{SecretString, SecretVec};
@@ -15,9 +17,27 @@ pub enum ErrSection {
     HEADER,
 }
 
+impl fmt::Display for ErrSection {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ErrSection::PEM(err) => write!(f, "PEM Error: {}", err),
+            ErrSection::BSON(err) => write!(f, "BSON Error: {}", err),
+            ErrSection::HEADER => write!(f, "Header Error"),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum FormatError {
     FailedToDecode(ErrSection),
+}
+
+impl fmt::Display for FormatError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            FormatError::FailedToDecode(err) => write!(f, "Failed to decode: {}", err),
+        }
+    }
 }
 
 impl From<BsonError> for FormatError {
