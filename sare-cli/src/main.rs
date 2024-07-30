@@ -1,5 +1,5 @@
+use lib::{common, SareCLIError};
 use std::{error::Error, fs::File};
-use lib::common;
 
 use argh::FromArgs;
 
@@ -28,28 +28,43 @@ enum SubCommand {
 #[derive(FromArgs)]
 /// Generates a SARE keypair
 #[argh(subcommand, name = "keygen")]
-struct KeyGen {}
+struct KeyGen {
+    /// generates key files without encryption (Not recommended)
+    #[argh(option)]
+    unencrypted_keyfiles: Option<bool>,
+}
 
 // TODO: Implement Display to SareError so it can be returned here and shown to the user
-fn generate_key_pair() -> Result<(), Box<dyn Error>> {
+fn generate_key_pair(options: &KeyGen) -> Result<(), SareCLIError> {
     // TODO: Take algorithms as input and if they're None use default
     let masterkey = MasterKey::generate(
         HybridKEMAlgorithm::default(),
         HybridSignAlgorithm::default(),
     );
 
-    let passphrase = common::read_cli_secret("Enter your passphrase: ")?;
+    let mut masterkey_file = File::create("sare_masterkey.pem")?;
+    let mut publickey_file = File::create("sare_publickey.pem")?;
 
-    let mut masterkey_file = File::create("sare_masterkey.pem").unwrap();
-    let mut publickey_file = File::create("sare_publickey.pem").unwrap();
+    match options.unencrypted_keyfiles {
+        None => {
+            let passphrase = common::read_cli_secret("Enter your passphrase: ")?;
 
-    masterkey.export(
-        Some(SecretVec::<u8>::from(
-            passphrase.expose_secret().as_bytes().to_vec(),
-        )),
-        &mut masterkey_file,
-    );
-    masterkey.export_public(&mut publickey_file);
+            masterkey.export(
+                Some(SecretVec::<u8>::from(
+                    passphrase.expose_secret().as_bytes().to_vec(),
+                )),
+                &mut masterkey_file,
+            )
+        }
+        Some(_) => {
+            masterkey.export(
+                None,
+                &mut masterkey_file,
+            )
+        }
+    }?;
+
+    masterkey.export_public(&mut publickey_file)?;
     todo!();
     //let output_file = File::create(output_path);
 }
@@ -59,8 +74,8 @@ fn main() {
     let args: SareCli = argh::from_env();
 
     match args.cmd {
-        SubCommand::KeyGen(_) => {
-            if let Err(err) = generate_key_pair() {
+        SubCommand::KeyGen(options) => {
+            if let Err(err) = generate_key_pair(&options) {
                 eprintln!("Error: {}", err);
             } else {
                 println!("Key pair generated!");
