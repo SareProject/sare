@@ -30,7 +30,7 @@ enum SubCommand {
 #[argh(subcommand, name = "keygen")]
 struct KeyGen {
     /// generates key files without encryption (Not recommended)
-    #[argh(option)]
+    #[argh(switch)]
     unencrypted_keyfiles: Option<bool>,
 }
 
