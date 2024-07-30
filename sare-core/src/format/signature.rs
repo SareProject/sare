@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::format::error::FormatError;
 use crate::format::EncodablePublic;
-use crate::format::FormatError;
 use crate::hybrid_sign::{ECAlgorithm, PQAlgorithm};
 
 const SIGNATURE_TAG: &str = "SARE MESSAGE";

@@ -8,7 +8,7 @@ pub mod seed;
 use std::fmt;
 
 use encryption::error::EncryptionError;
-use format::FormatError;
+use format::error::FormatError;
 use hybrid_kem::error::HybridKEMError;
 use kdf::error::KDFError;
 pub use pem;

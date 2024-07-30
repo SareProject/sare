@@ -7,8 +7,8 @@ use std::fmt;
 use std::io::Error as IoError;
 
 use sare_core::{
-    encryption::error::EncryptionError, format::FormatError, hybrid_kem::error::HybridKEMError,
-    kdf::error::KDFError, CoreErrorKind,
+    encryption::error::EncryptionError, format::error::FormatError,
+    hybrid_kem::error::HybridKEMError, kdf::error::KDFError, CoreErrorKind,
 };
 
 #[derive(Debug)]
