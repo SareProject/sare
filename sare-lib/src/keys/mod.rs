@@ -8,6 +8,7 @@ use sare_core::kdf::{PKDFAlgorithm, KDF, PKDF};
 pub use sare_core::seed::Seed;
 use secrecy::{ExposeSecret, SecretString, SecretVec};
 use std::io::{BufReader, Read, Write};
+use std::str::FromStr;
 
 use crate::SareError;
 
@@ -27,6 +28,18 @@ impl Default for HybridSignAlgorithm {
     }
 }
 
+impl HybridSignAlgorithm {
+    pub fn from_string(algo: String) -> Self {
+        match algo.as_str() {
+            "ED25519_DILITHIUM3" => HybridSignAlgorithm {
+                ec_algorithm: ECAlgorithm::Ed25519,
+                pq_algorithm: PQAlgorithm::Dilithium3,
+            },
+            _ => HybridSignAlgorithm::default(),
+        }
+    }
+}
+
 pub struct HybridKEMAlgorithm {
     pub dh_algorithm: DHAlgorithm,
     pub kem_algorithm: KEMAlgorithm,
@@ -40,6 +53,19 @@ impl Default for HybridKEMAlgorithm {
         }
     }
 }
+
+impl HybridKEMAlgorithm {
+    pub fn from_string(algo: String) -> Self {
+        match algo.as_str() {
+            "X25519_KYBER768" => HybridKEMAlgorithm {
+                dh_algorithm: DHAlgorithm::X25519,
+                kem_algorithm: KEMAlgorithm::Kyber768,
+            },
+            _ => HybridKEMAlgorithm::default(),
+        }
+    }
+}
+
 pub struct MasterKey {
     hybrid_kem_algorithm: HybridKEMAlgorithm,
     hybrid_sign_algorithm: HybridSignAlgorithm,

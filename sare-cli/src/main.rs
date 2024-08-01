@@ -1,7 +1,7 @@
 use lib::{common, SareCLIError};
 use std::{error::Error, fs::File};
 
-use argh::FromArgs;
+use argh::{FromArgValue, FromArgs};
 
 use sare_lib::{
     keys::{HybridKEMAlgorithm, HybridSignAlgorithm, MasterKey},
@@ -32,17 +32,33 @@ struct KeyGen {
     /// generates key files without encryption (Not recommended)
     #[argh(switch)]
     unencrypted_keyfiles: Option<bool>,
+
+    /// hybrid KEM algorithm
+    #[argh(option)]
+    hybrid_kem_algorithm: Option<String>,
+
+    /// hybrid Sign algorithm
+    #[argh(option)]
+    hybrid_sign_algorithm: Option<String>,
 }
 
-// TODO: Implement Display to SareError so it can be returned here and shown to the user
 fn generate_key_pair(options: &KeyGen) -> Result<(), SareCLIError> {
-    // TODO: Take algorithms as input and if they're None use default
     let masterkey = MasterKey::generate(
-        HybridKEMAlgorithm::default(),
-        HybridSignAlgorithm::default(),
+        HybridKEMAlgorithm::from_string(
+            options
+                .hybrid_kem_algorithm
+                .clone()
+                .unwrap_or("".to_string()),
+        ),
+        HybridSignAlgorithm::from_string(
+            options
+                .hybrid_sign_algorithm
+                .clone()
+                .unwrap_or("".to_string()),
+        ),
     );
 
-    let mut masterkey_file = File::create("sare_masterkey.pem")?;
+    let mut masterkey_file = File::create("/sare_masterkey.pem")?;
     let mut publickey_file = File::create("sare_publickey.pem")?;
 
     match options.unencrypted_keyfiles {
@@ -60,21 +76,16 @@ fn generate_key_pair(options: &KeyGen) -> Result<(), SareCLIError> {
     }?;
 
     masterkey.export_public(&mut publickey_file)?;
-    todo!();
-    //let output_file = File::create(output_path);
+
+    eprintln!("Your Keypair has been generated!");
+    Ok(())
 }
 
-fn main() {
+fn main() -> Result<(), SareCLIError> {
     // Parse command-line arguments
     let args: SareCli = argh::from_env();
 
     match args.cmd {
-        SubCommand::KeyGen(options) => {
-            if let Err(err) = generate_key_pair(&options) {
-                eprintln!("Error: {}", err);
-            } else {
-                println!("Key pair generated!");
-            }
-        }
+        SubCommand::KeyGen(options) => generate_key_pair(&options),
     }
 }
