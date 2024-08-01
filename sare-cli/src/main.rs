@@ -58,7 +58,7 @@ fn generate_key_pair(options: &KeyGen) -> Result<(), SareCLIError> {
         ),
     );
 
-    let mut masterkey_file = File::create("/sare_masterkey.pem")?;
+    let mut masterkey_file = File::create("sare_masterkey.pem")?;
     let mut publickey_file = File::create("sare_publickey.pem")?;
 
     match options.unencrypted_keyfiles {
@@ -77,6 +77,7 @@ fn generate_key_pair(options: &KeyGen) -> Result<(), SareCLIError> {
 
     masterkey.export_public(&mut publickey_file)?;
 
+    // TODO: create and return fingerprint as well
     eprintln!("Your Keypair has been generated!");
     Ok(())
 }
