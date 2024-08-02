@@ -1,5 +1,4 @@
 use std::{fs::File, path::PathBuf};
-use  std::path::Path;
 
 use argh::FromArgs;
 
@@ -61,7 +60,7 @@ impl KeyGenCommand {
         masterkey.export_public(&mut publickey_file)?;
 
         // TODO: create and return fingerprint as well
-        eprintln!("Your Keypair has been generated!");
+        log::info!("Your Keypair has been generated!");
         Ok(())
     }
 }

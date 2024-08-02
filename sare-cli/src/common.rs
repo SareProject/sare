@@ -1,4 +1,4 @@
-use std::{fs, path::{Path, PathBuf}};
+use std::{fs, path::PathBuf};
 
 use rpassword;
 use secrecy::SecretString;
@@ -15,8 +15,10 @@ pub fn read_cli_secret(prompt: impl ToString) -> Result<SecretString, String> {
 }
 
 pub fn create_directory(path: &PathBuf) -> Result<PathBuf, SareCLIError> {
+    log::debug!("Directory {} exists, Skipping!", path.to_string_lossy());
     if !path.exists() {
         fs::create_dir(path)?;
+        log::debug!("Directory {} Initialized!", path.to_string_lossy())
     }
     Ok(path.to_owned())
 }

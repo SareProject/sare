@@ -8,6 +8,8 @@ edition = "2021"
 [dependencies]
 argh = "0.1.12"
 dirs = "5.0.1"
+log = "0.4.22"
+pretty_env_logger = "0.5.0"
 read-stdin = "1.1.1"
 rpassword = "7.3.1"
 sare-lib = { path = "../sare-lib" }

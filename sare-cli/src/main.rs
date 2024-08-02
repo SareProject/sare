@@ -21,6 +21,7 @@ enum SubCommand {
 }
 
 fn main() -> Result<(), SareCLIError> {
+    pretty_env_logger::init();
     // Parse command-line arguments
     let args: SareCli = argh::from_env();
 
