@@ -1,4 +1,3 @@
-pub mod common;
 use sare_lib::SareError;
 use std::fmt;
 use std::io::Error as IoError;
