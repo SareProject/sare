@@ -1,4 +1,5 @@
-use std::fs::File;
+use std::{fs::File, path::PathBuf};
+use  std::path::Path;
 
 use argh::FromArgs;
 
@@ -6,9 +7,6 @@ use sare_lib::keys::{HybridKEMAlgorithm, HybridSignAlgorithm, MasterKey};
 use secrecy::{ExposeSecret, SecretVec};
 
 use crate::{common, SareCLIError};
-
-// TODO: Use a crate to create and check if the directory exists, this is for testing purposes only
-// const DEFAULT_KEY_PATH: &str = ".sare";
 
 #[derive(FromArgs)]
 /// Generates a SARE keypair
@@ -38,8 +36,13 @@ impl KeyGenCommand {
             ),
         );
 
-        let mut masterkey_file = File::create("sare_masterkey.pem")?;
-        let mut publickey_file = File::create("sare_publickey.pem")?;
+        let home_directory = dirs::home_dir().unwrap_or(PathBuf::new());
+
+        let sare_directory = common::create_directory(&home_directory.join(".sare"))?;
+
+        // TODO: generate fingerprint or keyid and name the file with that
+        let mut masterkey_file = File::create(sare_directory.join("sare_masterkey.pem"))?;
+        let mut publickey_file = File::create(sare_directory.join("sare_publickey.pem"))?;
 
         match self.unencrypted_keyfiles {
             None => {
