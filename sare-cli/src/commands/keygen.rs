@@ -35,13 +35,13 @@ impl KeyGenCommand {
             ),
         );
 
-        let home_directory = dirs::home_dir().unwrap_or(PathBuf::new());
+        let fullchain_fingerprint = hex::encode_upper(masterkey.get_fullchain_public_fingerprint());
 
-        let sare_directory = common::create_directory(&home_directory.join(".sare"))?;
+        let sare_directory = common::prepare_sare_directory()?;
 
         // TODO: generate fingerprint or keyid and name the file with that
-        let mut masterkey_file = File::create(sare_directory.join("sare_masterkey.pem"))?;
-        let mut publickey_file = File::create(sare_directory.join("sare_publickey.pem"))?;
+        let mut masterkey_file = File::create(sare_directory.join("private_keys/sare_masterkey.pem"))?;
+        let mut publickey_file = File::create(sare_directory.join(format!("public_keys/PUB_{fullchain_fingerprint}.pem")))?;
 
         match self.unencrypted_keyfiles {
             None => {
@@ -59,7 +59,6 @@ impl KeyGenCommand {
 
         masterkey.export_public(&mut publickey_file)?;
 
-        // TODO: create and return fingerprint as well
         log::info!("Your Keypair has been generated!");
         Ok(())
     }

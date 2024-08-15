@@ -8,7 +8,6 @@ use sare_core::kdf::{PKDFAlgorithm, KDF, PKDF};
 pub use sare_core::seed::Seed;
 use secrecy::{ExposeSecret, SecretString, SecretVec};
 use std::io::{BufReader, Read, Write};
-use std::str::FromStr;
 
 use crate::SareError;
 
@@ -253,7 +252,7 @@ impl MasterKey {
         Ok(())
     }
 
-    pub fn export_public<W: Write>(&self, mut output: W) -> Result<(), SareError> {
+    fn get_fullchain_public_key(&self) -> FullChainPublicKeyFormat{
         let signature_public_key = self.get_signing_public_key();
         let encryption_public_key = self.get_encryption_public_key();
 
@@ -262,7 +261,17 @@ impl MasterKey {
             encryption_public_key,
         };
 
+        fullchain_public_key
+    }
+
+    pub fn export_public<W: Write>(&self, mut output: W) -> Result<[u8; 32], SareError> {
+        let fullchain_public_key = self.get_fullchain_public_key();
+
         output.write_all(fullchain_public_key.encode_pem().as_bytes())?;
-        Ok(())
+        Ok(fullchain_public_key.calculate_fingerprint())
+    }
+
+    pub fn get_fullchain_public_fingerprint(&self) -> [u8; 32]{
+        self.get_fullchain_public_key().calculate_fingerprint()
     }
 }

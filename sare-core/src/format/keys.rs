@@ -15,7 +15,7 @@ const SIGNATURE_PUBLIC_KEY_PEM_TAG: &str = "SARE SIGNATURE PUBLIC KEY";
 const ENCRYPTION_PUBLIC_KEY_PEM_TAG: &str = "SARE ENCRYPTION PUBLIC KEY";
 const MASTER_KEY_PEM_TAG: &str = "SARE MASTER KEY";
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct SignaturePublicKeyFormat {
     ec_algorithm: ECAlgorithm,
     pq_algorithm: PQAlgorithm,
@@ -57,7 +57,7 @@ impl EncodablePublic for SignaturePublicKeyFormat {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct EncryptionPublicKeyFormat {
     dh_algorithm: DHAlgorithm,
     kem_algorithm: KEMAlgorithm,
@@ -99,7 +99,7 @@ impl EncodablePublic for EncryptionPublicKeyFormat {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct FullChainPublicKeyFormat {
     pub signature_public_key: SignaturePublicKeyFormat,
     pub encryption_public_key: EncryptionPublicKeyFormat,
