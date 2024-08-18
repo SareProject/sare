@@ -1,6 +1,7 @@
 use std::io::Write;
 
-use sare_core::format::{
+use sare_core::format::certificate::{self, CertificateType, RevocationCertificateFormat, RevocationReason};
+pub use sare_core::format::{
     certificate::CertificateFormat, signature::SignatureFormat, EncodablePublic,
 };
 
@@ -16,6 +17,22 @@ impl Cerificate {
         let signed_certificate = super::signing::Signing::new(masterkey).sign(&encoded_certificate);
 
         Cerificate(signed_certificate)
+    }
+
+    pub fn new_revocation_expiry(masterkey: MasterKey, expiry_timestamp: u64, issuer: String) -> Self {
+        let reason = RevocationReason::Expired;
+        let revocation = RevocationCertificateFormat {
+            revocation_date: Some(expiry_timestamp),
+            revocation_reason: reason
+        };
+
+        let certificate = CertificateFormat {
+            issuer,
+            expiry_date: None,
+            certificate_type: CertificateType::Revocation(revocation)
+        };
+
+        Self::new(masterkey, certificate)
     }
 
     fn encode_pem(&self) -> String {

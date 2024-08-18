@@ -5,7 +5,7 @@ use argh::FromArgs;
 use sare_lib::keys::{HybridKEMAlgorithm, HybridSignAlgorithm, MasterKey};
 use secrecy::{ExposeSecret, SecretVec};
 
-use crate::{common, SareCLIError};
+use crate::{commands::revocation::RevocationCommand, common, SareCLIError};
 
 #[derive(FromArgs)]
 /// Generates a SARE keypair
@@ -40,8 +40,25 @@ impl KeyGenCommand {
         let sare_directory = common::prepare_sare_directory()?;
 
         // TODO: generate fingerprint or keyid and name the file with that
-        let mut masterkey_file = File::create(sare_directory.join("private_keys/sare_masterkey.pem"))?;
-        let mut publickey_file = File::create(sare_directory.join(format!("public_keys/PUB_{fullchain_fingerprint}.pem")))?;
+        let mut masterkey_file =
+            File::create(sare_directory.join("private_keys/sare_masterkey.pem"))?;
+        let mut publickey_file = File::create(
+            sare_directory.join(format!("public_keys/PUB_{fullchain_fingerprint}.pem")),
+        )?;
+        let revocation_file =
+            File::create(sare_directory.join(format!("revocations/sare_revocation.asc")))?;
+
+        let issuer = String::from("TEST"); // TODO: It should be taken when generating keyID.
+
+        let expiry_duration = common::get_confirmed_input("Key is valid for?");
+
+        // NOTE: Really unefficient way of cloning masterkey, should be sorted out later
+        RevocationCommand::revocate_expiry(
+            masterkey.clone(),
+            expiry_duration,
+            issuer,
+            revocation_file,
+        )?;
 
         match self.unencrypted_keyfiles {
             None => {

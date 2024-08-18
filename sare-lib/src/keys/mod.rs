@@ -13,6 +13,7 @@ use crate::SareError;
 
 pub const RECOMENDED_PKDF_PARAMS: PKDFAlgorithm = PKDFAlgorithm::Scrypt(17, 8, 12);
 
+#[derive(Clone, Copy)]
 pub struct HybridSignAlgorithm {
     ec_algorithm: ECAlgorithm,
     pq_algorithm: PQAlgorithm,
@@ -39,6 +40,7 @@ impl HybridSignAlgorithm {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct HybridKEMAlgorithm {
     pub dh_algorithm: DHAlgorithm,
     pub kem_algorithm: KEMAlgorithm,
@@ -82,6 +84,14 @@ impl MasterKey {
             hybrid_kem_algorithm,
             hybrid_sign_algorithm,
             master_seed,
+        }
+    }
+
+    pub fn clone(&self) -> Self {
+        MasterKey {
+            hybrid_kem_algorithm: self.hybrid_kem_algorithm,
+            hybrid_sign_algorithm: self.hybrid_sign_algorithm,
+            master_seed: Seed::new(self.master_seed.clone_raw_seed())
         }
     }
 

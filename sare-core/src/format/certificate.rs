@@ -4,9 +4,15 @@ use serde::{Deserialize, Serialize};
 const CERTIFICATE_PEM_TAG: &str = "SARE CERTIFICATE";
 
 #[derive(Serialize, Deserialize)]
+pub enum RevocationReason {
+    Expired,
+    Compromised,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct RevocationCertificateFormat {
-    revocation_date: Option<i64>,
-    revocation_reason: String,
+    pub revocation_date: Option<u64>,
+    pub revocation_reason: RevocationReason,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -16,9 +22,9 @@ pub enum CertificateType {
 
 #[derive(Serialize, Deserialize)]
 pub struct CertificateFormat {
-    issuer: String,
-    expiry_date: Option<i64>,
-    certificate_type: CertificateType,
+    pub issuer: String,
+    pub expiry_date: Option<u64>,
+    pub certificate_type: CertificateType,
 }
 
 impl EncodablePublic for CertificateFormat {
