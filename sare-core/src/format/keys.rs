@@ -169,6 +169,17 @@ pub struct SecretKeyFormat {
     pub encryption_metadata: Option<EncryptionMetadataFormat>,
 }
 
+impl SecretKeyFormat {
+    pub fn calculate_fingerprint(master_seed: SecretVec<u8>) -> Vec<u8> {
+        let mut hasher = Sha256::new();
+        hasher.update(master_seed.expose_secret());
+
+        let fingerprint: [u8; 32] = hasher.finalize().into();
+
+        fingerprint[..=16].to_vec()
+    }
+}
+
 impl EncodableSecret for SecretKeyFormat {
     fn encode_bson(&self) -> SecretVec<u8> {
         SecretVec::from(bson::to_vec(&self).unwrap())

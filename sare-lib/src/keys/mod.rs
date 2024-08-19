@@ -284,4 +284,8 @@ impl MasterKey {
     pub fn get_fullchain_public_fingerprint(&self) -> [u8; 32]{
         self.get_fullchain_public_key().calculate_fingerprint()
     }
+
+    pub fn get_fullchain_private_fingerprint(&self) -> Vec<u8> {
+        SecretKeyFormat::calculate_fingerprint(self.master_seed.clone_raw_seed())
+    }
 }

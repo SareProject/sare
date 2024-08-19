@@ -39,16 +39,20 @@ impl KeyGenCommand {
 
         let sare_directory = common::prepare_sare_directory()?;
 
-        // TODO: generate fingerprint or keyid and name the file with that
+        let keyid = hex::encode_upper(masterkey.get_fullchain_private_fingerprint());
+        
         let mut masterkey_file =
-            File::create(sare_directory.join("private_keys/sare_masterkey.pem"))?;
+            File::create(sare_directory.join(format!("private_keys/MASTER_{keyid}.pem")))?;
         let mut publickey_file = File::create(
             sare_directory.join(format!("public_keys/PUB_{fullchain_fingerprint}.pem")),
         )?;
         let revocation_file =
-            File::create(sare_directory.join(format!("revocations/sare_revocation.asc")))?;
+            File::create(sare_directory.join(format!("revocations/REVOC_{fullchain_fingerprint}.asc")))?;
 
-        let issuer = String::from("TEST"); // TODO: It should be taken when generating keyID.
+        let issuer_name = common::get_confirmed_input("Full Name: ");
+        let issuer_email= common::get_confirmed_input("Email: ");
+
+        let issuer = format!("{issuer_name} <{issuer_email}>");
 
         let expiry_duration = common::get_confirmed_input("Key is valid for?");
 
