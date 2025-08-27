@@ -27,6 +27,15 @@ pub struct CertificateFormat {
     pub certificate_type: CertificateType,
 }
 
+impl CertificateFormat {
+    pub fn get_revocation_timestamp(&self) -> Option<u64> {
+        match &self.certificate_type {
+            CertificateType::Revocation(revocation_format) => revocation_format.revocation_date,
+            _ => None,
+        }
+    }
+}
+
 impl EncodablePublic for CertificateFormat {
     fn encode_bson(&self) -> Vec<u8> {
         bson::to_vec(&self).unwrap()
