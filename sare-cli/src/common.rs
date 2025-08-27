@@ -4,10 +4,25 @@ use std::{
     path::PathBuf,
 };
 
+use chrono::DateTime;
 use rpassword;
 use secrecy::SecretString;
 
 use crate::error::SareCLIError;
+
+pub const DEFAULT_SARE_DIRECTORY: &str = ".sare";
+pub const DB_FILE: &str = "saredb.json";
+
+pub fn format_expiry_date(expiry_timestamp: Option<u64>) -> String {
+    match expiry_timestamp {
+        Some(timestamp) => {
+            let datetime = DateTime::from_timestamp(timestamp as i64, 0)
+                .unwrap_or_else(|| DateTime::from_timestamp(0, 0).unwrap());
+            datetime.format("%Y-%m-%d").to_string()
+        }
+        None => "Never".to_string(),
+    }
+}
 
 // TODO: Return SareCLIError Instead Of String
 pub fn read_cli_secret(prompt: impl ToString) -> Result<SecretString, String> {
@@ -29,7 +44,7 @@ pub fn create_directory(path: &PathBuf) -> Result<PathBuf, SareCLIError> {
 
 pub fn prepare_sare_directory() -> Result<PathBuf, SareCLIError> {
     let home_directory = dirs::home_dir().unwrap_or(PathBuf::new());
-    let sare_directory = create_directory(&home_directory.join(".sare"))?;
+    let sare_directory = create_directory(&home_directory.join(DEFAULT_SARE_DIRECTORY))?;
 
     create_directory(&sare_directory.join("private_keys"))?;
     create_directory(&sare_directory.join("public_keys"))?;
