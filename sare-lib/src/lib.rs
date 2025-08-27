@@ -5,10 +5,10 @@ pub mod signing;
 
 use std::fmt;
 use std::io::Error as IoError;
+pub use sare_core::format::certificate::CertificateFormat;
 
 use sare_core::{
-    encryption::error::EncryptionError, format::error::FormatError,
-    hybrid_kem::error::HybridKEMError, kdf::error::KDFError, CoreErrorKind,
+    encryption::error::EncryptionError, format::error::FormatError, hybrid_kem::error::HybridKEMError, hybrid_sign::error::HybridSignError, kdf::error::KDFError, CoreErrorKind
 };
 
 #[derive(Debug)]
@@ -44,6 +44,12 @@ impl From<KDFError> for SareError {
 impl From<HybridKEMError> for SareError {
     fn from(err: HybridKEMError) -> Self {
         SareError::CoreError(CoreErrorKind::HybridKEM(err))
+    }
+}
+
+impl From<HybridSignError> for SareError {
+    fn from(err: HybridSignError) -> Self {
+        SareError::CoreError(CoreErrorKind::HybridSign(err))
     }
 }
 
