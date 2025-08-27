@@ -1,4 +1,5 @@
 use sare_lib::SareError;
+use serde_json::Error as JsonError;
 use std::fmt;
 use std::io::Error as IoError;
 
@@ -7,6 +8,7 @@ pub enum SareCLIError {
     IoError(String),
     Unexpected(String),
     SareLibError(SareError),
+    JsonError(String),
 }
 impl From<String> for SareCLIError {
     fn from(err: String) -> Self {
@@ -26,12 +28,19 @@ impl From<SareError> for SareCLIError {
     }
 }
 
+impl From<JsonError> for SareCLIError {
+    fn from(err: JsonError) -> Self {
+        SareCLIError::JsonError(err.to_string())
+    }
+}
+
 impl fmt::Display for SareCLIError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             SareCLIError::IoError(err) => write!(f, "IO Error: {}", err),
             SareCLIError::Unexpected(err) => write!(f, "Unexpected Error: {}", err),
             SareCLIError::SareLibError(err) => write!(f, "SareLib Error: {}", err),
+            SareCLIError::JsonError(err) => write!(f, "Json Error: {}", err),
         }
     }
 }
