@@ -1,13 +1,15 @@
-use std::io::Write;
+use std::{io::{Read, Write}};
 
-use sare_core::format::certificate::{self, CertificateType, RevocationCertificateFormat, RevocationReason};
+use sare_core::format::{certificate::{
+    self, CertificateType, RevocationCertificateFormat, RevocationReason,
+}, signature};
 pub use sare_core::format::{
     certificate::CertificateFormat, signature::SignatureFormat, EncodablePublic,
 };
 
 const CERTIFICATE_PEM_TAG: &str = "SARE CERTIFICATE";
 
-use crate::{keys::MasterKey, SareError};
+use crate::{keys::MasterKey, signing, SareError};
 
 pub struct Cerificate(SignatureFormat);
 
@@ -19,17 +21,21 @@ impl Cerificate {
         Cerificate(signed_certificate)
     }
 
-    pub fn new_revocation_expiry(masterkey: MasterKey, expiry_timestamp: u64, issuer: String) -> Self {
+    pub fn new_revocation_expiry(
+        masterkey: MasterKey,
+        expiry_timestamp: u64,
+        issuer: String,
+    ) -> Self {
         let reason = RevocationReason::Expired;
         let revocation = RevocationCertificateFormat {
             revocation_date: Some(expiry_timestamp),
-            revocation_reason: reason
+            revocation_reason: reason,
         };
 
         let certificate = CertificateFormat {
             issuer,
             expiry_date: None,
-            certificate_type: CertificateType::Revocation(revocation)
+            certificate_type: CertificateType::Revocation(revocation),
         };
 
         Self::new(masterkey, certificate)
@@ -45,5 +51,23 @@ impl Cerificate {
 
         output.write_all(pem_encoded_certificate.as_bytes())?;
         Ok(())
+    }
+
+    pub fn import<R: Read>(mut input: R) -> Result<(CertificateFormat, SignatureFormat, bool), SareError> {
+        let mut pem_string = String::new();
+        input.read_to_string(&mut pem_string)?;
+
+        let pem = sare_core::pem::parse(pem_string).map_err(|e| SareError::IoError(e.to_string()))?;
+
+        let bson_data = pem.contents();
+        let signature = SignatureFormat::decode_bson(bson_data)?;
+
+        let signature_message = &signature.message;
+
+        let certificate = CertificateFormat::decode_bson(&signature_message)?;
+
+        let verified = super::signing::Signing::verify(&signature)?;
+
+        Ok((certificate, signature, verified))
     }
 }
