@@ -1,6 +1,6 @@
 pub mod error;
 
-use crate::hybrid_sign::error::*;
+use crate::{format::signature, hybrid_sign::error::*};
 use crate::seed::Seed;
 use crystals_dilithium as dilithium;
 use ed25519_compact as ed25519;
@@ -91,13 +91,11 @@ impl<'a> ECSignature<'a> {
     }
 
     pub fn verify(
-        &self,
+        signature_algorithm: &ECAlgorithm,
         public_key: &[u8],
         message: &[u8],
         signature: &[u8],
     ) -> Result<bool, HybridSignError> {
-        let signature_algorithm = &self.keypair.algorithm;
-
         match signature_algorithm {
             ECAlgorithm::Ed25519 => {
                 let public_key = ed25519::PublicKey::from_slice(public_key)?;
@@ -174,13 +172,11 @@ impl<'a> PQSignature<'a> {
     }
 
     pub fn verify(
-        &self,
+        signature_algorithm: &PQAlgorithm,
         public_key: &[u8],
         message: &[u8],
         signature: &[u8],
     ) -> Result<bool, HybridSignError> {
-        let signature_algorithm = &self.keypair.algorithm;
-
         match signature_algorithm {
             PQAlgorithm::Dilithium3 => {
                 let public_key = dilithium::dilithium3::PublicKey::from_bytes(public_key);
@@ -254,10 +250,8 @@ mod tests {
         )
         .unwrap();
 
-        let signature = ECSignature::new(&keypair);
-
-        assert!(signature
-            .verify(
+        assert!(ECSignature::verify(
+                &ECAlgorithm::Ed25519,
                 &BASE64_STANDARD.decode(ED25519_PUBLIC_KEY).unwrap(),
                 b"SARE",
                 &BASE64_STANDARD.decode(ED25519_SIGNATURE).unwrap()
