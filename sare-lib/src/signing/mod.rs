@@ -3,7 +3,7 @@ use sare_core::{
     hybrid_sign::{ECSignature, PQSignature},
 };
 
-use crate::keys::MasterKey;
+use crate::{keys::MasterKey, SareError};
 
 pub struct Signing(MasterKey);
 
@@ -41,4 +41,28 @@ impl Signing {
             pq_signature,
         }
     }
+
+    pub fn verify(signature: &SignatureFormat) -> Result<bool, SareError> {
+
+        let ec_algorithm = signature.signature_metadata.as_ref().unwrap().ec_algorithm;
+        let pq_algorithm = signature.signature_metadata.as_ref().unwrap().pq_algorithm;
+
+
+        let ec_valid = ECSignature::verify(
+            &ec_algorithm,
+            &signature.ec_public_key,
+            &signature.message,
+            &signature.ec_signature
+        )?;
+
+        let pq_valid = PQSignature::verify(
+            &pq_algorithm,
+            &signature.pq_public_key,
+            &signature.message,
+            &signature.pq_signature
+        )?;
+
+        Ok(ec_valid && pq_valid)
+    }
+
 }
