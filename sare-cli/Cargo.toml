@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 argh = "0.1.12"
+chrono = "0.4.41"
 dirs = "5.0.1"
 duration-str = "0.11.2"
 hex = "0.4.3"
@@ -16,3 +17,5 @@ read-stdin = "1.1.1"
 rpassword = "7.3.1"
 sare-lib = { path = "../sare-lib" }
 secrecy = "0.8.0"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.143"
