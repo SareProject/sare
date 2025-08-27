@@ -1,11 +1,16 @@
-use std::{fs::File, path::PathBuf};
+use std::fs::File;
 
 use argh::FromArgs;
 
 use sare_lib::keys::{HybridKEMAlgorithm, HybridSignAlgorithm, MasterKey};
 use secrecy::{ExposeSecret, SecretVec};
 
-use crate::{commands::revocation::RevocationCommand, common, SareCLIError};
+use crate::{
+    commands::revocation::RevocationCommand,
+    common,
+    db::{self, SareDB},
+    SareCLIError,
+};
 
 #[derive(FromArgs)]
 /// Generates a SARE keypair
@@ -40,17 +45,18 @@ impl KeyGenCommand {
         let sare_directory = common::prepare_sare_directory()?;
 
         let keyid = hex::encode_upper(masterkey.get_fullchain_private_fingerprint());
-        
+
         let mut masterkey_file =
             File::create(sare_directory.join(format!("private_keys/MASTER_{keyid}.pem")))?;
         let mut publickey_file = File::create(
             sare_directory.join(format!("public_keys/PUB_{fullchain_fingerprint}.pem")),
         )?;
-        let revocation_file =
-            File::create(sare_directory.join(format!("revocations/REVOC_{fullchain_fingerprint}.asc")))?;
+        let revocation_file = File::create(
+            sare_directory.join(format!("revocations/REVOC_{fullchain_fingerprint}.asc")),
+        )?;
 
         let issuer_name = common::get_confirmed_input("Full Name: ");
-        let issuer_email= common::get_confirmed_input("Email: ");
+        let issuer_email = common::get_confirmed_input("Email: ");
 
         let issuer = format!("{issuer_name} <{issuer_email}>");
 
@@ -63,6 +69,12 @@ impl KeyGenCommand {
             issuer,
             revocation_file,
         )?;
+
+        let associated_key =
+            db::SareDBAssociatedKey::new(&fullchain_fingerprint, &fullchain_fingerprint);
+        let sare_db = SareDB::new(&keyid, associated_key);
+
+        sare_db.insert_to_json_file()?;
 
         match self.unencrypted_keyfiles {
             None => {
