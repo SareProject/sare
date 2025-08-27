@@ -91,7 +91,7 @@ impl MasterKey {
         MasterKey {
             hybrid_kem_algorithm: self.hybrid_kem_algorithm,
             hybrid_sign_algorithm: self.hybrid_sign_algorithm,
-            master_seed: Seed::new(self.master_seed.clone_raw_seed())
+            master_seed: Seed::new(self.master_seed.clone_raw_seed()),
         }
     }
 
@@ -262,7 +262,7 @@ impl MasterKey {
         Ok(())
     }
 
-    fn get_fullchain_public_key(&self) -> FullChainPublicKeyFormat{
+    fn get_fullchain_public_key(&self) -> FullChainPublicKeyFormat {
         let signature_public_key = self.get_signing_public_key();
         let encryption_public_key = self.get_encryption_public_key();
 
@@ -281,7 +281,7 @@ impl MasterKey {
         Ok(fullchain_public_key.calculate_fingerprint())
     }
 
-    pub fn get_fullchain_public_fingerprint(&self) -> [u8; 32]{
+    pub fn get_fullchain_public_fingerprint(&self) -> [u8; 32] {
         self.get_fullchain_public_key().calculate_fingerprint()
     }
 
