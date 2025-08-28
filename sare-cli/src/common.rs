@@ -55,7 +55,9 @@ pub fn prepare_sare_directory() -> Result<PathBuf, SareCLIError> {
 
 pub fn get_confirmed_input(prompt: &str) -> String {
     loop {
-        println!("{}", prompt);
+        print!("{}", prompt);
+        io::stdout().flush().unwrap();
+        
         let mut input = String::new();
         match io::stdin().read_line(&mut input) {
             Ok(_) => {
