@@ -1,7 +1,8 @@
-use std::fs::File;
+use std::{fs::{self, File}, io::Cursor, time::Duration};
 
 use argh::FromArgs;
 
+use indicatif::ProgressBar;
 use sare_lib::keys::{HybridKEMAlgorithm, HybridSignAlgorithm, MasterKey};
 use secrecy::{ExposeSecret, SecretVec};
 
@@ -41,58 +42,79 @@ impl KeyGenCommand {
         );
 
         let fullchain_fingerprint = hex::encode_upper(masterkey.get_fullchain_public_fingerprint());
-
-        let sare_directory = common::prepare_sare_directory()?;
-
         let keyid = hex::encode_upper(masterkey.get_fullchain_private_fingerprint());
-
-        let mut masterkey_file =
-            File::create(sare_directory.join(format!("private_keys/MASTER_{keyid}.pem")))?;
-        let mut publickey_file = File::create(
-            sare_directory.join(format!("public_keys/PUB_{fullchain_fingerprint}.pem")),
-        )?;
-        let revocation_file = File::create(
-            sare_directory.join(format!("revocations/REVOC_{fullchain_fingerprint}.asc")),
-        )?;
 
         let issuer_name = common::get_confirmed_input("Full Name: ");
         let issuer_email = common::get_confirmed_input("Email: ");
-
         let issuer = format!("{issuer_name} <{issuer_email}>");
+        let expiry_duration = common::get_confirmed_input("Key is valid for? ");
 
-        let expiry_duration = common::get_confirmed_input("Key is valid for?");
+        let sare_directory = common::prepare_sare_directory()?;
 
-        // NOTE: Really unefficient way of cloning masterkey, should be sorted out later
+        // Creating temp directories
+        let temp_dir = sare_directory.join(".temp");
+        fs::create_dir_all(&temp_dir.join("private_keys"))?;
+        fs::create_dir_all(&temp_dir.join("public_keys"))?;
+        fs::create_dir_all(&temp_dir.join("revocations"))?;
+
+        // Export master key to memory
+        let mut master_buffer = Cursor::new(Vec::new());
+        if self.unencrypted_keyfiles.unwrap_or(false) {
+            masterkey.export(None, &mut master_buffer)?;
+        } else {
+            let passphrase = common::read_cli_secret("Enter your passphrase: ")?;
+
+            let progress_bar = ProgressBar::new_spinner();
+            progress_bar.set_message("Encrypting Masterkey...");
+            progress_bar.enable_steady_tick(Duration::from_millis(100));
+
+            masterkey.export(
+                Some(SecretVec::<u8>::from(passphrase.expose_secret().as_bytes().to_vec())),
+                &mut master_buffer,
+            )?;
+
+            progress_bar.finish_with_message("Masterkey encrypted!");
+        }
+
+        // Export public key
+        let mut public_buffer = Cursor::new(Vec::new());
+        masterkey.export_public(&mut public_buffer)?;
+
+        // Export revocation file
+        let revocation_path_temp = temp_dir.join("revocations").join(format!("REVOC_{fullchain_fingerprint}.asc"));
+        let revocation_file_temp = fs::File::create(&revocation_path_temp)?;
         RevocationCommand::revocate_expiry(
             masterkey.clone(),
             expiry_duration,
             issuer,
-            revocation_file,
+            revocation_file_temp,
         )?;
 
-        let associated_key =
-            db::SareDBAssociatedKey::new(&fullchain_fingerprint, &fullchain_fingerprint);
-        let sare_db = SareDB::new(&keyid, associated_key);
+        // write files to temp dir
+        let master_path_temp = temp_dir.join("private_keys").join(format!("MASTER_{keyid}.pem"));
+        fs::write(&master_path_temp, master_buffer.into_inner())?;
 
+        let public_path_temp = temp_dir.join("public_keys").join(format!("PUB_{fullchain_fingerprint}.pem"));
+        fs::write(&public_path_temp, public_buffer.into_inner())?;
+
+        // Move files to actual directories since everything went ok
+        let master_final = sare_directory.join("private_keys").join(format!("MASTER_{keyid}.pem"));
+        let public_final = sare_directory.join("public_keys").join(format!("PUB_{fullchain_fingerprint}.pem"));
+        let revocation_final = sare_directory.join("revocations").join(format!("REVOC_{fullchain_fingerprint}.asc"));
+
+        fs::rename(master_path_temp, master_final)?;
+        fs::rename(public_path_temp, public_final)?;
+        fs::rename(revocation_path_temp, revocation_final)?;
+
+        // Insert to DB
+        let associated_key = db::SareDBAssociatedKey::new(&fullchain_fingerprint, &fullchain_fingerprint);
+        let sare_db = SareDB::new(&keyid, associated_key);
         sare_db.insert_to_json_file()?;
 
-        match self.unencrypted_keyfiles {
-            None => {
-                let passphrase = common::read_cli_secret("Enter your passphrase: ")?;
+        println!("\nYour Keypair has been generated!
+        \n\tLOCATION: {:?},
+        \n\tPUB: {}\n\tMASTER: {}", sare_directory, fullchain_fingerprint, keyid);
 
-                masterkey.export(
-                    Some(SecretVec::<u8>::from(
-                        passphrase.expose_secret().as_bytes().to_vec(),
-                    )),
-                    &mut masterkey_file,
-                )
-            }
-            Some(_) => masterkey.export(None, &mut masterkey_file),
-        }?;
-
-        masterkey.export_public(&mut publickey_file)?;
-
-        log::info!("Your Keypair has been generated!");
         Ok(())
     }
 }
