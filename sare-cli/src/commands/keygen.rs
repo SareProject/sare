@@ -1,4 +1,8 @@
-use std::{fs::{self, File}, io::Cursor, time::Duration};
+use std::{
+    fs::{self, File},
+    io::Cursor,
+    time::Duration,
+};
 
 use argh::FromArgs;
 
@@ -69,7 +73,9 @@ impl KeyGenCommand {
             progress_bar.enable_steady_tick(Duration::from_millis(100));
 
             masterkey.export(
-                Some(SecretVec::<u8>::from(passphrase.expose_secret().as_bytes().to_vec())),
+                Some(SecretVec::<u8>::from(
+                    passphrase.expose_secret().as_bytes().to_vec(),
+                )),
                 &mut master_buffer,
             )?;
 
@@ -81,7 +87,9 @@ impl KeyGenCommand {
         masterkey.export_public(&mut public_buffer)?;
 
         // Export revocation file
-        let revocation_path_temp = temp_dir.join("revocations").join(format!("REVOC_{fullchain_fingerprint}.asc"));
+        let revocation_path_temp = temp_dir
+            .join("revocations")
+            .join(format!("REVOC_{fullchain_fingerprint}.asc"));
         let revocation_file_temp = fs::File::create(&revocation_path_temp)?;
         RevocationCommand::revocate_expiry(
             masterkey.clone(),
@@ -91,29 +99,43 @@ impl KeyGenCommand {
         )?;
 
         // write files to temp dir
-        let master_path_temp = temp_dir.join("private_keys").join(format!("MASTER_{keyid}.pem"));
+        let master_path_temp = temp_dir
+            .join("private_keys")
+            .join(format!("MASTER_{keyid}.pem"));
         fs::write(&master_path_temp, master_buffer.into_inner())?;
 
-        let public_path_temp = temp_dir.join("public_keys").join(format!("PUB_{fullchain_fingerprint}.pem"));
+        let public_path_temp = temp_dir
+            .join("public_keys")
+            .join(format!("PUB_{fullchain_fingerprint}.pem"));
         fs::write(&public_path_temp, public_buffer.into_inner())?;
 
         // Move files to actual directories since everything went ok
-        let master_final = sare_directory.join("private_keys").join(format!("MASTER_{keyid}.pem"));
-        let public_final = sare_directory.join("public_keys").join(format!("PUB_{fullchain_fingerprint}.pem"));
-        let revocation_final = sare_directory.join("revocations").join(format!("REVOC_{fullchain_fingerprint}.asc"));
+        let master_final = sare_directory
+            .join("private_keys")
+            .join(format!("MASTER_{keyid}.pem"));
+        let public_final = sare_directory
+            .join("public_keys")
+            .join(format!("PUB_{fullchain_fingerprint}.pem"));
+        let revocation_final = sare_directory
+            .join("revocations")
+            .join(format!("REVOC_{fullchain_fingerprint}.asc"));
 
         fs::rename(master_path_temp, master_final)?;
         fs::rename(public_path_temp, public_final)?;
         fs::rename(revocation_path_temp, revocation_final)?;
 
         // Insert to DB
-        let associated_key = db::SareDBAssociatedKey::new(&fullchain_fingerprint, &fullchain_fingerprint);
+        let associated_key =
+            db::SareDBAssociatedKey::new(&fullchain_fingerprint, &fullchain_fingerprint);
         let sare_db = SareDB::new(&keyid, associated_key);
         sare_db.insert_to_json_file()?;
 
-        println!("\nYour Keypair has been generated!
+        println!(
+            "\nYour Keypair has been generated!
         \n\tLOCATION: {:?},
-        \n\tPUB: {}\n\tMASTER: {}", sare_directory, fullchain_fingerprint, keyid);
+        \n\tPUB: {}\n\tMASTER: {}",
+            sare_directory, fullchain_fingerprint, keyid
+        );
 
         Ok(())
     }

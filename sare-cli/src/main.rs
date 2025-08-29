@@ -5,7 +5,9 @@ pub mod common;
 pub mod db;
 pub mod error;
 
-use crate::commands::{keygen::KeyGenCommand, listkeys::ListKeysCommand};
+use crate::commands::{
+    keygen::KeyGenCommand, listkeys::ListKeysCommand, recipient::RecipientCommand,
+};
 use error::SareCLIError;
 
 #[derive(FromArgs)]
@@ -20,6 +22,7 @@ struct SareCli {
 enum SubCommand {
     KeyGen(KeyGenCommand),
     ListKeys(ListKeysCommand),
+    Recipient(RecipientCommand),
 }
 
 fn main() -> Result<(), SareCLIError> {
@@ -30,5 +33,6 @@ fn main() -> Result<(), SareCLIError> {
     match args.cmd {
         SubCommand::KeyGen(keygen_command) => keygen_command.execute(),
         SubCommand::ListKeys(listkeys_command) => listkeys_command.execute(),
+        SubCommand::Recipient(recipient_command) => recipient_command.execute(),
     }
 }

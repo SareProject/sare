@@ -3,18 +3,21 @@ pub mod encryption;
 pub mod keys;
 pub mod signing;
 
-use std::fmt;
-use std::io::Error as IoError;
 pub use sare_core::format::certificate::CertificateFormat;
+use std::fmt::{self, Display};
+use std::io::Error as IoError;
 
 use sare_core::{
-    encryption::error::EncryptionError, format::error::FormatError, hybrid_kem::error::HybridKEMError, hybrid_sign::error::HybridSignError, kdf::error::KDFError, CoreErrorKind
+    encryption::error::EncryptionError, format::error::FormatError,
+    hybrid_kem::error::HybridKEMError, hybrid_sign::error::HybridSignError, kdf::error::KDFError,
+    CoreErrorKind,
 };
 
 #[derive(Debug)]
 pub enum SareError {
     IoError(String),
     CoreError(CoreErrorKind),
+    Unexpected(String),
 }
 
 impl From<IoError> for SareError {
@@ -58,6 +61,7 @@ impl fmt::Display for SareError {
         match self {
             SareError::IoError(err) => write!(f, "IO Error: {}", err),
             SareError::CoreError(err) => write!(f, "Core Error: {}", err),
+            SareError::Unexpected(err) => write!(f, "Unexpected Error: {}", err),
         }
     }
 }

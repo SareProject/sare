@@ -43,26 +43,23 @@ impl Signing {
     }
 
     pub fn verify(signature: &SignatureFormat) -> Result<bool, SareError> {
-
         let ec_algorithm = signature.signature_metadata.as_ref().unwrap().ec_algorithm;
         let pq_algorithm = signature.signature_metadata.as_ref().unwrap().pq_algorithm;
-
 
         let ec_valid = ECSignature::verify(
             &ec_algorithm,
             &signature.ec_public_key,
             &signature.message,
-            &signature.ec_signature
+            &signature.ec_signature,
         )?;
 
         let pq_valid = PQSignature::verify(
             &pq_algorithm,
             &signature.pq_public_key,
             &signature.message,
-            &signature.pq_signature
+            &signature.pq_signature,
         )?;
 
         Ok(ec_valid && pq_valid)
     }
-
 }

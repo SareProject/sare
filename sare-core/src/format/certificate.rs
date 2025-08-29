@@ -1,7 +1,12 @@
+use std::ops::Deref;
+
+use crate::format::{keys::FullChainPublicKeyFormat, signature::SignatureFormat};
+
 use super::{EncodablePublic, FormatError};
 use serde::{Deserialize, Serialize};
 
-const CERTIFICATE_PEM_TAG: &str = "SARE CERTIFICATE";
+pub const CERTIFICATE_PEM_TAG: &str = "SARE CERTIFICATE";
+pub const REVOCATION_PEM_TAG: &str = "SARE REVOCATION CERTIFICATE";
 
 #[derive(Serialize, Deserialize)]
 pub enum RevocationReason {
@@ -13,11 +18,13 @@ pub enum RevocationReason {
 pub struct RevocationCertificateFormat {
     pub revocation_date: Option<u64>,
     pub revocation_reason: RevocationReason,
+    pub fullchain_public_key_fingerprint: [u8; 32],
 }
 
 #[derive(Serialize, Deserialize)]
 pub enum CertificateType {
     Revocation(RevocationCertificateFormat),
+    Certificate(SignatureFormat),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -28,9 +35,9 @@ pub struct CertificateFormat {
 }
 
 impl CertificateFormat {
-    pub fn get_revocation_timestamp(&self) -> Option<u64> {
+    pub fn get_revocation_data(&self) -> Option<&RevocationCertificateFormat> {
         match &self.certificate_type {
-            CertificateType::Revocation(revocation_format) => revocation_format.revocation_date,
+            CertificateType::Revocation(revocation_format) => Some(revocation_format),
             _ => None,
         }
     }
@@ -47,7 +54,12 @@ impl EncodablePublic for CertificateFormat {
     }
 
     fn encode_pem(&self) -> String {
-        let pem = pem::Pem::new(CERTIFICATE_PEM_TAG, self.encode_bson().as_slice());
+        let tag = match self.certificate_type {
+            CertificateType::Revocation(_) => REVOCATION_PEM_TAG,
+            _ => CERTIFICATE_PEM_TAG,
+        };
+
+        let pem = pem::Pem::new(tag, self.encode_bson().as_slice());
         pem::encode(&pem)
     }
 

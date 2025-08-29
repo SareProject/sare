@@ -1,24 +1,31 @@
-use std::{io::{Read, Write}};
+use std::io::{Read, Write};
 
-use sare_core::format::{certificate::{
-    self, CertificateType, RevocationCertificateFormat, RevocationReason,
-}, signature};
 pub use sare_core::format::{
     certificate::CertificateFormat, signature::SignatureFormat, EncodablePublic,
+};
+use sare_core::format::{
+    certificate::{self, CertificateType, RevocationCertificateFormat, RevocationReason},
+    signature,
 };
 
 const CERTIFICATE_PEM_TAG: &str = "SARE CERTIFICATE";
 
 use crate::{keys::MasterKey, signing, SareError};
 
-pub struct Cerificate(SignatureFormat);
+pub struct Certificate {
+    pub certificate: CertificateFormat,
+    pub signature: SignatureFormat,
+}
 
-impl Cerificate {
+impl Certificate {
     pub fn new(masterkey: MasterKey, certificate: CertificateFormat) -> Self {
         let encoded_certificate = certificate.encode_bson();
         let signed_certificate = super::signing::Signing::new(masterkey).sign(&encoded_certificate);
 
-        Cerificate(signed_certificate)
+        Certificate {
+            certificate,
+            signature: signed_certificate,
+        }
     }
 
     pub fn new_revocation_expiry(
@@ -30,6 +37,7 @@ impl Cerificate {
         let revocation = RevocationCertificateFormat {
             revocation_date: Some(expiry_timestamp),
             revocation_reason: reason,
+            fullchain_public_key_fingerprint: masterkey.get_fullchain_public_fingerprint(),
         };
 
         let certificate = CertificateFormat {
@@ -42,7 +50,8 @@ impl Cerificate {
     }
 
     fn encode_pem(&self) -> String {
-        let pem = sare_core::pem::Pem::new(CERTIFICATE_PEM_TAG, self.0.encode_bson().as_slice());
+        let pem =
+            sare_core::pem::Pem::new(CERTIFICATE_PEM_TAG, self.signature.encode_bson().as_slice());
         sare_core::pem::encode(&pem)
     }
 
@@ -53,21 +62,32 @@ impl Cerificate {
         Ok(())
     }
 
-    pub fn import<R: Read>(mut input: R) -> Result<(CertificateFormat, SignatureFormat, bool), SareError> {
-        let mut pem_string = String::new();
-        input.read_to_string(&mut pem_string)?;
-
-        let pem = sare_core::pem::parse(pem_string).map_err(|e| SareError::IoError(e.to_string()))?;
-
-        let bson_data = pem.contents();
+    pub fn decode_bson(bson_data: &[u8]) -> Result<Self, SareError> {
         let signature = SignatureFormat::decode_bson(bson_data)?;
 
         let signature_message = &signature.message;
 
         let certificate = CertificateFormat::decode_bson(&signature_message)?;
 
-        let verified = super::signing::Signing::verify(&signature)?;
+        Ok(Certificate {
+            certificate,
+            signature,
+        })
+    }
 
-        Ok((certificate, signature, verified))
+    pub fn verify(&self) -> Result<bool, SareError> {
+        super::signing::Signing::verify(&self.signature)
+    }
+
+    pub fn import<R: Read>(mut input: R) -> Result<Self, SareError> {
+        let mut pem_string = String::new();
+        input.read_to_string(&mut pem_string)?;
+
+        let pem =
+            sare_core::pem::parse(pem_string).map_err(|e| SareError::IoError(e.to_string()))?;
+
+        let bson_data = pem.contents();
+
+        Self::decode_bson(bson_data)
     }
 }

@@ -1,7 +1,7 @@
 pub mod error;
 
-use crate::{format::signature, hybrid_sign::error::*};
 use crate::seed::Seed;
+use crate::{format::signature, hybrid_sign::error::*};
 use crystals_dilithium as dilithium;
 use ed25519_compact as ed25519;
 use secrecy::{ExposeSecret, SecretVec};
@@ -251,11 +251,11 @@ mod tests {
         .unwrap();
 
         assert!(ECSignature::verify(
-                &ECAlgorithm::Ed25519,
-                &BASE64_STANDARD.decode(ED25519_PUBLIC_KEY).unwrap(),
-                b"SARE",
-                &BASE64_STANDARD.decode(ED25519_SIGNATURE).unwrap()
-            )
-            .unwrap());
+            &ECAlgorithm::Ed25519,
+            &BASE64_STANDARD.decode(ED25519_PUBLIC_KEY).unwrap(),
+            b"SARE",
+            &BASE64_STANDARD.decode(ED25519_SIGNATURE).unwrap()
+        )
+        .unwrap());
     }
 }

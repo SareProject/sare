@@ -1,10 +1,14 @@
+use super::certificate::Certificate;
 pub use sare_core::encryption::{EncryptionAlgorithm, KeyWrap};
+use sare_core::format::certificate::CertificateFormat;
 pub use sare_core::format::encryption::*;
 pub use sare_core::format::keys::*;
+use sare_core::format::signature::SignatureFormat;
 pub use sare_core::format::{EncodablePublic, EncodableSecret};
 pub use sare_core::hybrid_kem::{DHAlgorithm, DHKeyPair, KEMAlgorithm, KEMKeyPair};
 pub use sare_core::hybrid_sign::{ECAlgorithm, ECKeyPair, PQAlgorithm, PQKeyPair};
 use sare_core::kdf::{PKDFAlgorithm, KDF, PKDF};
+use sare_core::pem;
 pub use sare_core::seed::Seed;
 use secrecy::{ExposeSecret, SecretString, SecretVec};
 use std::io::{BufReader, Read, Write};
@@ -287,5 +291,43 @@ impl MasterKey {
 
     pub fn get_fullchain_private_fingerprint(&self) -> Vec<u8> {
         SecretKeyFormat::calculate_fingerprint(self.master_seed.clone_raw_seed())
+    }
+}
+
+pub struct RecipientPublicKey {
+    pub fullchain_public_key: FullChainPublicKeyFormat,
+    pub revocation_certificate: Option<Certificate>,
+}
+
+impl RecipientPublicKey {
+    pub fn from_pem(pem_data: String) -> Result<Self, SareError> {
+        // Parse all PEM blocks at once
+        let all_pems =
+            pem::parse_many(&pem_data).map_err(|e| SareError::Unexpected(e.to_string()))?;
+
+        let mut fullchain_public_key: Option<FullChainPublicKeyFormat> = None;
+        let mut revocation_certificate: Option<Certificate> = None;
+
+        for block in all_pems {
+            match block.tag() {
+                sare_core::format::keys::FULLCHAIN_PUBLIC_KEY_PEM_TAG => {
+                    fullchain_public_key =
+                        Some(FullChainPublicKeyFormat::decode_bson(&block.contents())?);
+                }
+                sare_core::format::certificate::CERTIFICATE_PEM_TAG => {
+                    revocation_certificate = Some(Certificate::decode_bson(&block.contents())?)
+                }
+                _ => {}
+            }
+        }
+
+        let fullchain_public_key = fullchain_public_key.ok_or(SareError::Unexpected(
+            "Recipient's PublicKey is Missing".to_string(),
+        ))?;
+
+        Ok(RecipientPublicKey {
+            fullchain_public_key,
+            revocation_certificate: revocation_certificate,
+        })
     }
 }

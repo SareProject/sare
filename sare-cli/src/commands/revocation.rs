@@ -7,7 +7,7 @@ use std::{
 };
 
 use argh::FromArgs;
-use sare_lib::{certificate::Cerificate, keys::MasterKey};
+use sare_lib::{certificate::Certificate, keys::MasterKey};
 
 use crate::error::SareCLIError;
 
@@ -35,7 +35,7 @@ impl RevocationCommand {
             .map_err(|e| e.to_string())?;
 
         let revocation_certificate =
-            Cerificate::new_revocation_expiry(masterkey, target_time, issuer);
+            Certificate::new_revocation_expiry(masterkey, target_time, issuer);
 
         revocation_certificate.export(output)?;
 

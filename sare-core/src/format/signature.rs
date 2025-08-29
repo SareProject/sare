@@ -4,7 +4,7 @@ use crate::format::error::FormatError;
 use crate::format::EncodablePublic;
 use crate::hybrid_sign::{ECAlgorithm, PQAlgorithm};
 
-const SIGNATURE_TAG: &str = "SARE MESSAGE";
+pub const SIGNATURE_TAG: &str = "SARE MESSAGE";
 
 #[derive(Serialize, Deserialize)]
 pub struct SignatureMetadataFormat {

@@ -7,12 +7,12 @@ pub mod seed;
 
 use std::fmt;
 
+pub use bson;
 use encryption::error::EncryptionError;
 use format::error::FormatError;
 use hybrid_kem::error::HybridKEMError;
 use kdf::error::KDFError;
 pub use pem;
-pub use bson;
 
 use crate::hybrid_sign::error::HybridSignError;
 
@@ -22,7 +22,7 @@ pub enum CoreErrorKind {
     Encryption(EncryptionError),
     KDF(KDFError),
     HybridKEM(HybridKEMError),
-    HybridSign(HybridSignError)
+    HybridSign(HybridSignError),
 }
 
 impl fmt::Display for CoreErrorKind {
@@ -33,7 +33,6 @@ impl fmt::Display for CoreErrorKind {
             CoreErrorKind::KDF(err) => write!(f, "KDF Error: {}", err),
             CoreErrorKind::HybridKEM(err) => write!(f, "Hybrid KEM Error: {}", err),
             CoreErrorKind::HybridSign(err) => write!(f, "Hybrid Sign Error: {}", err),
-        
         }
     }
 }

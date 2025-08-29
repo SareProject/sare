@@ -1,7 +1,7 @@
 use std::{fs::File, io::BufReader};
 
 use argh::FromArgs;
-use sare_lib::{certificate::Cerificate, CertificateFormat};
+use sare_lib::{certificate::Certificate, keys::EncodableSecret, CertificateFormat};
 
 use crate::{commands::revocation, common, db::SareDB, SareCLIError};
 
@@ -26,15 +26,21 @@ impl ListKeysCommand {
                     .join(format!("REVOC_{}.asc", key.revocation_certificate_id)),
             )?;
 
-            let (cert,_s, _verified): (CertificateFormat,_, bool) =
-                Cerificate::import(revocation_cert_file)?;
+            let cert = Certificate::import(revocation_cert_file)?;
 
-            let revocation_expiry_date =
-                common::format_expiry_date(cert.get_revocation_timestamp());
+            let revocation_data = cert.certificate.get_revocation_data();
+
+            let revocation_timestamp = if let Some(rev_data) = revocation_data {
+                rev_data.revocation_date
+            } else {
+                None
+            };
+
+            let revocation_expiry_date = common::format_expiry_date(revocation_timestamp);
 
             println!(
                 "\tRevocation Certificate ID: {} \n\t\tIssuer: {} Expiry: {}",
-                key.revocation_certificate_id, cert.issuer, revocation_expiry_date
+                key.revocation_certificate_id, cert.certificate.issuer, revocation_expiry_date
             );
             println!();
         }

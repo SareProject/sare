@@ -10,17 +10,17 @@ use crate::hybrid_sign::{ECAlgorithm, ECKeyPair, PQAlgorithm, PQKeyPair};
 
 use sha2::{Digest, Sha256};
 
-const FULLCHAIN_PUBLIC_KEY_PEM_TAG: &str = "SARE FULLCHAIN PUBLIC KEY";
-const SIGNATURE_PUBLIC_KEY_PEM_TAG: &str = "SARE SIGNATURE PUBLIC KEY";
-const ENCRYPTION_PUBLIC_KEY_PEM_TAG: &str = "SARE ENCRYPTION PUBLIC KEY";
-const MASTER_KEY_PEM_TAG: &str = "SARE MASTER KEY";
+pub const FULLCHAIN_PUBLIC_KEY_PEM_TAG: &str = "SARE FULLCHAIN PUBLIC KEY";
+pub const SIGNATURE_PUBLIC_KEY_PEM_TAG: &str = "SARE SIGNATURE PUBLIC KEY";
+pub const ENCRYPTION_PUBLIC_KEY_PEM_TAG: &str = "SARE ENCRYPTION PUBLIC KEY";
+pub const MASTER_KEY_PEM_TAG: &str = "SARE MASTER KEY";
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct SignaturePublicKeyFormat {
-    ec_algorithm: ECAlgorithm,
-    pq_algorithm: PQAlgorithm,
-    ec_public_key: Vec<u8>,
-    pq_public_key: Vec<u8>,
+    pub ec_algorithm: ECAlgorithm,
+    pub pq_algorithm: PQAlgorithm,
+    pub ec_public_key: Vec<u8>,
+    pub pq_public_key: Vec<u8>,
 }
 
 impl SignaturePublicKeyFormat {
