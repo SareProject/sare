@@ -4,11 +4,12 @@ pub use sare_core::format::{
     certificate::CertificateFormat, signature::SignatureFormat, EncodablePublic,
 };
 use sare_core::format::{
-    certificate::{self, CertificateType, RevocationCertificateFormat, RevocationReason},
+    certificate::{
+        self, CertificateType, RevocationCertificateFormat, RevocationReason,
+        ValidationCertificateFormat,
+    },
     signature,
 };
-
-const CERTIFICATE_PEM_TAG: &str = "SARE CERTIFICATE";
 
 use crate::{keys::MasterKey, signing, SareError};
 
@@ -28,6 +29,20 @@ impl Certificate {
         }
     }
 
+    pub fn new_validation(masterkey: MasterKey, expiry_timestamp: u64, issuer: String) -> Self {
+        let validation = ValidationCertificateFormat {
+            fullchain_public_key_fingerprint: masterkey.get_fullchain_public_fingerprint(),
+        };
+
+        let certificate = CertificateFormat {
+            issuer,
+            expiry_date: Some(expiry_timestamp),
+            certificate_type: CertificateType::Validation(validation),
+        };
+
+        Self::new(masterkey, certificate)
+    }
+
     pub fn new_revocation_expiry(
         masterkey: MasterKey,
         expiry_timestamp: u64,
@@ -37,7 +52,6 @@ impl Certificate {
         let revocation = RevocationCertificateFormat {
             revocation_date: Some(expiry_timestamp),
             revocation_reason: reason,
-            fullchain_public_key_fingerprint: masterkey.get_fullchain_public_fingerprint(),
         };
 
         let certificate = CertificateFormat {
@@ -50,9 +64,7 @@ impl Certificate {
     }
 
     fn encode_pem(&self) -> String {
-        let pem =
-            sare_core::pem::Pem::new(CERTIFICATE_PEM_TAG, self.signature.encode_bson().as_slice());
-        sare_core::pem::encode(&pem)
+        self.certificate.encode_pem()
     }
 
     pub fn export<W: Write>(&self, mut output: W) -> Result<(), SareError> {

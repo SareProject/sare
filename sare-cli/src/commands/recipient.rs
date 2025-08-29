@@ -65,38 +65,10 @@ impl RecipientCommand {
         Ok(())
     }
 
-    // TODO: This method of verification is not very secure plus being super messy
     fn add_recipient(&self, add: &AddRecipient) -> Result<(), SareCLIError> {
         let pem_content = fs::read_to_string(&add.key)?;
         let recipient_key = RecipientPublicKey::from_pem(pem_content)?;
 
-        let contact_info = if let Some(rev_cert) = &recipient_key.revocation_certificate {
-
-            let fingerprints_match = if let Some(rev_data) = rev_cert.certificate.get_revocation_data() {
-                rev_data.fullchain_public_key_fingerprint == recipient_key.fullchain_public_key.calculate_fingerprint()
-            } else {
-                false
-            };
-
-            let verified = fingerprints_match && rev_cert.verify()?;
-
-            if verified {
-                let issuer = rev_cert.certificate.issuer.clone();
-                println!("PublicKey Issuer: {}", issuer);
-            } else {
-                log::warn!("Revocation Certificate of the Recipient don't verify");
-            }
-            rev_cert.certificate.issuer.clone()
-        } else {
-            log::warn!("Publickey does not include revocation certificate");
-
-            common::get_confirmed_input(
-                "PublicKey does not contain issuer information,
-            Please enter a name for this recipient: ",
-            )
-        };
-
-        // TODO: RecipientsDB needs to be Designed and recipient should be written to it
         todo!();
     }
 

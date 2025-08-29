@@ -2,6 +2,7 @@ use std::{
     fs,
     io::{self, Write},
     path::PathBuf,
+    time::SystemTime,
 };
 
 use chrono::DateTime;
@@ -12,6 +13,21 @@ use crate::error::SareCLIError;
 
 pub const DEFAULT_SARE_DIRECTORY: &str = ".sare";
 pub const DB_FILE: &str = "saredb.json";
+
+pub fn human_readable_duration_to_timestamp(duration: &str) -> Result<u64, SareCLIError> {
+    let duration_in_second =
+        duration_str::parse(duration).map_err(|e| format!("Failed to parse duration {e}"))?;
+
+    let now_timestamp = SystemTime::now();
+    let expiry_timestamp = now_timestamp + duration_in_second;
+
+    let target_time = expiry_timestamp
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .map_err(|e| e.to_string())?;
+
+    Ok(target_time)
+}
 
 pub fn format_expiry_date(expiry_timestamp: Option<u64>) -> String {
     match expiry_timestamp {

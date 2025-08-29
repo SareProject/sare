@@ -1,13 +1,16 @@
 use std::{
     fs::{self, File},
-    io::Cursor,
+    io::{Cursor, Write},
     time::Duration,
 };
 
 use argh::FromArgs;
 
 use indicatif::ProgressBar;
-use sare_lib::keys::{HybridKEMAlgorithm, HybridSignAlgorithm, MasterKey};
+use sare_lib::{
+    certificate::Certificate,
+    keys::{HybridKEMAlgorithm, HybridSignAlgorithm, MasterKey},
+};
 use secrecy::{ExposeSecret, SecretVec};
 
 use crate::{
@@ -51,7 +54,9 @@ impl KeyGenCommand {
         let issuer_name = common::get_confirmed_input("Full Name: ");
         let issuer_email = common::get_confirmed_input("Email: ");
         let issuer = format!("{issuer_name} <{issuer_email}>");
-        let expiry_duration = common::get_confirmed_input("Key is valid for? ");
+        let expiry_duration = common::human_readable_duration_to_timestamp(
+            &common::get_confirmed_input("Key is valid for? "),
+        )?;
 
         let sare_directory = common::prepare_sare_directory()?;
 
@@ -82,9 +87,13 @@ impl KeyGenCommand {
             progress_bar.finish_with_message("Masterkey encrypted!");
         }
 
+        let validation_certificate =
+            Certificate::new_validation(masterkey.clone(), expiry_duration, issuer.clone());
+
         // Export public key
         let mut public_buffer = Cursor::new(Vec::new());
         masterkey.export_public(&mut public_buffer)?;
+        validation_certificate.export(&mut public_buffer)?;
 
         // Export revocation file
         let revocation_path_temp = temp_dir

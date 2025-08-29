@@ -1,6 +1,7 @@
 use super::certificate::Certificate;
 pub use sare_core::encryption::{EncryptionAlgorithm, KeyWrap};
 use sare_core::format::certificate::CertificateFormat;
+use sare_core::format::certificate::ValidationCertificateFormat;
 pub use sare_core::format::encryption::*;
 pub use sare_core::format::keys::*;
 use sare_core::format::signature::SignatureFormat;
@@ -296,17 +297,24 @@ impl MasterKey {
 
 pub struct RecipientPublicKey {
     pub fullchain_public_key: FullChainPublicKeyFormat,
-    pub revocation_certificate: Option<Certificate>,
+    pub validation_certificate: Option<Certificate>,
 }
 
 impl RecipientPublicKey {
+    pub fn new(fullchain: FullChainPublicKeyFormat, validation: Option<Certificate>) -> Self {
+        RecipientPublicKey {
+            fullchain_public_key: fullchain,
+            validation_certificate: validation,
+        }
+    }
+
     pub fn from_pem(pem_data: String) -> Result<Self, SareError> {
         // Parse all PEM blocks at once
         let all_pems =
             pem::parse_many(&pem_data).map_err(|e| SareError::Unexpected(e.to_string()))?;
 
         let mut fullchain_public_key: Option<FullChainPublicKeyFormat> = None;
-        let mut revocation_certificate: Option<Certificate> = None;
+        let mut validation_certificate: Option<Certificate> = None;
 
         for block in all_pems {
             match block.tag() {
@@ -314,8 +322,8 @@ impl RecipientPublicKey {
                     fullchain_public_key =
                         Some(FullChainPublicKeyFormat::decode_bson(&block.contents())?);
                 }
-                sare_core::format::certificate::CERTIFICATE_PEM_TAG => {
-                    revocation_certificate = Some(Certificate::decode_bson(&block.contents())?)
+                sare_core::format::certificate::VALIDATION_PEM_TAG => {
+                    validation_certificate = Some(Certificate::decode_bson(&block.contents())?)
                 }
                 _ => {}
             }
@@ -327,7 +335,7 @@ impl RecipientPublicKey {
 
         Ok(RecipientPublicKey {
             fullchain_public_key,
-            revocation_certificate: revocation_certificate,
+            validation_certificate,
         })
     }
 }

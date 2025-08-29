@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 
 pub const CERTIFICATE_PEM_TAG: &str = "SARE CERTIFICATE";
 pub const REVOCATION_PEM_TAG: &str = "SARE REVOCATION CERTIFICATE";
+pub const VALIDATION_PEM_TAG: &str = "SARE VALIDATION CERTIFICATE";
 
 #[derive(Serialize, Deserialize)]
 pub enum RevocationReason {
@@ -18,13 +19,17 @@ pub enum RevocationReason {
 pub struct RevocationCertificateFormat {
     pub revocation_date: Option<u64>,
     pub revocation_reason: RevocationReason,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ValidationCertificateFormat {
     pub fullchain_public_key_fingerprint: [u8; 32],
 }
 
 #[derive(Serialize, Deserialize)]
 pub enum CertificateType {
     Revocation(RevocationCertificateFormat),
-    Certificate(SignatureFormat),
+    Validation(ValidationCertificateFormat),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -38,6 +43,13 @@ impl CertificateFormat {
     pub fn get_revocation_data(&self) -> Option<&RevocationCertificateFormat> {
         match &self.certificate_type {
             CertificateType::Revocation(revocation_format) => Some(revocation_format),
+            _ => None,
+        }
+    }
+
+    pub fn get_validation_data(&self) -> Option<&ValidationCertificateFormat> {
+        match &self.certificate_type {
+            CertificateType::Validation(validation_format) => Some(validation_format),
             _ => None,
         }
     }
@@ -56,6 +68,7 @@ impl EncodablePublic for CertificateFormat {
     fn encode_pem(&self) -> String {
         let tag = match self.certificate_type {
             CertificateType::Revocation(_) => REVOCATION_PEM_TAG,
+            CertificateType::Validation(_) => VALIDATION_PEM_TAG,
             _ => CERTIFICATE_PEM_TAG,
         };
 
