@@ -108,7 +108,7 @@ impl RecipientCommand {
         let recipient = SareDBRecipient::new(&fullchain_fingerprint, Some(comment));
 
         let mut sare_db = SareDB::import_from_json_file()?;
-        sare_db.add_recipient(recipient);
+        sare_db.add_recipient(fullchain_fingerprint[0..10].to_string(), recipient);
         sare_db.save_to_json_file()?;
 
         println!(
@@ -126,19 +126,13 @@ impl RecipientCommand {
     fn remove_recipient(&self, remove: &RemoveRecipient) -> Result<(), SareCLIError> {
         let mut sare_db = SareDB::import_from_json_file()?;
 
-        // Filter out the recipient matching the provided fingerprint
-        let initial_count = sare_db.recipients.len();
-        sare_db
-            .recipients
-            .retain(|r| r.fullchain_fingerprint != remove.id);
-
-        if sare_db.recipients.len() == initial_count {
-            println!("No recipient found with fingerprint: {}", remove.id);
-            return Ok(());
+        if sare_db.recipients.remove(&remove.id).is_some() {
+            println!("Recipient {} removed successfully.", remove.id);
+        } else {
+            println!("No recipient found with id: {}", remove.id);
         }
 
         sare_db.save_to_json_file()?;
-        println!("Recipient {} removed successfully.", remove.id);
 
         let sare_directory = prepare_sare_directory()?;
         let recipient_file = sare_directory
@@ -161,10 +155,11 @@ impl RecipientCommand {
         }
 
         println!("Recipients:");
-        for (idx, r) in sare_db.recipients.iter().enumerate() {
+        for (idx, (id, r)) in sare_db.recipients.iter().enumerate() {
             println!(
-                "{}. {}\n\tComment: {}\n\tAdded: {}\n",
+                "{}. {}\n\tFingerprint: {}\n\tComment: {}\n\tAdded: {}\n",
                 idx + 1,
+                id,
                 r.fullchain_fingerprint,
                 r.comment.as_deref().unwrap_or("None"),
                 common::format_expiry_date(Some(r.date_added))

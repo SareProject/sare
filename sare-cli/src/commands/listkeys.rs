@@ -23,7 +23,7 @@ impl ListKeysCommand {
 
         let sare_directory = common::prepare_sare_directory()?;
 
-        for (master_key_id, key) in sare_db.master_key_and_associated_key {
+        for (master_key_id, key) in sare_db.key_associations {
             println!("Master Key ID: {}", master_key_id);
             println!("\tPublic Key ID: {}", key.public_key_id);
 
@@ -34,7 +34,7 @@ impl ListKeysCommand {
             )?;
 
             let mut public_key_pem_content = String::new();
-            public_key_file.read_to_string(&mut public_key_pem_content);
+            public_key_file.read_to_string(&mut public_key_pem_content)?;
 
             let shared_public_key = SharedPublicKey::from_pem(public_key_pem_content)?;
             let validation_cert = shared_public_key.validation_certificate;

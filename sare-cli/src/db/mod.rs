@@ -6,6 +6,7 @@ use std::io::{BufReader, Write};
 
 use serde::{Deserialize, Serialize};
 
+use crate::commands::recipient;
 use crate::common;
 use crate::error::SareCLIError;
 
@@ -45,10 +46,9 @@ impl SareDBRecipient {
 pub struct SareDB {
     #[serde(default)]
     pub version: u32,
-    #[serde(flatten)]
-    pub master_key_and_associated_key: HashMap<String, SareDBAssociatedKey>,
+    pub key_associations: HashMap<String, SareDBAssociatedKey>,
     #[serde(default)]
-    pub recipients: Vec<SareDBRecipient>,
+    pub recipients: HashMap<String, SareDBRecipient>,
 }
 
 impl SareDB {
@@ -61,12 +61,12 @@ impl SareDB {
         master_key_id: &str,
         associated_key: SareDBAssociatedKey,
     ) {
-        self.master_key_and_associated_key
+        self.key_associations
             .insert(master_key_id.to_ascii_uppercase(), associated_key);
     }
 
-    pub fn add_recipient(&mut self, recipient: SareDBRecipient) {
-        self.recipients.push(recipient);
+    pub fn add_recipient(&mut self, recipient_id: String, recipient: SareDBRecipient) {
+        self.recipients.insert(recipient_id, recipient);
     }
 
     pub fn import_from_json_file() -> Result<Self, SareCLIError> {
@@ -98,11 +98,11 @@ impl SareDB {
     }
 
     pub fn get_key_association(&self, master_key_id: &str) -> Option<&SareDBAssociatedKey> {
-        self.master_key_and_associated_key
+        self.key_associations
             .get(&master_key_id.to_ascii_uppercase())
     }
 
-    pub fn list_recipients(&self) -> &[SareDBRecipient] {
+    pub fn list_recipients(&self) -> &HashMap<String, SareDBRecipient> {
         &self.recipients
     }
 }
@@ -111,8 +111,8 @@ impl Default for SareDB {
     fn default() -> Self {
         SareDB {
             version: 1,
-            master_key_and_associated_key: HashMap::new(),
-            recipients: Vec::new(),
+            key_associations: HashMap::new(),
+            recipients: HashMap::new(),
         }
     }
 }
