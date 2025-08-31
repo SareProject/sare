@@ -149,6 +149,24 @@ impl RecipientCommand {
     }
 
     fn list_recipients() -> Result<(), SareCLIError> {
-        todo!();
+        let sare_db = SareDB::import_from_json_file()?;
+
+        if sare_db.recipients.is_empty() {
+            println!("No recipients found.");
+            return Ok(());
+        }
+
+        println!("Recipients:");
+        for (idx, r) in sare_db.recipients.iter().enumerate() {
+            println!(
+                "{}. {}\n\tComment: {}\n\tAdded: {}\n",
+                idx + 1,
+                r.fullchain_fingerprint,
+                r.comment.as_deref().unwrap_or("None"),
+                common::format_expiry_date(Some(r.date_added))
+            );
+        }
+
+        Ok(())
     }
 }
