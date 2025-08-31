@@ -8,13 +8,64 @@ use std::{
 use chrono::DateTime;
 use indicatif::ProgressBar;
 use rpassword;
-use sare_lib::keys::MasterKey;
+use sare_lib::keys::{MasterKey, SharedPublicKey};
 use secrecy::{ExposeSecret, SecretString};
 
-use crate::{db::SareDB, error::SareCLIError};
+use crate::{commands::recipient, db::SareDB, error::SareCLIError};
 
 pub const DEFAULT_SARE_DIRECTORY: &str = ".sare";
 pub const DB_FILE: &str = "saredb.json";
+
+pub fn get_recipient_from_cli(
+    recipient_id: &Option<String>,
+) -> Result<SharedPublicKey, SareCLIError> {
+    let sare_db = SareDB::import_from_json_file()?;
+
+    let recipients = sare_db.recipients;
+
+    if recipients.is_empty() {
+        println!("You don't have any recipients. use recipient add command to add one!");
+        return Err(SareCLIError::Unexpected(String::new()));
+    }
+
+    let recipient_id = if let Some(recipient_id) = recipient_id {
+        &recipient_id.to_owned()
+    } else {
+        println!("You haven't specified any recipients, choose one from the list below:");
+
+        let mut entries: Vec<_> = recipients.iter().collect();
+        entries.sort_by_key(|(k, _)| *k); // sort by key
+
+        for (idx, key_id) in entries.iter().enumerate() {
+            println!("{}. {}", idx + 1, key_id.1.fullchain_fingerprint);
+        }
+
+        let index_input = get_confirmed_input("Please enter the number of the recipient: ");
+
+        let index: usize = index_input
+            .parse()
+            .map_err(|e: std::num::ParseIntError| SareCLIError::Unexpected(e.to_string()))?;
+
+        if let Some((key, value)) = entries.get(index - 1) {
+            &value.fullchain_fingerprint
+        } else {
+            println!("Invalid index {}", index);
+            return Err(SareCLIError::Unexpected(String::new()));
+        }
+    };
+
+    let sare_directory = prepare_sare_directory()?;
+
+    let recipient_file = sare_directory
+        .join("recipients")
+        .join(format!("RECIPIENT_{recipient_id}.pem"));
+
+    let recipient_pem = fs::read_to_string(recipient_file)?;
+
+    let recipient = SharedPublicKey::from_pem(recipient_pem)?;
+
+    Ok(recipient)
+}
 
 pub fn get_master_key_from_cli(masterkey_id: &Option<String>) -> Result<MasterKey, SareCLIError> {
     let sare_db = SareDB::import_from_json_file()?;

@@ -8,7 +8,7 @@ pub mod error;
 
 use error::*;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum HKDFAlgorithm {
     SHA256,
     SHA512,
@@ -86,7 +86,7 @@ impl<'a> HKDF<'a> {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum PKDFAlgorithm {
     Scrypt(u8, u32, u32),
 }

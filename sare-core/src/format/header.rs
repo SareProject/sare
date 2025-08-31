@@ -10,16 +10,16 @@ use super::EncodablePublic;
 
 const MAGIC_BYTES: &[u8; 9] = b"CRYPTOPIA";
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct HeaderMetadataFormat {
     #[serde(skip_serializing_if = "Option::is_none", flatten)]
-    kem_metadata: Option<KEMMetadataFormat>,
+    pub kem_metadata: Option<KEMMetadataFormat>,
     #[serde(skip_serializing_if = "Option::is_none", flatten)]
-    signature_metadata: Option<SignatureMetadataFormat>,
+    pub signature_metadata: Option<SignatureMetadataFormat>,
     #[serde(flatten)]
-    encryption_metadata: EncryptionMetadataFormat,
+    pub encryption_metadata: EncryptionMetadataFormat,
     #[serde(skip_serializing_if = "Option::is_none")]
-    comment: Option<String>,
+    pub comment: Option<String>,
 }
 
 impl HeaderMetadataFormat {
@@ -36,9 +36,9 @@ impl HeaderMetadataFormat {
 }
 
 pub struct HeaderFormat {
-    version: u32,
-    metadata: HeaderMetadataFormat,
-    signature: Option<SignatureFormat>,
+    pub version: u32,
+    pub metadata: HeaderMetadataFormat,
+    pub signature: Option<SignatureFormat>,
 }
 
 impl HeaderFormat {

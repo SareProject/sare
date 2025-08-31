@@ -1,27 +1,43 @@
 use std::io::{Read, Write};
 
 use sare_core::{
-    encryption::{EncryptionAlgorithm, Encryptor as CoreEncryptor},
+    encryption::{self, EncryptionAlgorithm, Encryptor as CoreEncryptor},
+    format::{
+        encryption::{EncryptionMetadataFormat, KEMMetadataFormat, PKDFMetadataFormat},
+        header::{HeaderFormat, HeaderMetadataFormat},
+        signature,
+    },
     hybrid_kem::{Encapsulation, HybridKEM},
     kdf::{HKDFAlgorithm, HKDF, KDF, PKDF},
+    sha3::{Digest, Sha3_256},
 };
 use secrecy::{ExposeSecret, SecretVec};
 
 use crate::{
-    keys::{HybridKEMAlgorithm, MasterKey},
-    SareError,
+    keys::{HybridKEMAlgorithm, MasterKey, SharedPublicKey},
+    signing, SareError,
 };
-
-pub struct Recipient {
-    dh_public_key: Vec<u8>,
-    kem_public_key: Vec<u8>,
-    algorithm: HybridKEMAlgorithm, // NOTE: To be able to check if recipient's algorithms are
-                                   // compatible with ours
-}
 
 pub struct Encryptor(MasterKey);
 
 impl Encryptor {
+    pub fn checksum<R: Read>(mut data: R) -> Result<[u8; 32], SareError> {
+        let mut hasher = Sha3_256::new();
+        let mut buf = vec![0u8; 2048 * 2048];
+        loop {
+            let n = data.read(&mut buf)?;
+            if n == 0 {
+                break;
+            }
+            hasher.update(&buf[..n]);
+        }
+        let digest = hasher.finalize();
+        let mut out = [0u8; 32];
+        out.copy_from_slice(&digest);
+
+        Ok(out)
+    }
+
     pub fn new(master_key: MasterKey) -> Self {
         Encryptor(master_key)
     }
@@ -52,17 +68,26 @@ impl Encryptor {
         &self,
         mut data: R,
         mut output: W,
-        recipient: &Recipient,
+        recipient: &SharedPublicKey,
         algorithm: EncryptionAlgorithm,
     ) -> Result<(), SareError> {
         let (dh_keypair, kem_keypair) = self.0.get_encryption_keypair();
-        let kem = Encapsulation::new(&recipient.kem_public_key, recipient.algorithm.kem_algorithm);
+
+        let encryption_public_key = recipient
+            .fullchain_public_key
+            .encryption_public_key
+            .to_owned();
+
+        let kem = Encapsulation::new(
+            &encryption_public_key.kem_public_key,
+            encryption_public_key.kem_algorithm,
+        );
         let kem_cipher_text = kem.encapsulate()?.cipher_text;
 
         let hybrid_kem = HybridKEM::new(dh_keypair, kem_keypair);
 
-        let shared_secret =
-            hybrid_kem.calculate_raw_shared_key(&kem_cipher_text, &recipient.dh_public_key)?;
+        let shared_secret = hybrid_kem
+            .calculate_raw_shared_key(&kem_cipher_text, &encryption_public_key.dh_public_key)?;
 
         let concated_shared_secrets = SecretVec::new(
             [
@@ -71,14 +96,51 @@ impl Encryptor {
             ]
             .concat(),
         );
-        let encryption_key = HKDF::new(
-            &concated_shared_secrets,
-            &PKDF::generate_salt(),
-            HKDFAlgorithm::SHA256,
-        )
-        .expand(None)?;
+
+        let kdf_salt = PKDF::generate_salt();
+        let encryption_key =
+            HKDF::new(&concated_shared_secrets, &kdf_salt, HKDFAlgorithm::SHA256).expand(None)?;
+
+        let message_checksum = Self::checksum(&mut data)?;
+        let signature = signing::Signing::new(self.0.clone()).sign_attached(&message_checksum);
+        let signature_metadata = signature.signature_metadata.to_owned();
+
+        let kem_metadata = KEMMetadataFormat {
+            kem_algorithm: hybrid_kem.kem_keypair.algorithm,
+            dh_algorithm: hybrid_kem.dh_keypair.algorithm,
+            dh_sender_public_key: hybrid_kem.dh_keypair.public_key,
+            hkdf_algorithm: HKDFAlgorithm::SHA256,
+            kem_ciphertext: kem_cipher_text,
+            kdf_salt: kdf_salt,
+        };
+
+        let signature_metadata = signature_metadata;
 
         let encryptor = CoreEncryptor::new(encryption_key, algorithm);
+
+        let encryption_metadata = EncryptionMetadataFormat {
+            encryption_algorithm: algorithm,
+            nonce: Some(encryptor.nonce.to_owned()),
+            kem_metadata: Some(kem_metadata.to_owned()),
+            pkdf_metadata: None,
+        };
+
+        let header_metadata = HeaderMetadataFormat {
+            encryption_metadata,
+            kem_metadata: Some(kem_metadata),
+            signature_metadata,
+            comment: None,
+        };
+
+        let header = HeaderFormat {
+            version: 1,
+            metadata: header_metadata,
+            signature: Some(signature),
+        };
+
+        let encoded_header = header.encode();
+
+        output.write_all(&encoded_header)?;
 
         match algorithm {
             EncryptionAlgorithm::XCHACHA20POLY1305 => {

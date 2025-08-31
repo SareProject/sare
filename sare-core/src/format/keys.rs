@@ -59,10 +59,10 @@ impl EncodablePublic for SignaturePublicKeyFormat {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct EncryptionPublicKeyFormat {
-    dh_algorithm: DHAlgorithm,
-    kem_algorithm: KEMAlgorithm,
-    dh_public_key: Vec<u8>,
-    kem_public_key: Vec<u8>,
+    pub dh_algorithm: DHAlgorithm,
+    pub kem_algorithm: KEMAlgorithm,
+    pub dh_public_key: Vec<u8>,
+    pub kem_public_key: Vec<u8>,
 }
 
 impl EncryptionPublicKeyFormat {

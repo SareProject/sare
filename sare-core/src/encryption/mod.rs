@@ -62,7 +62,7 @@ impl KeyWrap {
 
 pub struct Encryptor {
     input_key: SecretVec<u8>,
-    nonce: Vec<u8>,
+    pub nonce: Vec<u8>,
     algorithm: EncryptionAlgorithm,
 }
 
@@ -91,8 +91,7 @@ impl Encryptor {
         mut output: W,
     ) -> Result<(), EncryptionError> {
         let input_key = <[u8; 32]>::try_from(self.input_key.expose_secret().as_slice()).unwrap();
-        let nonce =
-            <[u8; XCHACHA20POLY1305_NONCE_LENGTH]>::try_from(self.nonce.as_slice()).unwrap();
+        let nonce = self.nonce.as_slice();
 
         let aead = XChaCha20Poly1305::new(input_key.as_ref().into());
         let mut stream_aead = stream::EncryptorBE32::from_aead(aead, nonce.as_ref().into());
@@ -104,13 +103,13 @@ impl Encryptor {
             if read_count == AEAD_BUFFER_LEN {
                 let encrypted_data = stream_aead.encrypt_next(data_buffer.as_slice()).unwrap();
 
-                output.write(&encrypted_data)?;
+                output.write_all(&encrypted_data)?;
             } else {
                 let encrypted_data = stream_aead
                     .encrypt_last(&data_buffer[..read_count])
                     .unwrap();
 
-                output.write(&encrypted_data)?;
+                output.write_all(&encrypted_data)?;
                 break;
             }
         }
