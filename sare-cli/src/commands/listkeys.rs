@@ -1,7 +1,14 @@
-use std::{fs::File, io::BufReader};
+use std::{
+    fs::File,
+    io::{BufReader, Read},
+};
 
 use argh::FromArgs;
-use sare_lib::{certificate::Certificate, keys::EncodableSecret, CertificateFormat, Issuer};
+use sare_lib::{
+    certificate::Certificate,
+    keys::{EncodableSecret, SharedPublicKey},
+    CertificateFormat, Issuer,
+};
 
 use crate::{commands::revocation, common, db::SareDB, SareCLIError};
 
@@ -20,29 +27,30 @@ impl ListKeysCommand {
             println!("Master Key ID: {}", master_key_id);
             println!("\tPublic Key ID: {}", key.public_key_id);
 
-            let revocation_cert_file = File::open(
+            let mut public_key_file = File::open(
                 sare_directory
-                    .join("revocations")
-                    .join(format!("REVOC_{}.asc", key.revocation_certificate_id)),
+                    .join("public_keys")
+                    .join(format!("PUB_{}.pem", key.public_key_id)),
             )?;
 
-            let cert = Certificate::import(revocation_cert_file)?;
+            let mut public_key_pem_content = String::new();
+            public_key_file.read_to_string(&mut public_key_pem_content);
 
-            let revocation_data = cert.certificate.get_revocation_data();
+            let shared_public_key = SharedPublicKey::from_pem(public_key_pem_content)?;
+            let validation_cert = shared_public_key.validation_certificate;
 
-            let revocation_timestamp = if let Some(rev_data) = revocation_data {
-                rev_data.revocation_date
+            if let Some(validation_data) = validation_cert {
+                let expiry_date =
+                    common::format_expiry_date(validation_data.certificate.expiry_date);
+
+                println!(
+                    "\t\tIssuer: {} Expiry: {}\n",
+                    validation_data.certificate.issuer.to_string(),
+                    expiry_date
+                );
             } else {
-                None
-            };
-
-            let revocation_expiry_date = common::format_expiry_date(revocation_timestamp);
-
-            println!(
-                "\tRevocation Certificate ID: {} \n\t\tIssuer: {} Expiry: {}",
-                key.revocation_certificate_id, cert.certificate.issuer.to_string() , revocation_expiry_date
-            );
-            println!();
+                println!("\t\tValidation Certificate Not Found!\n",);
+            }
         }
 
         Ok(())

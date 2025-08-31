@@ -5,7 +5,8 @@ pub use sare_core::format::{
 };
 use sare_core::format::{
     certificate::{
-        self, CertificateType, Issuer, RevocationCertificateFormat, RevocationReason, ValidationCertificateFormat
+        self, CertificateType, Issuer, RevocationCertificateFormat, RevocationReason,
+        ValidationCertificateFormat,
     },
     signature,
 };
@@ -43,15 +44,12 @@ impl Certificate {
         Self::new(masterkey, certificate)
     }
 
-    pub fn new_revocation_expiry(
-        masterkey: MasterKey,
-        expiry_timestamp: u64,
-        issuer: Issuer,
-    ) -> Self {
-        let reason = RevocationReason::Expired;
+    pub fn new_revocation_no_reason(masterkey: MasterKey, timestamp: u64, issuer: Issuer) -> Self {
+        let reason = RevocationReason::NoReasonSpecified;
         let revocation = RevocationCertificateFormat {
-            revocation_date: Some(expiry_timestamp),
+            revocation_date: timestamp,
             revocation_reason: reason,
+            fullchain_fingerprint: masterkey.get_fullchain_public_fingerprint(),
         };
 
         let certificate = CertificateFormat {

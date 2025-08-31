@@ -9,7 +9,8 @@ use argh::FromArgs;
 use indicatif::ProgressBar;
 use sare_lib::{
     certificate::Certificate,
-    keys::{HybridKEMAlgorithm, HybridSignAlgorithm, MasterKey}, Issuer,
+    keys::{HybridKEMAlgorithm, HybridSignAlgorithm, MasterKey},
+    Issuer,
 };
 use secrecy::{ExposeSecret, SecretVec};
 
@@ -89,7 +90,7 @@ impl KeyGenCommand {
         // Export public key
         let mut public_buffer = Cursor::new(Vec::new());
         masterkey.export_public(&mut public_buffer)?;
-        if !self.no_validation_cert.unwrap_or(true) {
+        if !self.no_validation_cert.unwrap_or(false) {
             let validation_certificate =
                 Certificate::new_validation(masterkey.clone(), expiry_duration, &issuer);
             validation_certificate.export(&mut public_buffer)?;
@@ -100,12 +101,7 @@ impl KeyGenCommand {
             .join("revocations")
             .join(format!("REVOC_{fullchain_fingerprint}.asc"));
         let revocation_file_temp = fs::File::create(&revocation_path_temp)?;
-        RevocationCommand::revocate_expiry(
-            masterkey.clone(),
-            expiry_duration,
-            issuer,
-            revocation_file_temp,
-        )?;
+        RevocationCommand::revocate_no_reason(masterkey.clone(), issuer, revocation_file_temp)?;
 
         // write files to temp dir
         let master_path_temp = temp_dir

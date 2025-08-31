@@ -115,18 +115,22 @@ impl RecipientCommand {
             "\nPublicKey added as recipient
         \n\tLOCATION: {:?},
         \n\tPUB: {}\n\tVERIFIED: {}",
-            sare_directory.join("recipients"), fullchain_fingerprint, is_key_verified
+            sare_directory.join("recipients"),
+            fullchain_fingerprint,
+            is_key_verified
         );
 
         Ok(())
     }
 
-    fn remove_recipient(&self, remove: &RemoveRecipient) -> Result<(), SareCLIError> {        
+    fn remove_recipient(&self, remove: &RemoveRecipient) -> Result<(), SareCLIError> {
         let mut sare_db = SareDB::import_from_json_file()?;
 
         // Filter out the recipient matching the provided fingerprint
         let initial_count = sare_db.recipients.len();
-        sare_db.recipients.retain(|r| r.fullchain_fingerprint != remove.id);
+        sare_db
+            .recipients
+            .retain(|r| r.fullchain_fingerprint != remove.id);
 
         if sare_db.recipients.len() == initial_count {
             println!("No recipient found with fingerprint: {}", remove.id);

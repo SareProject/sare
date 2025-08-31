@@ -17,7 +17,7 @@ pub struct Issuer {
 
 impl Issuer {
     pub fn new(name: String, email: String) -> Self {
-        Issuer { name, email}
+        Issuer { name, email }
     }
     pub fn parse(input: &str) -> Option<Self> {
         let start = input.find('<')?;
@@ -40,14 +40,15 @@ impl Issuer {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub enum RevocationReason {
-    Expired,
     Compromised,
+    NoReasonSpecified,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct RevocationCertificateFormat {
-    pub revocation_date: Option<u64>,
+    pub revocation_date: u64,
     pub revocation_reason: RevocationReason,
+    pub fullchain_fingerprint: [u8; 32],
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -65,6 +66,7 @@ pub enum CertificateType {
 pub struct CertificateFormat {
     pub issuer: Issuer,
     pub expiry_date: Option<u64>,
+    #[serde(flatten)]
     pub certificate_type: CertificateType,
 }
 
