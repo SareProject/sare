@@ -64,7 +64,15 @@ impl Certificate {
     }
 
     fn encode_pem(&self) -> String {
-        self.certificate.encode_pem()
+        // TODO: implement get_tag() for CertificateType
+        let tag = match self.certificate.certificate_type {
+            CertificateType::Revocation(_) => sare_core::format::certificate::REVOCATION_PEM_TAG,
+            CertificateType::Validation(_) => sare_core::format::certificate::VALIDATION_PEM_TAG,
+            _ => sare_core::format::certificate::CERTIFICATE_PEM_TAG,
+        };
+
+        let pem = sare_core::pem::Pem::new(tag, self.signature.encode_bson().as_slice());
+        sare_core::pem::encode(&pem)
     }
 
     pub fn export<W: Write>(&self, mut output: W) -> Result<(), SareError> {
