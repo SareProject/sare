@@ -14,6 +14,13 @@ use crate::error::SareCLIError;
 pub const DEFAULT_SARE_DIRECTORY: &str = ".sare";
 pub const DB_FILE: &str = "saredb.json";
 
+pub fn get_now_timestamp() -> u64 {
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .expect("System time is before UNIX EPOCH")
+        .as_secs()
+}
+
 pub fn human_readable_duration_to_timestamp(duration: &str) -> Result<u64, SareCLIError> {
     let duration_in_second =
         duration_str::parse(duration).map_err(|e| format!("Failed to parse duration {e}"))?;
