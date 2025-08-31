@@ -19,10 +19,8 @@ pub struct Certificate {
 impl Certificate {
     pub fn new(masterkey: MasterKey, certificate: CertificateFormat) -> Self {
         let encoded_certificate = certificate.encode_bson();
-        let signed_certificate = super::signing::Signing::new(masterkey.clone()).sign_attached(
-            &encoded_certificate,
-            masterkey.get_fullchain_public_fingerprint(),
-        );
+        let signed_certificate =
+            super::signing::Signing::new(masterkey.clone()).sign_attached(&encoded_certificate);
 
         Certificate {
             certificate,
@@ -97,10 +95,7 @@ impl Certificate {
     }
 
     pub fn verify(&self) -> Result<bool, SareError> {
-        super::signing::Signing::verify_attached(
-            &self.signature,
-            self.signature.fullchain_fingerprint,
-        )
+        super::signing::Signing::verify_attached(&self.signature)
     }
 
     pub fn import<R: Read>(mut input: R) -> Result<Self, SareError> {

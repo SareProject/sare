@@ -62,7 +62,6 @@ impl SignatureCommand {
 
     fn generate(&self, gen: &GenerateSignature) -> Result<(), SareCLIError> {
         let masterkey = common::get_master_key_from_cli(&gen.masterkey_id)?;
-        let fullchain_fingerprint = masterkey.get_fullchain_public_fingerprint();
 
         let sign_engine = Signing::new(masterkey);
 
