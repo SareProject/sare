@@ -1,3 +1,4 @@
+use std::time::SystemTime;
 use std::{collections::HashMap, process::Output};
 
 use std::fs::{File, OpenOptions};
@@ -25,10 +26,19 @@ impl SareDBAssociatedKey {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SareDBRecipient {
-    fullchain_public_key_id: String,
-    verification_certificate_id: String,
-    comment: String,
+    fullchain_fingerprint: String,
+    comment: Option<String>,
     date_added: u64,
+}
+
+impl SareDBRecipient {
+    pub fn new(fullchain_fingerprint: &str, comment: Option<String>) -> Self {
+        SareDBRecipient {
+            fullchain_fingerprint: fullchain_fingerprint.to_ascii_uppercase(),
+            comment,
+            date_added: common::get_now_timestamp(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -42,12 +52,15 @@ pub struct SareDB {
 }
 
 impl SareDB {
-
     pub fn empty() -> Self {
         SareDB::default()
     }
 
-    pub fn add_key_association(&mut self, master_key_id: &str, associated_key: SareDBAssociatedKey) {
+    pub fn add_key_association(
+        &mut self,
+        master_key_id: &str,
+        associated_key: SareDBAssociatedKey,
+    ) {
         self.master_key_and_associated_key
             .insert(master_key_id.to_ascii_uppercase(), associated_key);
     }
@@ -92,14 +105,12 @@ impl SareDB {
     pub fn list_recipients(&self) -> &[SareDBRecipient] {
         &self.recipients
     }
-
 }
-
 
 impl Default for SareDB {
     fn default() -> Self {
         SareDB {
-            version: 1, 
+            version: 1,
             master_key_and_associated_key: HashMap::new(),
             recipients: Vec::new(),
         }
