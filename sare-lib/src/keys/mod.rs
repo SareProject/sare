@@ -295,14 +295,15 @@ impl MasterKey {
     }
 }
 
-pub struct RecipientPublicKey {
+#[derive(Clone)]
+pub struct SharedPublicKey {
     pub fullchain_public_key: FullChainPublicKeyFormat,
     pub validation_certificate: Option<Certificate>,
 }
 
-impl RecipientPublicKey {
+impl SharedPublicKey {
     pub fn new(fullchain: FullChainPublicKeyFormat, validation: Option<Certificate>) -> Self {
-        RecipientPublicKey {
+        SharedPublicKey {
             fullchain_public_key: fullchain,
             validation_certificate: validation,
         }
@@ -333,9 +334,21 @@ impl RecipientPublicKey {
             "Recipient's PublicKey is Missing".to_string(),
         ))?;
 
-        Ok(RecipientPublicKey {
+        Ok(SharedPublicKey {
             fullchain_public_key,
             validation_certificate,
         })
+    }
+
+    pub fn export<W: Write>(&self, mut output: W) -> Result<[u8; 32], SareError> {
+        let fullchain_public_key = &self.fullchain_public_key;
+
+        output.write_all(fullchain_public_key.encode_pem().as_bytes())?;
+
+        if let Some(validation_certificate) = &self.validation_certificate {
+            validation_certificate.export(output)?;
+        }
+
+        Ok(fullchain_public_key.calculate_fingerprint())
     }
 }

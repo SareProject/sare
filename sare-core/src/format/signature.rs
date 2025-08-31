@@ -6,13 +6,13 @@ use crate::hybrid_sign::{ECAlgorithm, PQAlgorithm};
 
 pub const SIGNATURE_TAG: &str = "SARE MESSAGE";
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct SignatureMetadataFormat {
     pub ec_algorithm: ECAlgorithm,
     pub pq_algorithm: PQAlgorithm,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct SignatureFormat {
     #[serde(skip_serializing_if = "Option::is_none", flatten)]
     pub signature_metadata: Option<SignatureMetadataFormat>,

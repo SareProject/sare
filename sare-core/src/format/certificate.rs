@@ -9,30 +9,30 @@ pub const CERTIFICATE_PEM_TAG: &str = "SARE CERTIFICATE";
 pub const REVOCATION_PEM_TAG: &str = "SARE REVOCATION CERTIFICATE";
 pub const VALIDATION_PEM_TAG: &str = "SARE VALIDATION CERTIFICATE";
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum RevocationReason {
     Expired,
     Compromised,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct RevocationCertificateFormat {
     pub revocation_date: Option<u64>,
     pub revocation_reason: RevocationReason,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ValidationCertificateFormat {
     pub fullchain_public_key_fingerprint: [u8; 32],
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum CertificateType {
     Revocation(RevocationCertificateFormat),
     Validation(ValidationCertificateFormat),
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct CertificateFormat {
     pub issuer: String,
     pub expiry_date: Option<u64>,

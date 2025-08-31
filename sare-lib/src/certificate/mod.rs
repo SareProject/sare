@@ -13,6 +13,7 @@ use sare_core::format::{
 
 use crate::{keys::MasterKey, signing, SareError};
 
+#[derive(Clone)]
 pub struct Certificate {
     pub certificate: CertificateFormat,
     pub signature: SignatureFormat,
