@@ -9,7 +9,7 @@ use argh::FromArgs;
 use indicatif::ProgressBar;
 use sare_lib::{
     certificate::Certificate,
-    keys::{HybridKEMAlgorithm, HybridSignAlgorithm, MasterKey},
+    keys::{HybridKEMAlgorithm, HybridSignAlgorithm, MasterKey}, Issuer,
 };
 use secrecy::{ExposeSecret, SecretVec};
 
@@ -57,7 +57,7 @@ impl KeyGenCommand {
 
         let issuer_name = common::get_confirmed_input("Full Name: ");
         let issuer_email = common::get_confirmed_input("Email: ");
-        let issuer = format!("{issuer_name} <{issuer_email}>");
+        let issuer = Issuer::new(issuer_name, issuer_email);
         let expiry_duration = common::human_readable_duration_to_timestamp(
             &common::get_confirmed_input("Key is valid for? "),
         )?;
@@ -91,7 +91,7 @@ impl KeyGenCommand {
         masterkey.export_public(&mut public_buffer)?;
         if !self.no_validation_cert.unwrap_or(true) {
             let validation_certificate =
-                Certificate::new_validation(masterkey.clone(), expiry_duration, issuer.clone());
+                Certificate::new_validation(masterkey.clone(), expiry_duration, &issuer);
             validation_certificate.export(&mut public_buffer)?;
         }
 

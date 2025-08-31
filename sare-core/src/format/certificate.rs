@@ -10,6 +10,35 @@ pub const REVOCATION_PEM_TAG: &str = "SARE REVOCATION CERTIFICATE";
 pub const VALIDATION_PEM_TAG: &str = "SARE VALIDATION CERTIFICATE";
 
 #[derive(Clone, Serialize, Deserialize)]
+pub struct Issuer {
+    pub name: String,
+    email: String,
+}
+
+impl Issuer {
+    pub fn new(name: String, email: String) -> Self {
+        Issuer { name, email}
+    }
+    pub fn parse(input: &str) -> Option<Self> {
+        let start = input.find('<')?;
+        let end = input.find('>')?;
+
+        if start >= end {
+            return None;
+        }
+
+        Some(Self {
+            name: input[..start].trim().to_string(),
+            email: input[start + 1..end].trim().to_string(),
+        })
+    }
+
+    pub fn to_string(&self) -> String {
+        format!("{} <{}>", self.name, self.email)
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
 pub enum RevocationReason {
     Expired,
     Compromised,
@@ -34,7 +63,7 @@ pub enum CertificateType {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct CertificateFormat {
-    pub issuer: String,
+    pub issuer: Issuer,
     pub expiry_date: Option<u64>,
     pub certificate_type: CertificateType,
 }

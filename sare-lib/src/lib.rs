@@ -4,6 +4,7 @@ pub mod keys;
 pub mod signing;
 
 pub use sare_core::format::certificate::CertificateFormat;
+pub use sare_core::format::certificate::Issuer;
 use std::fmt::{self, Display};
 use std::io::Error as IoError;
 

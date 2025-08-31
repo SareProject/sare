@@ -1,7 +1,7 @@
 use std::{fs::File, io::BufReader};
 
 use argh::FromArgs;
-use sare_lib::{certificate::Certificate, keys::EncodableSecret, CertificateFormat};
+use sare_lib::{certificate::Certificate, keys::EncodableSecret, CertificateFormat, Issuer};
 
 use crate::{commands::revocation, common, db::SareDB, SareCLIError};
 
@@ -40,7 +40,7 @@ impl ListKeysCommand {
 
             println!(
                 "\tRevocation Certificate ID: {} \n\t\tIssuer: {} Expiry: {}",
-                key.revocation_certificate_id, cert.certificate.issuer, revocation_expiry_date
+                key.revocation_certificate_id, cert.certificate.issuer.to_string() , revocation_expiry_date
             );
             println!();
         }
