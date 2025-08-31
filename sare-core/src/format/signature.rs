@@ -1,18 +1,19 @@
 use serde::{Deserialize, Serialize};
 
 use crate::format::error::FormatError;
-use crate::format::EncodablePublic;
+use crate::format::{signature, EncodablePublic};
 use crate::hybrid_sign::{ECAlgorithm, PQAlgorithm};
 
 pub const SIGNATURE_TAG: &str = "SARE MESSAGE";
+pub const SIGNATURE_MAGIC_BYTE: &str = "SARESIGN";
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SignatureMetadataFormat {
     pub ec_algorithm: ECAlgorithm,
     pub pq_algorithm: PQAlgorithm,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SignatureFormat {
     #[serde(skip_serializing_if = "Option::is_none", flatten)]
     pub signature_metadata: Option<SignatureMetadataFormat>,
@@ -21,6 +22,34 @@ pub struct SignatureFormat {
     pub message: Option<Vec<u8>>, // Some(msg) would be attached & None would be detached signatures
     pub ec_signature: Vec<u8>,
     pub pq_signature: Vec<u8>,
+    pub fullchain_fingerprint: [u8; 32],
+}
+
+impl SignatureFormat {
+    pub fn encode_with_magic_byte(&self) -> Vec<u8> {
+        let mut header: Vec<u8> = Vec::new();
+        header.extend(SIGNATURE_MAGIC_BYTE.as_bytes());
+        header.extend_from_slice(&self.encode_bson());
+
+        header
+    }
+
+    pub fn decode_with_magic_byte(signature: &[u8]) -> Result<Self, FormatError> {
+        let mut cursor = 0;
+        let magic_bytes = &signature[cursor..cursor + SIGNATURE_MAGIC_BYTE.len()];
+
+        cursor = cursor + SIGNATURE_MAGIC_BYTE.len();
+
+        if magic_bytes != SIGNATURE_MAGIC_BYTE.as_bytes() {
+            return Err(FormatError::FailedToDecode(
+                super::error::ErrSection::HEADER,
+            ));
+        };
+
+        let bson_data = &signature[cursor..signature.len()];
+
+        Self::decode_bson(bson_data)
+    }
 }
 
 impl EncodablePublic for SignatureFormat {
@@ -35,7 +64,7 @@ impl EncodablePublic for SignatureFormat {
     }
 
     fn encode_pem(&self) -> String {
-        let pem = pem::Pem::new(SIGNATURE_TAG, self.encode_bson().as_slice());
+        let pem = pem::Pem::new(SIGNATURE_TAG, self.encode_with_magic_byte().as_slice());
         pem::encode(&pem)
     }
 
@@ -43,6 +72,6 @@ impl EncodablePublic for SignatureFormat {
         let pem = pem::parse(pem_data)?;
 
         let bson_data = pem.contents();
-        Self::decode_bson(bson_data)
+        Self::decode_with_magic_byte(bson_data)
     }
 }

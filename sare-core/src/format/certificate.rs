@@ -12,7 +12,7 @@ pub const VALIDATION_PEM_TAG: &str = "SARE VALIDATION CERTIFICATE";
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Issuer {
     pub name: String,
-    email: String,
+    pub email: String,
 }
 
 impl Issuer {

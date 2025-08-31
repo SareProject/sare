@@ -212,6 +212,7 @@ impl EncodableSecret for SecretKeyFormat {
 mod secret_vec_serde {
     use secrecy::{ExposeSecret, SecretVec};
     use serde::{self, Deserialize, Deserializer, Serializer};
+    use serde_bytes::ByteBuf;
 
     pub fn serialize<S>(data: &SecretVec<u8>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -224,7 +225,7 @@ mod secret_vec_serde {
     where
         D: Deserializer<'de>,
     {
-        let bytes: Vec<u8> = Vec::deserialize(deserializer)?;
-        Ok(SecretVec::new(bytes))
+        let bytes: ByteBuf = ByteBuf::deserialize(deserializer)?;
+        Ok(SecretVec::new(bytes.into_vec()))
     }
 }

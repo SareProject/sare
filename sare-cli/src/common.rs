@@ -1,18 +1,78 @@
 use std::{
-    fs,
+    fs::{self, File},
     io::{self, Write},
     path::PathBuf,
-    time::SystemTime,
+    time::{Duration, SystemTime},
 };
 
 use chrono::DateTime;
+use indicatif::ProgressBar;
 use rpassword;
-use secrecy::SecretString;
+use sare_lib::keys::MasterKey;
+use secrecy::{ExposeSecret, SecretString};
 
-use crate::error::SareCLIError;
+use crate::{db::SareDB, error::SareCLIError};
 
 pub const DEFAULT_SARE_DIRECTORY: &str = ".sare";
 pub const DB_FILE: &str = "saredb.json";
+
+pub fn get_master_key_from_cli(masterkey_id: &Option<String>) -> Result<MasterKey, SareCLIError> {
+    let sare_db = SareDB::import_from_json_file()?;
+
+    let associated_keys = sare_db.key_associations;
+
+    if associated_keys.is_empty() {
+        println!("You don't have any master keys right now, use keygen command to generate one!");
+        return Err(SareCLIError::Unexpected(String::new()));
+    }
+
+    let masterkey_id = if let Some(masterkey_id) = masterkey_id {
+        &masterkey_id.to_owned()
+    } else {
+        println!("You haven't specified any master keys, choose one from below");
+
+        let mut entries: Vec<_> = associated_keys.iter().collect();
+        entries.sort_by_key(|(k, _)| *k); // sort by key
+
+        for (idx, key_id) in entries.iter().enumerate() {
+            println!("{}. {}", idx + 1, key_id.0);
+        }
+
+        let index_input = get_confirmed_input("Please enter the number of the key: ");
+
+        let index: usize = index_input
+            .parse()
+            .map_err(|e: std::num::ParseIntError| SareCLIError::Unexpected(e.to_string()))?;
+
+        if let Some((key, _value)) = entries.get(index - 1) {
+            key.to_owned()
+        } else {
+            println!("Invalid index {}", index);
+            return Err(SareCLIError::Unexpected(String::new()));
+        }
+    };
+
+    let sare_directory = prepare_sare_directory()?;
+
+    let masterkey_file =
+        File::open(sare_directory.join(format!("private_keys/MASTER_{masterkey_id}.pem")))?;
+
+    let secret_key_format = MasterKey::decode_pem(masterkey_file)?;
+
+    let passphrase = if secret_key_format.encryption_metadata.is_some() {
+        let input_passphrase = read_cli_secret("Please enter your passphrase: ")?;
+        let passphrase_bytes =
+            secrecy::Secret::new(input_passphrase.expose_secret().clone().into_bytes());
+
+        Some(passphrase_bytes)
+    } else {
+        None
+    };
+
+    let masterkey = MasterKey::import(secret_key_format, passphrase)?;
+
+    Ok(masterkey)
+}
 
 pub fn get_now_timestamp() -> u64 {
     SystemTime::now()

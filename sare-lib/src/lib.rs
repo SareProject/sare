@@ -5,13 +5,14 @@ pub mod signing;
 
 pub use sare_core::format::certificate::CertificateFormat;
 pub use sare_core::format::certificate::Issuer;
+pub use sare_core::format::error::FormatError;
+pub use sare_core::CoreErrorKind;
 use std::fmt::{self, Display};
 use std::io::Error as IoError;
 
 use sare_core::{
-    encryption::error::EncryptionError, format::error::FormatError,
-    hybrid_kem::error::HybridKEMError, hybrid_sign::error::HybridSignError, kdf::error::KDFError,
-    CoreErrorKind,
+    encryption::error::EncryptionError, hybrid_kem::error::HybridKEMError,
+    hybrid_sign::error::HybridSignError, kdf::error::KDFError,
 };
 
 #[derive(Debug)]

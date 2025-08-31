@@ -199,13 +199,12 @@ impl MasterKey {
                     pkdf_metadata.pkdf_algorithm,
                 );
 
-                let derived_key = pkdf.derive_key(32).unwrap();
+                let derived_key = pkdf.derive_key(32)?;
 
-                let keywrap = KeyWrap::new(derived_key).unwrap();
+                let keywrap = KeyWrap::new(derived_key)?;
 
-                let decrypted_master_seed = keywrap
-                    .dewrap(&decoded_master_key_format.master_seed)
-                    .unwrap(); // TODO: Handle Errors
+                let decrypted_master_seed =
+                    keywrap.dewrap(&decoded_master_key_format.master_seed)?;
 
                 Ok(MasterKey {
                     hybrid_sign_algorithm,

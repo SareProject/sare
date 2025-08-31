@@ -1,4 +1,4 @@
-use sare_lib::SareError;
+use sare_lib::{FormatError, SareError};
 use serde_json::Error as JsonError;
 use std::fmt;
 use std::io::Error as IoError;
@@ -31,6 +31,12 @@ impl From<SareError> for SareCLIError {
 impl From<JsonError> for SareCLIError {
     fn from(err: JsonError) -> Self {
         SareCLIError::JsonError(err.to_string())
+    }
+}
+
+impl From<FormatError> for SareCLIError {
+    fn from(err: FormatError) -> Self {
+        SareCLIError::SareLibError(SareError::CoreError(sare_lib::CoreErrorKind::Format(err)))
     }
 }
 

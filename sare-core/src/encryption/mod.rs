@@ -48,7 +48,7 @@ impl KeyWrap {
     }
 
     pub fn dewrap(&self, wrapped_data: &SecretVec<u8>) -> Result<SecretVec<u8>, EncryptionError> {
-        let mut output: Vec<u8> = Vec::with_capacity(wrapped_data.expose_secret().len() - 8);
+        let mut output: Vec<u8> = vec![0; wrapped_data.expose_secret().len() - 8];
 
         let input_key = <[u8; 32]>::try_from(self.input_key.expose_secret().as_slice()).unwrap();
 

@@ -1,8 +1,17 @@
-use std::path::PathBuf;
+use std::{
+    fs::{self, File},
+    path::PathBuf,
+};
 
 use argh::FromArgs;
+use sare_lib::signing::Signing;
+use sare_lib::{
+    certificate::SignatureFormat,
+    keys::{EncodablePublic, MasterKey},
+};
+use secrecy::ExposeSecret;
 
-use crate::error::SareCLIError;
+use crate::{commands::signature, common, db::SareDB, error::SareCLIError};
 
 #[derive(FromArgs, Debug)]
 #[argh(subcommand)]
@@ -19,6 +28,9 @@ struct GenerateSignature {
     original_file: PathBuf,
     #[argh(positional)]
     sign_file: PathBuf,
+    /// masterkey id
+    #[argh(option)]
+    masterkey_id: Option<String>,
 }
 
 #[derive(FromArgs, Debug)]
@@ -49,10 +61,41 @@ impl SignatureCommand {
     }
 
     fn generate(&self, gen: &GenerateSignature) -> Result<(), SareCLIError> {
-        todo!()
+        let masterkey = common::get_master_key_from_cli(&gen.masterkey_id)?;
+        let fullchain_fingerprint = masterkey.get_fullchain_public_fingerprint();
+
+        let sign_engine = Signing::new(masterkey);
+
+        let message = fs::read(&gen.original_file)?;
+
+        let signature = sign_engine.sign_detached(&message);
+
+        let bson_signature = signature.encode_with_magic_byte();
+
+        fs::write(&gen.sign_file, bson_signature)?;
+
+        println!("Signature successfully generated!");
+        Ok(())
     }
 
     fn verify(&self, verify: &VerifySignature) -> Result<(), SareCLIError> {
-        todo!();
+        let signed_message = fs::read(&verify.sign_file)?;
+        let original_message = fs::read(&verify.original_file)?;
+
+        let signature_format = SignatureFormat::decode_with_magic_byte(&signed_message)?;
+        let is_verified = Signing::verify_detached(&signature_format, &original_message)?;
+
+        if is_verified {
+            println!("Verified: yes");
+        } else {
+            println!("Verified: no");
+        };
+
+        println!(
+            "Signed by: {}",
+            hex::encode_upper(signature_format.fullchain_fingerprint)
+        );
+
+        Ok(())
     }
 }

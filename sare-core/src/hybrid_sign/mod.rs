@@ -7,11 +7,12 @@ use ed25519_compact as ed25519;
 use secrecy::{ExposeSecret, SecretVec};
 
 use serde::{Deserialize, Serialize};
+use sha2::Digest;
 
 const ED25519_MAGIC_BYTES: [u8; 4] = [25, 85, 210, 14]; // 0xED25519 in LittleEndian
 const DILITHIUM3_MAGIC_BYTES: [u8; 4] = [211, 12, 0, 0]; // 0xCD3 in LittleEndian
 
-#[derive(Clone, Copy, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum ECAlgorithm {
     Ed25519,
 }
@@ -106,9 +107,37 @@ impl<'a> ECSignature<'a> {
             }
         }
     }
+
+    fn hash_message(message: &[u8]) -> Vec<u8> {
+        let mut hasher = sha3::Sha3_256::new();
+
+        hasher.update(message);
+
+        let result = hasher.finalize();
+
+        result.to_vec()
+    }
+
+    pub fn hash_and_sign(&self, message: &[u8]) -> Vec<u8> {
+        self.sign(&Self::hash_message(message))
+    }
+
+    pub fn hash_and_verify(
+        signature_algorithm: &ECAlgorithm,
+        public_key: &[u8],
+        message: &[u8],
+        signature: &[u8],
+    ) -> Result<bool, HybridSignError> {
+        Self::verify(
+            signature_algorithm,
+            public_key,
+            &Self::hash_message(message),
+            signature,
+        )
+    }
 }
 
-#[derive(Clone, Copy, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum PQAlgorithm {
     Dilithium3,
 }
@@ -153,6 +182,34 @@ impl<'a> PQSignature<'a> {
 
     pub fn new(keypair: &'a PQKeyPair) -> Self {
         PQSignature { keypair }
+    }
+
+    fn hash_message(message: &[u8]) -> Vec<u8> {
+        let mut hasher = sha3::Sha3_256::new();
+
+        hasher.update(message);
+
+        let result = hasher.finalize();
+
+        result.to_vec()
+    }
+
+    pub fn hash_and_sign(&self, message: &[u8]) -> Vec<u8> {
+        self.sign(&Self::hash_message(message))
+    }
+
+    pub fn hash_and_verify(
+        signature_algorithm: &PQAlgorithm,
+        public_key: &[u8],
+        message: &[u8],
+        signature: &[u8],
+    ) -> Result<bool, HybridSignError> {
+        Self::verify(
+            signature_algorithm,
+            public_key,
+            &Self::hash_message(message),
+            signature,
+        )
     }
 
     pub fn sign(&self, message: &[u8]) -> Vec<u8> {
