@@ -75,10 +75,9 @@ impl RecipientCommand {
         let fullchain_fingerprint = recipient_key.fullchain_public_key.calculate_fingerprint();
 
         let sare_directory = common::prepare_sare_directory()?;
+        let temp_dir = sare_directory.join(".temp");
 
         let fullchain_fingerprint = hex::encode_upper(fullchain_fingerprint);
-
-        let temp_dir = sare_directory.join(".temp");
 
         let mut recipient_buffer = Cursor::new(Vec::new());
         recipient_key.export(recipient_buffer.get_mut())?;
@@ -122,8 +121,31 @@ impl RecipientCommand {
         Ok(())
     }
 
-    fn remove_recipient(&self, remove: &RemoveRecipient) -> Result<(), SareCLIError> {
-        todo!();
+    fn remove_recipient(&self, remove: &RemoveRecipient) -> Result<(), SareCLIError> {        
+        let mut sare_db = SareDB::import_from_json_file()?;
+
+        // Filter out the recipient matching the provided fingerprint
+        let initial_count = sare_db.recipients.len();
+        sare_db.recipients.retain(|r| r.fullchain_fingerprint != remove.id);
+
+        if sare_db.recipients.len() == initial_count {
+            println!("No recipient found with fingerprint: {}", remove.id);
+            return Ok(());
+        }
+
+        sare_db.save_to_json_file()?;
+        println!("Recipient {} removed successfully.", remove.id);
+
+        let sare_directory = prepare_sare_directory()?;
+        let recipient_file = sare_directory
+            .join("recipients")
+            .join(format!("RECIPIENT_{}.pem", remove.id));
+
+        if recipient_file.exists() {
+            fs::remove_file(recipient_file)?;
+        }
+
+        Ok(())
     }
 
     fn list_recipients() -> Result<(), SareCLIError> {

@@ -26,9 +26,9 @@ impl SareDBAssociatedKey {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SareDBRecipient {
-    fullchain_fingerprint: String,
-    comment: Option<String>,
-    date_added: u64,
+    pub fullchain_fingerprint: String,
+    pub comment: Option<String>,
+    pub date_added: u64,
 }
 
 impl SareDBRecipient {
