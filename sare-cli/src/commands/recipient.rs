@@ -78,9 +78,7 @@ impl RecipientCommand {
 
         let fullchain_fingerprint = hex::encode_upper(fullchain_fingerprint);
 
-        // Creating temp directories
         let temp_dir = sare_directory.join(".temp");
-        fs::create_dir_all(&temp_dir.join("recipients"))?;
 
         let mut recipient_buffer = Cursor::new(Vec::new());
         recipient_key.export(recipient_buffer.get_mut())?;

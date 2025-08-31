@@ -63,12 +63,7 @@ impl KeyGenCommand {
         )?;
 
         let sare_directory = common::prepare_sare_directory()?;
-
-        // Creating temp directories
         let temp_dir = sare_directory.join(".temp");
-        fs::create_dir_all(&temp_dir.join("private_keys"))?;
-        fs::create_dir_all(&temp_dir.join("public_keys"))?;
-        fs::create_dir_all(&temp_dir.join("revocations"))?;
 
         // Export master key to memory
         let mut master_buffer = Cursor::new(Vec::new());
@@ -124,10 +119,6 @@ impl KeyGenCommand {
         fs::write(&public_path_temp, public_buffer.into_inner())?;
 
         // Move files to actual directories since everything went ok
-
-        fs::create_dir_all(&sare_directory.join("private_keys"))?;
-        fs::create_dir_all(&sare_directory.join("public_keys"))?;
-        fs::create_dir_all(&sare_directory.join("revocations"))?;
 
         let master_final = sare_directory
             .join("private_keys")

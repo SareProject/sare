@@ -69,9 +69,20 @@ pub fn prepare_sare_directory() -> Result<PathBuf, SareCLIError> {
     let home_directory = dirs::home_dir().unwrap_or(PathBuf::new());
     let sare_directory = create_directory(&home_directory.join(DEFAULT_SARE_DIRECTORY))?;
 
+    // Clean the temp dir on each run
+    fs::remove_dir_all(sare_directory.join(".temp"))?;
+
     create_directory(&sare_directory.join("private_keys"))?;
     create_directory(&sare_directory.join("public_keys"))?;
     create_directory(&sare_directory.join("revocations"))?;
+    create_directory(&sare_directory.join("recipients"))?;
+
+    let temp_dir = create_directory(&sare_directory.join(".temp"))?;
+
+    create_directory(&temp_dir.join("private_keys"))?;
+    create_directory(&temp_dir.join("public_keys"))?;
+    create_directory(&temp_dir.join("revocations"))?;
+    create_directory(&temp_dir.join("recipients"))?;
 
     Ok(sare_directory)
 }
