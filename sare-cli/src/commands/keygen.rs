@@ -142,7 +142,7 @@ impl KeyGenCommand {
         // Insert to DB
         let associated_key =
             db::SareDBAssociatedKey::new(&fullchain_fingerprint, &fullchain_fingerprint);
-        let mut sare_db = SareDB::empty();
+        let mut sare_db = SareDB::import_from_json_file()?;
         sare_db.add_key_association(&keyid, associated_key);
         sare_db.save_to_json_file()?;
 
