@@ -28,6 +28,10 @@ pub struct KeyGenCommand {
     #[argh(switch)]
     unencrypted_keyfiles: Option<bool>,
 
+    /// generates public keys without validation certificate (Not recommended)
+    #[argh(switch)]
+    no_validation_cert: Option<bool>,
+
     /// hybrid KEM algorithm
     #[argh(option)]
     hybrid_kem_algorithm: Option<String>,
@@ -87,13 +91,15 @@ impl KeyGenCommand {
             progress_bar.finish_with_message("Masterkey encrypted!");
         }
 
-        let validation_certificate =
-            Certificate::new_validation(masterkey.clone(), expiry_duration, issuer.clone());
 
         // Export public key
         let mut public_buffer = Cursor::new(Vec::new());
         masterkey.export_public(&mut public_buffer)?;
-        validation_certificate.export(&mut public_buffer)?;
+        if !self.no_validation_cert.unwrap_or(true){
+            let validation_certificate =
+            Certificate::new_validation(masterkey.clone(), expiry_duration, issuer.clone());
+            validation_certificate.export(&mut public_buffer)?;
+        }
 
         // Export revocation file
         let revocation_path_temp = temp_dir
@@ -136,8 +142,9 @@ impl KeyGenCommand {
         // Insert to DB
         let associated_key =
             db::SareDBAssociatedKey::new(&fullchain_fingerprint, &fullchain_fingerprint);
-        let sare_db = SareDB::new(&keyid, associated_key);
-        sare_db.insert_to_json_file()?;
+        let mut sare_db = SareDB::empty();
+        sare_db.add_key_association(&keyid, associated_key);
+        sare_db.save_to_json_file()?;
 
         println!(
             "\nYour Keypair has been generated!
