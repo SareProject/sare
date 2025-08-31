@@ -22,7 +22,8 @@ pub struct Certificate {
 impl Certificate {
     pub fn new(masterkey: MasterKey, certificate: CertificateFormat) -> Self {
         let encoded_certificate = certificate.encode_bson();
-        let signed_certificate = super::signing::Signing::new(masterkey).sign(&encoded_certificate);
+        let signed_certificate =
+            super::signing::Signing::new(masterkey).sign_attached(&encoded_certificate);
 
         Certificate {
             certificate,
@@ -83,8 +84,11 @@ impl Certificate {
     pub fn decode_bson(bson_data: &[u8]) -> Result<Self, SareError> {
         let signature = SignatureFormat::decode_bson(bson_data)?;
 
-        let signature_message = &signature.message;
-
+        // Note: all certificates will be attached
+        let raw_message = &signature.message;
+        let signature_message = raw_message
+            .as_ref()
+            .expect("Attached signature is missing the message");
         let certificate = CertificateFormat::decode_bson(&signature_message)?;
 
         Ok(Certificate {
@@ -94,7 +98,7 @@ impl Certificate {
     }
 
     pub fn verify(&self) -> Result<bool, SareError> {
-        super::signing::Signing::verify(&self.signature)
+        super::signing::Signing::verify_attached(&self.signature)
     }
 
     pub fn import<R: Read>(mut input: R) -> Result<Self, SareError> {

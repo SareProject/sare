@@ -7,6 +7,7 @@ pub mod error;
 
 use crate::commands::{
     keygen::KeyGenCommand, listkeys::ListKeysCommand, recipient::RecipientCommand,
+    signature::SignatureCommand,
 };
 use error::SareCLIError;
 
@@ -23,6 +24,7 @@ enum SubCommand {
     KeyGen(KeyGenCommand),
     ListKeys(ListKeysCommand),
     Recipient(RecipientCommand),
+    Signature(SignatureCommand),
 }
 
 fn main() -> Result<(), SareCLIError> {
@@ -34,5 +36,6 @@ fn main() -> Result<(), SareCLIError> {
         SubCommand::KeyGen(keygen_command) => keygen_command.execute(),
         SubCommand::ListKeys(listkeys_command) => listkeys_command.execute(),
         SubCommand::Recipient(recipient_command) => recipient_command.execute(),
+        SubCommand::Signature(signature_command) => signature_command.execute(),
     }
 }

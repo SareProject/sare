@@ -6,7 +6,6 @@ use std::io::{BufReader, Write};
 
 use serde::{Deserialize, Serialize};
 
-use crate::commands::recipient;
 use crate::common;
 use crate::error::SareCLIError;
 

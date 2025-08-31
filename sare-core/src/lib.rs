@@ -13,6 +13,7 @@ use format::error::FormatError;
 use hybrid_kem::error::HybridKEMError;
 use kdf::error::KDFError;
 pub use pem;
+pub use sha3;
 
 use crate::hybrid_sign::error::HybridSignError;
 

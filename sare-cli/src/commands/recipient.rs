@@ -51,10 +51,9 @@ struct RemoveRecipient {
 struct ListRecipients {}
 
 #[derive(FromArgs)]
-/// Generates a SARE keypair
+/// Adds/Removes/Lists Recipients
 #[argh(subcommand, name = "recipient")]
 pub struct RecipientCommand {
-    /// generates key files without encryption (Not recommended)
     #[argh(subcommand)]
     sub: RecipientSubCommand,
 }

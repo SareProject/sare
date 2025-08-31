@@ -18,7 +18,7 @@ pub struct SignatureFormat {
     pub signature_metadata: Option<SignatureMetadataFormat>,
     pub ec_public_key: Vec<u8>,
     pub pq_public_key: Vec<u8>,
-    pub message: Vec<u8>,
+    pub message: Option<Vec<u8>>, // Some(msg) would be attached & None would be detached signatures
     pub ec_signature: Vec<u8>,
     pub pq_signature: Vec<u8>,
 }
