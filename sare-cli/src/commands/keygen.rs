@@ -91,13 +91,12 @@ impl KeyGenCommand {
             progress_bar.finish_with_message("Masterkey encrypted!");
         }
 
-
         // Export public key
         let mut public_buffer = Cursor::new(Vec::new());
         masterkey.export_public(&mut public_buffer)?;
-        if !self.no_validation_cert.unwrap_or(true){
+        if !self.no_validation_cert.unwrap_or(true) {
             let validation_certificate =
-            Certificate::new_validation(masterkey.clone(), expiry_duration, issuer.clone());
+                Certificate::new_validation(masterkey.clone(), expiry_duration, issuer.clone());
             validation_certificate.export(&mut public_buffer)?;
         }
 
@@ -125,6 +124,11 @@ impl KeyGenCommand {
         fs::write(&public_path_temp, public_buffer.into_inner())?;
 
         // Move files to actual directories since everything went ok
+
+        fs::create_dir_all(&sare_directory.join("private_keys"))?;
+        fs::create_dir_all(&sare_directory.join("public_keys"))?;
+        fs::create_dir_all(&sare_directory.join("revocations"))?;
+
         let master_final = sare_directory
             .join("private_keys")
             .join(format!("MASTER_{keyid}.pem"));
