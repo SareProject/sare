@@ -1,4 +1,4 @@
-use std::io::{Read, Write};
+use std::io::{Read, Seek, Write};
 
 use sare_core::{
     encryption::{
@@ -201,7 +201,19 @@ impl Encryptor {
 pub struct Decryptor(MasterKey);
 
 impl Decryptor {
-    fn decode_file_header<R: Read>(encrypted_data: &mut R) -> Result<HeaderFormat, SareError> {
+    pub fn new(master_key: MasterKey) -> Self {
+        Decryptor(master_key)
+    }
+
+    pub fn decode_file_header_and_rewind<R: Read + Seek>(
+        encrypted_data: &mut R,
+    ) -> Result<HeaderFormat, SareError> {
+        let header_bytes = HeaderFormat::peek_header_seek(encrypted_data)?;
+
+        Ok(HeaderFormat::decode(&header_bytes)?)
+    }
+
+    pub fn decode_file_header<R: Read>(encrypted_data: &mut R) -> Result<HeaderFormat, SareError> {
         let header_bytes = HeaderFormat::separate_header(encrypted_data)?;
         Ok(HeaderFormat::decode(&header_bytes)?)
     }

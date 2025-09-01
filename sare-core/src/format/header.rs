@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 use std::io;
 use std::io::Cursor;
 use std::io::Read;
+use std::io::Seek;
+use std::io::SeekFrom;
 
 use crate::format::encryption::*;
 use crate::format::signature::*;
@@ -126,23 +128,58 @@ impl HeaderFormat {
         })
     }
 
+    pub fn peek_header_seek<R: Read + Seek>(reader: &mut R) -> std::io::Result<Vec<u8>> {
+        let pos = reader.stream_position()?; // save current position
+
+        let mut magic = [0u8; 9];
+        reader.read_exact(&mut magic)?;
+
+        let mut len_buf = [0u8; 8];
+        reader.read_exact(&mut len_buf)?;
+        let header_len = u64::from_le_bytes(len_buf) as usize;
+
+        let mut header_buf = vec![0u8; header_len];
+        reader.read_exact(&mut header_buf)?;
+
+        reader.seek(SeekFrom::Start(pos))?; // rewind
+
+        let mut full = Vec::with_capacity(magic.len() + 8 + header_buf.len());
+        full.extend_from_slice(&magic);
+        full.extend_from_slice(&len_buf);
+        full.extend_from_slice(&header_buf);
+
+        Ok(full)
+    }
+
     pub fn separate_header<R: Read>(reader: &mut R) -> io::Result<Vec<u8>> {
         let mut magic = [0u8; MAGIC_BYTES.len()];
         reader.read_exact(&mut magic)?;
 
         let mut len_buf = [0u8; 8];
         reader.read_exact(&mut len_buf)?;
-        let header_len = u64::from_le_bytes(len_buf);
+        let header_len = u64::from_le_bytes(len_buf) as usize;
 
-        let mut header_buf = vec![0u8; header_len as usize];
+        let mut header_buf = vec![0u8; header_len];
         reader.read_exact(&mut header_buf)?;
 
-        let mut full = Vec::with_capacity(MAGIC_BYTES.len() + 8 + header_buf.len());
-        full.extend_from_slice(&magic);
-        full.extend_from_slice(&len_buf);
-        full.extend_from_slice(&header_buf);
+        let mut full_header = Vec::with_capacity(magic.len() + len_buf.len() + header_buf.len());
+        full_header.extend_from_slice(&magic);
+        full_header.extend_from_slice(&len_buf);
+        full_header.extend_from_slice(&header_buf);
 
-        Ok(full)
+        Ok(full_header)
+    }
+
+    pub fn is_asymmetric(&self) -> bool {
+        let metadata = &self.metadata;
+
+        metadata.kem_metadata.is_some()
+    }
+
+    pub fn is_signed(&self) -> bool {
+        let metadata = &self.metadata;
+
+        metadata.signature_metadata.is_some()
     }
 }
 
