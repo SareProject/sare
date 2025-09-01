@@ -4,7 +4,7 @@ use crate::encryption::EncryptionAlgorithm;
 use crate::hybrid_kem::{DHAlgorithm, KEMAlgorithm};
 use crate::kdf::{HKDFAlgorithm, PKDFAlgorithm};
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct KEMMetadataFormat {
     pub kem_algorithm: KEMAlgorithm,
     pub dh_algorithm: DHAlgorithm,
@@ -14,7 +14,7 @@ pub struct KEMMetadataFormat {
     pub kdf_salt: Vec<u8>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct EncryptionMetadataFormat {
     pub encryption_algorithm: EncryptionAlgorithm,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -25,7 +25,7 @@ pub struct EncryptionMetadataFormat {
     pub pkdf_metadata: Option<PKDFMetadataFormat>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PKDFMetadataFormat {
     pub pkdf_salt: Vec<u8>,
     pub pkdf_algorithm: PKDFAlgorithm,

@@ -15,7 +15,7 @@ use std::vec;
 const AEAD_BUFFER_LEN: usize = 2048;
 const XCHACHA20POLY1305_NONCE_LENGTH: usize = 24;
 
-#[derive(Copy, Clone, Serialize, Deserialize)]
+#[derive(Copy, Debug, Clone, Serialize, Deserialize)]
 pub enum EncryptionAlgorithm {
     AES256GCM,
     AES256KW,

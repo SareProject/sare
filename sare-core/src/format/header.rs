@@ -14,10 +14,8 @@ use super::EncodablePublic;
 
 const MAGIC_BYTES: &[u8; 9] = b"CRYPTOPIA";
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct HeaderMetadataFormat {
-    #[serde(skip_serializing_if = "Option::is_none", flatten)]
-    pub kem_metadata: Option<KEMMetadataFormat>,
     #[serde(skip_serializing_if = "Option::is_none", flatten)]
     pub signature_metadata: Option<SignatureMetadataFormat>,
     #[serde(flatten)]
@@ -39,6 +37,7 @@ impl HeaderMetadataFormat {
     }
 }
 
+#[derive(Debug)]
 pub struct HeaderFormat {
     pub version: u32,
     pub metadata: HeaderMetadataFormat,
@@ -173,7 +172,7 @@ impl HeaderFormat {
     pub fn is_asymmetric(&self) -> bool {
         let metadata = &self.metadata;
 
-        metadata.kem_metadata.is_some()
+        metadata.encryption_metadata.kem_metadata.is_some()
     }
 
     pub fn is_signed(&self) -> bool {
@@ -209,7 +208,6 @@ mod tests {
         };
 
         let metadata = HeaderMetadataFormat {
-            kem_metadata: None,
             signature_metadata: None,
             encryption_metadata,
             comment: Some("Test Comment".to_string()),

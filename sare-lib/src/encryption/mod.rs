@@ -79,7 +79,6 @@ impl Encryptor {
         };
 
         let header_metadata = HeaderMetadataFormat {
-            kem_metadata: None,
             signature_metadata: None,
             encryption_metadata: encryption_metadata,
             comment: None,
@@ -173,7 +172,6 @@ impl Encryptor {
 
         let header_metadata = HeaderMetadataFormat {
             encryption_metadata,
-            kem_metadata: Some(kem_metadata),
             signature_metadata,
             comment: None,
         };
