@@ -11,6 +11,7 @@ pub struct KEMMetadataFormat {
     pub dh_sender_public_key: Vec<u8>,
     pub hkdf_algorithm: HKDFAlgorithm,
     pub kem_ciphertext: Vec<u8>,
+    pub kdf_salt: Vec<u8>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]

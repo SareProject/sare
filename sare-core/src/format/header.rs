@@ -1,6 +1,8 @@
 use byteorder::{LittleEndian, ReadBytesExt};
 use serde::{Deserialize, Serialize};
+use std::io;
 use std::io::Cursor;
+use std::io::Read;
 
 use crate::format::encryption::*;
 use crate::format::signature::*;
@@ -122,6 +124,25 @@ impl HeaderFormat {
             metadata,
             signature,
         })
+    }
+
+    pub fn separate_header<R: Read>(reader: &mut R) -> io::Result<Vec<u8>> {
+        let mut magic = [0u8; MAGIC_BYTES.len()];
+        reader.read_exact(&mut magic)?;
+
+        let mut len_buf = [0u8; 8];
+        reader.read_exact(&mut len_buf)?;
+        let header_len = u64::from_le_bytes(len_buf);
+
+        let mut header_buf = vec![0u8; header_len as usize];
+        reader.read_exact(&mut header_buf)?;
+
+        let mut full = Vec::with_capacity(MAGIC_BYTES.len() + 8 + header_buf.len());
+        full.extend_from_slice(&magic);
+        full.extend_from_slice(&len_buf);
+        full.extend_from_slice(&header_buf);
+
+        Ok(full)
     }
 }
 
