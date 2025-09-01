@@ -4,11 +4,11 @@ use sare_core::{
     encryption::{self, EncryptionAlgorithm, Encryptor as CoreEncryptor},
     format::{
         encryption::{EncryptionMetadataFormat, KEMMetadataFormat, PKDFMetadataFormat},
-        header::{HeaderFormat, HeaderMetadataFormat},
+        header::{self, HeaderFormat, HeaderMetadataFormat},
         signature,
     },
     hybrid_kem::{Encapsulation, HybridKEM},
-    kdf::{HKDFAlgorithm, HKDF, KDF, PKDF},
+    kdf::{HKDFAlgorithm, PKDFAlgorithm, HKDF, KDF, PKDF},
     sha3::{Digest, Sha3_256},
 };
 use secrecy::{ExposeSecret, SecretVec};
@@ -42,8 +42,19 @@ impl Encryptor {
         Encryptor(master_key)
     }
 
+    pub fn get_pkdf(
+        passphrase: &SecretVec<u8>,
+        algorithm: PKDFAlgorithm,
+        _scaling_factor: u32,
+    ) -> PKDF {
+        let salt = PKDF::generate_salt();
+
+        let pkdf = PKDF::new(passphrase, salt, algorithm);
+
+        pkdf
+    }
+
     pub fn encrypt_with_passphrase<R: Read, W: Write>(
-        &self,
         mut data: R,
         mut output: W,
         pkdf: PKDF,
@@ -52,6 +63,35 @@ impl Encryptor {
         let encryption_key = pkdf.derive_key(32)?;
 
         let encryptor = CoreEncryptor::new(encryption_key, algorithm);
+
+        let pkdf_metadata = PKDFMetadataFormat {
+            pkdf_salt: pkdf.salt,
+            pkdf_algorithm: pkdf.algorithm,
+        };
+
+        let encryption_metadata = EncryptionMetadataFormat {
+            encryption_algorithm: algorithm,
+            nonce: Some(encryptor.nonce.to_owned()),
+            kem_metadata: None,
+            pkdf_metadata: Some(pkdf_metadata),
+        };
+
+        let header_metadata = HeaderMetadataFormat {
+            kem_metadata: None,
+            signature_metadata: None,
+            encryption_metadata: encryption_metadata,
+            comment: None,
+        };
+
+        let header = HeaderFormat {
+            version: 1,
+            metadata: header_metadata,
+            signature: None,
+        };
+
+        let encoded_header = header.encode();
+
+        output.write_all(&encoded_header)?;
 
         match algorithm {
             EncryptionAlgorithm::XCHACHA20POLY1305 => {
@@ -99,7 +139,7 @@ impl Encryptor {
 
         let kdf_salt = PKDF::generate_salt();
         let encryption_key =
-            HKDF::new(&concated_shared_secrets, &kdf_salt, HKDFAlgorithm::SHA256).expand(None)?;
+            HKDF::new(&concated_shared_secrets, kdf_salt, HKDFAlgorithm::SHA256).expand(None)?;
 
         let message_checksum = Self::checksum(&mut data)?;
         let signature = signing::Signing::new(self.0.clone()).sign_attached(&message_checksum);
@@ -111,7 +151,6 @@ impl Encryptor {
             dh_sender_public_key: hybrid_kem.dh_keypair.public_key,
             hkdf_algorithm: HKDFAlgorithm::SHA256,
             kem_ciphertext: kem_cipher_text,
-            kdf_salt: kdf_salt,
         };
 
         let signature_metadata = signature_metadata;

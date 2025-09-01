@@ -109,7 +109,7 @@ impl MasterKey {
             Some(passphrase) => {
                 let pkdf_salt = PKDF::generate_salt();
 
-                let pkdf = PKDF::new(&passphrase, &pkdf_salt, RECOMENDED_PKDF_PARAMS);
+                let pkdf = PKDF::new(&passphrase, pkdf_salt.to_owned(), RECOMENDED_PKDF_PARAMS);
 
                 let pkdf_metadata = PKDFMetadataFormat {
                     pkdf_salt,
@@ -195,7 +195,7 @@ impl MasterKey {
 
                 let pkdf = PKDF::new(
                     &passphrase,
-                    &pkdf_metadata.pkdf_salt,
+                    pkdf_metadata.pkdf_salt,
                     pkdf_metadata.pkdf_algorithm,
                 );
 

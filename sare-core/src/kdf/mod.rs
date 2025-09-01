@@ -24,23 +24,23 @@ impl HKDFAlgorithm {
 }
 
 pub trait KDF {
-    fn generate_salt() -> [u8; 8] {
+    fn generate_salt() -> Vec<u8> {
         let mut salt_buffer = [0u8; 8];
 
         OsRng.fill_bytes(&mut salt_buffer);
 
-        salt_buffer
+        salt_buffer.to_vec()
     }
 }
 
 pub struct HKDF<'a> {
     input_data: &'a SecretVec<u8>,
-    salt: &'a [u8],
+    salt: Vec<u8>,
     algorithm: HKDFAlgorithm,
 }
 
 impl<'a> HKDF<'a> {
-    pub fn new(input_data: &'a SecretVec<u8>, salt: &'a [u8], algorithm: HKDFAlgorithm) -> Self {
+    pub fn new(input_data: &'a SecretVec<u8>, salt: Vec<u8>, algorithm: HKDFAlgorithm) -> Self {
         HKDF {
             input_data,
             salt,
@@ -53,7 +53,7 @@ impl<'a> HKDF<'a> {
         additional_context: Option<&[u8]>,
         okm: &mut [u8],
     ) -> Result<(), KDFError> {
-        let hkdf = Hkdf::<Sha256>::new(Some(self.salt), self.input_data.expose_secret());
+        let hkdf = Hkdf::<Sha256>::new(Some(&self.salt), self.input_data.expose_secret());
         hkdf.expand(additional_context.unwrap_or(&[0]), okm)?;
 
         Ok(())
@@ -64,7 +64,7 @@ impl<'a> HKDF<'a> {
         additional_context: Option<&[u8]>,
         okm: &mut [u8],
     ) -> Result<(), KDFError> {
-        let hkdf = Hkdf::<Sha512>::new(Some(self.salt), self.input_data.expose_secret());
+        let hkdf = Hkdf::<Sha512>::new(Some(&self.salt), self.input_data.expose_secret());
         hkdf.expand(additional_context.unwrap_or(&[0]), okm)?;
 
         Ok(())
@@ -91,16 +91,17 @@ pub enum PKDFAlgorithm {
     Scrypt(u8, u32, u32),
 }
 
+#[derive(Clone)]
 pub struct PKDF<'a> {
     input_data: &'a SecretVec<u8>,
-    salt: &'a [u8],
-    algorithm: PKDFAlgorithm,
+    pub salt: Vec<u8>,
+    pub algorithm: PKDFAlgorithm,
 }
 
 impl KDF for PKDF<'_> {}
 
 impl<'a> PKDF<'a> {
-    pub fn new(input_data: &'a SecretVec<u8>, salt: &'a [u8], algorithm: PKDFAlgorithm) -> Self {
+    pub fn new(input_data: &'a SecretVec<u8>, salt: Vec<u8>, algorithm: PKDFAlgorithm) -> Self {
         PKDF {
             input_data,
             salt,
@@ -126,7 +127,7 @@ impl<'a> PKDF<'a> {
                 let mut output = vec![0u8; key_length];
                 scrypt::scrypt(
                     self.input_data.expose_secret(),
-                    self.salt,
+                    &self.salt,
                     &params,
                     &mut output,
                 )?;
@@ -156,7 +157,7 @@ mod tests {
     #[test]
     fn hkdf() {
         let binding = SecretVec::from(TEST_INPUT_DATA.to_vec());
-        let hkdf = HKDF::new(&binding, &TEST_SALT, HKDFAlgorithm::SHA512);
+        let hkdf = HKDF::new(&binding, TEST_SALT.to_vec(), HKDFAlgorithm::SHA512);
 
         let output = hkdf.expand(None).unwrap();
 
@@ -178,7 +179,11 @@ mod tests {
     #[test]
     fn scrypt_key_derive() {
         let input_data = SecretVec::from(TEST_INPUT_DATA.to_vec());
-        let pkdf = PKDF::new(&input_data, &TEST_SALT, PKDFAlgorithm::Scrypt(5, 8, 1));
+        let pkdf = PKDF::new(
+            &input_data,
+            TEST_SALT.to_vec(),
+            PKDFAlgorithm::Scrypt(5, 8, 1),
+        );
 
         let output = pkdf.derive_key(10).unwrap();
 

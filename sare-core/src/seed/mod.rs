@@ -80,12 +80,12 @@ impl Seed {
     }
 
     pub fn derive_64bytes_child_seed(&self, additional_context: Option<&[u8]>) -> SecretVec<u8> {
-        let hkdf = HKDF::new(&self.raw_seed, &[], HKDFAlgorithm::SHA512);
+        let hkdf = HKDF::new(&self.raw_seed, vec![], HKDFAlgorithm::SHA512);
         hkdf.expand(additional_context).unwrap()
     }
 
     pub fn derive_32bytes_child_seed(&self, additional_context: Option<&[u8]>) -> SecretVec<u8> {
-        let hkdf = HKDF::new(&self.raw_seed, &[], HKDFAlgorithm::SHA256);
+        let hkdf = HKDF::new(&self.raw_seed, vec![], HKDFAlgorithm::SHA256);
 
         hkdf.expand(additional_context).unwrap()
     }

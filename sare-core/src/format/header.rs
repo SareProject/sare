@@ -139,7 +139,7 @@ mod tests {
     #[test]
     fn metadata_format_encode() {
         let pkdf_metadata = PKDFMetadataFormat {
-            pkdf_salt: [0, 0, 0, 0, 0, 0, 0, 0],
+            pkdf_salt: vec![0, 0, 0, 0, 0, 0, 0, 0],
             pkdf_algorithm: PKDFAlgorithm::Scrypt(10, 8, 10),
         };
 
