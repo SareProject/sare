@@ -45,8 +45,12 @@ impl Certificate {
         Self::new(masterkey, certificate)
     }
 
-    pub fn new_revocation_no_reason(masterkey: MasterKey, timestamp: u64, issuer: Issuer) -> Self {
-        let reason = RevocationReason::NoReasonSpecified;
+    pub fn new_revocation(
+        masterkey: MasterKey,
+        timestamp: u64,
+        issuer: Issuer,
+        reason: RevocationReason,
+    ) -> Self {
         let revocation = RevocationCertificateFormat {
             revocation_date: timestamp,
             revocation_reason: reason,

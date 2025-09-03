@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use std::{ops::Deref, str::FromStr};
 
 use crate::format::{keys::FullChainPublicKeyFormat, signature::SignatureFormat};
 
@@ -38,10 +38,22 @@ impl Issuer {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum RevocationReason {
     Compromised,
     NoReasonSpecified,
+}
+
+impl FromStr for RevocationReason {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "compromised" => Ok(RevocationReason::Compromised),
+            "no-reason" | "none" | "unspecified" => Ok(RevocationReason::NoReasonSpecified),
+            _ => Err(format!("Invalid revocation reason: {}", s)),
+        }
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]

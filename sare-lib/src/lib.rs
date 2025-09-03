@@ -3,6 +3,7 @@ pub mod encryption;
 pub mod keys;
 pub mod signing;
 
+pub use sare_core::format;
 pub use sare_core::format::certificate::CertificateFormat;
 pub use sare_core::format::certificate::Issuer;
 pub use sare_core::format::error::FormatError;

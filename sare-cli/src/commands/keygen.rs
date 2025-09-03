@@ -131,8 +131,10 @@ impl KeyGenCommand {
         fs::rename(revocation_path_temp, revocation_final)?;
 
         // Insert to DB
-        let associated_key =
-            db::SareDBAssociatedKey::new(&fullchain_fingerprint, &fullchain_fingerprint);
+        let associated_key = db::SareDBAssociatedKey::new(
+            &fullchain_fingerprint,
+            &format!("{fullchain_fingerprint}"),
+        );
         let mut sare_db = SareDB::import_from_json_file()?;
         sare_db.add_key_association(&keyid, associated_key);
         sare_db.save_to_json_file()?;
