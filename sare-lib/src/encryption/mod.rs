@@ -87,7 +87,7 @@ impl Encryptor {
         };
 
         let header = HeaderFormat {
-            version: 1,
+            version: SARE_VERSION,
             metadata: header_metadata,
             signature: None,
         };
@@ -226,6 +226,13 @@ impl Decryptor {
         mut output: W,
     ) -> Result<(), SareError> {
         let header = Self::decode_file_header(&mut encrypted_data)?;
+
+        if header.version > SARE_VERSION {
+            return Err(SareError::Unexpected(format!(
+                "sare version {} or higher is required, your version is {}",
+                header.version, SARE_VERSION
+            )));
+        }
 
         let pkdf_metadata = header
             .metadata
