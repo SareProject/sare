@@ -2,13 +2,13 @@ use sare_core::{
     bson::raw,
     format::{
         header::HeaderMetadataFormat,
-        signature::{SignatureFormat, SignatureMetadataFormat},
+        signature::{self, SignatureFormat, SignatureHeaderFormat, SignatureMetadataFormat},
     },
     hybrid_sign::{ECSignature, PQSignature},
     sha3::Digest,
 };
 
-use crate::{keys::MasterKey, signing, SareError};
+use crate::{keys::MasterKey, signing, SareError, SARE_VERSION};
 
 pub struct Signing(MasterKey);
 
@@ -19,7 +19,7 @@ impl Signing {
 
     // TODO: Copy and Clone needs to be implemented in sare-core::hybrid_sign
     // TODO: `new`/`from` methods needs to be implemented for Signature Formats
-    fn sign(&self, raw_message: &[u8], attached: bool) -> SignatureFormat {
+    fn sign(&self, raw_message: &[u8], attached: bool) -> SignatureHeaderFormat {
         let fullchain_fingerprint = self.0.get_fullchain_public_fingerprint();
         let mut merged_message =
             Vec::with_capacity(raw_message.len() + fullchain_fingerprint.len());
@@ -47,7 +47,7 @@ impl Signing {
             ec_algorithm,
         };
 
-        SignatureFormat {
+        let signature = SignatureFormat {
             signature_metadata: Some(signature_metadata),
             ec_public_key: ec_keypair.public_key,
             pq_public_key: pq_keypair.public_key,
@@ -55,18 +55,33 @@ impl Signing {
             ec_signature,
             pq_signature,
             fullchain_fingerprint,
+        };
+
+        SignatureHeaderFormat {
+            version: SARE_VERSION,
+            signature,
         }
     }
 
-    pub fn sign_attached(&self, raw_message: &[u8]) -> SignatureFormat {
+    pub fn sign_attached(&self, raw_message: &[u8]) -> SignatureHeaderFormat {
         self.sign(raw_message, true)
     }
 
-    pub fn sign_detached(&self, raw_message: &[u8]) -> SignatureFormat {
+    pub fn sign_detached(&self, raw_message: &[u8]) -> SignatureHeaderFormat {
         self.sign(raw_message, false)
     }
 
-    fn verify(signature: &SignatureFormat, message: &[u8]) -> Result<bool, SareError> {
+    fn verify(signature_header: &SignatureHeaderFormat, message: &[u8]) -> Result<bool, SareError> {
+        let signature = &signature_header.signature;
+        let version = signature_header.version;
+
+        if version > SARE_VERSION {
+            return Err(SareError::Unexpected(format!(
+                "sare version {} or higher is required, your version is {}",
+                version, SARE_VERSION
+            )));
+        }
+
         let fullchain_fingerprint = signature.fullchain_fingerprint;
         let mut merged_message = Vec::with_capacity(message.len() + fullchain_fingerprint.len());
         merged_message.extend_from_slice(message);
@@ -93,13 +108,14 @@ impl Signing {
     }
 
     pub fn verify_detached(
-        signature: &SignatureFormat,
+        signature_header: &SignatureHeaderFormat,
         raw_message: &[u8],
     ) -> Result<bool, SareError> {
-        Self::verify(signature, raw_message)
+        Self::verify(signature_header, raw_message)
     }
 
-    pub fn verify_attached(signature: &SignatureFormat) -> Result<bool, SareError> {
+    pub fn verify_attached(signature_header: &SignatureHeaderFormat) -> Result<bool, SareError> {
+        let signature = &signature_header.signature;
         let raw_message = if let Some(message) = &signature.message {
             message
         } else {
@@ -108,6 +124,6 @@ impl Signing {
             )));
         };
 
-        Self::verify(signature, &raw_message)
+        Self::verify(signature_header, &raw_message)
     }
 }

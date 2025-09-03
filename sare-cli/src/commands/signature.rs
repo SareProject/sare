@@ -4,11 +4,11 @@ use std::{
 };
 
 use argh::FromArgs;
-use sare_lib::signing::Signing;
 use sare_lib::{
     certificate::SignatureFormat,
     keys::{EncodablePublic, MasterKey},
 };
+use sare_lib::{signing::Signing, SignatureHeaderFormat};
 use secrecy::ExposeSecret;
 
 use crate::{commands::signature, common, db::SareDB, error::SareCLIError};
@@ -81,8 +81,10 @@ impl SignatureCommand {
         let signed_message = fs::read(&verify.sign_file)?;
         let original_message = fs::read(&verify.original_file)?;
 
-        let signature_format = SignatureFormat::decode_with_magic_byte(&signed_message)?;
-        let is_verified = Signing::verify_detached(&signature_format, &original_message)?;
+        let signature_header_format =
+            SignatureHeaderFormat::decode_with_magic_byte(&signed_message)?;
+        let signature_format = &signature_header_format.signature;
+        let is_verified = Signing::verify_detached(&signature_header_format, &original_message)?;
 
         if is_verified {
             println!("Verified: yes");

@@ -7,6 +7,7 @@ pub use sare_core::format::certificate::CertificateFormat;
 pub use sare_core::format::certificate::Issuer;
 pub use sare_core::format::error::FormatError;
 pub use sare_core::format::header::HeaderFormat;
+pub use sare_core::format::signature::SignatureHeaderFormat;
 pub use sare_core::CoreErrorKind;
 use std::fmt::{self, Display};
 use std::io::Error as IoError;
@@ -15,6 +16,8 @@ use sare_core::{
     encryption::error::EncryptionError, hybrid_kem::error::HybridKEMError,
     hybrid_sign::error::HybridSignError, kdf::error::KDFError,
 };
+
+pub const SARE_VERSION: u32 = 1;
 
 #[derive(Debug)]
 pub enum SareError {

@@ -15,6 +15,8 @@ use sare_core::{
 };
 use secrecy::{ExposeSecret, SecretVec};
 
+use super::SARE_VERSION;
+
 use crate::{
     keys::{HybridKEMAlgorithm, MasterKey, SharedPublicKey},
     signing, SareError,
@@ -147,7 +149,9 @@ impl Encryptor {
         .expand(None)?;
 
         let message_checksum = Self::checksum(&mut data)?;
-        let signature = signing::Signing::new(self.0.clone()).sign_attached(&message_checksum);
+        let signature_header =
+            signing::Signing::new(self.0.clone()).sign_attached(&message_checksum);
+        let signature = signature_header.signature;
         let signature_metadata = signature.signature_metadata.to_owned();
 
         let kem_metadata = KEMMetadataFormat {
@@ -177,7 +181,7 @@ impl Encryptor {
         };
 
         let header = HeaderFormat {
-            version: 1,
+            version: SARE_VERSION,
             metadata: header_metadata,
             signature: Some(signature),
         };

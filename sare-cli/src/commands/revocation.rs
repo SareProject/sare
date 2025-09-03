@@ -16,7 +16,7 @@ use crate::{
 
 #[derive(FromArgs)]
 /// Generates a SARE Revocation Certificate
-#[argh(subcommand, name = "revcert")]
+#[argh(subcommand, name = "revocation")]
 pub struct RevocationCommand {}
 
 impl RevocationCommand {

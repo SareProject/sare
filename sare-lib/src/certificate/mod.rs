@@ -1,11 +1,14 @@
 use std::io::{Read, Write};
 
-use sare_core::format::certificate::{
-    self, CertificateType, Issuer, RevocationCertificateFormat, RevocationReason,
-    ValidationCertificateFormat,
-};
 pub use sare_core::format::{
     certificate::CertificateFormat, signature::SignatureFormat, EncodablePublic,
+};
+use sare_core::format::{
+    certificate::{
+        self, CertificateType, Issuer, RevocationCertificateFormat, RevocationReason,
+        ValidationCertificateFormat,
+    },
+    signature::{self, SignatureHeaderFormat},
 };
 
 use crate::{keys::MasterKey, signing, SareError};
@@ -13,7 +16,7 @@ use crate::{keys::MasterKey, signing, SareError};
 #[derive(Clone)]
 pub struct Certificate {
     pub certificate: CertificateFormat,
-    pub signature: SignatureFormat,
+    pub signature: SignatureHeaderFormat,
 }
 
 impl Certificate {
@@ -67,7 +70,7 @@ impl Certificate {
             _ => sare_core::format::certificate::CERTIFICATE_PEM_TAG,
         };
 
-        let pem = sare_core::pem::Pem::new(tag, self.signature.encode_bson().as_slice());
+        let pem = sare_core::pem::Pem::new(tag, self.signature.encode_with_magic_byte().as_slice());
         sare_core::pem::encode(&pem)
     }
 
@@ -78,8 +81,9 @@ impl Certificate {
         Ok(())
     }
 
-    pub fn decode_bson(bson_data: &[u8]) -> Result<Self, SareError> {
-        let signature = SignatureFormat::decode_bson(bson_data)?;
+    pub fn decode_bson(signature_data: &[u8]) -> Result<Self, SareError> {
+        let signature_header = SignatureHeaderFormat::decode_with_magic_byte(signature_data)?;
+        let signature = &signature_header.signature;
 
         // Note: all certificates will be attached
         let raw_message = &signature.message;
@@ -90,7 +94,7 @@ impl Certificate {
 
         Ok(Certificate {
             certificate,
-            signature,
+            signature: signature_header,
         })
     }
 
