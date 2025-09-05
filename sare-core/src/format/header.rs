@@ -12,7 +12,7 @@ use crate::format::{ErrSection, FormatError};
 
 use super::EncodablePublic;
 
-const MAGIC_BYTES: &[u8; 9] = b"CRYPTOPIA";
+const MAGIC_BYTES: &[u8; 9] = b"SARECRYPT";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct HeaderMetadataFormat {
@@ -114,7 +114,7 @@ impl HeaderFormat {
         let signature_length = Self::read_u64(header, &mut cursor)?;
         let signature = if signature_length > 0 {
             let signature_bson = &header[cursor..cursor + signature_length as usize];
-            //cursor += signature_length as usize;
+            cursor += signature_length as usize;
             Some(SignatureFormat::decode_bson(signature_bson)?)
         } else {
             None
@@ -191,7 +191,7 @@ mod tests {
 
     const ENCODED_METADATA: &str = "ygAAAAJlbmNyeXB0aW9uX2FsZ29yaXRobQAKAAAAQUVTMjU2R0NNAARwa2RmX3NhbHQAPQAAABAwAAAAAAAQMQAAAAAAEDIAAAAAABAzAAAAAAAQNAAAAAAAEDUAAAAAABA2AAAAAAAQNwAAAAAAAANwa2RmX2FsZ29yaXRobQAvAAAABFNjcnlwdAAiAAAAEDAACgAAABIxAAgAAAAAAAAAEjIACgAAAAAAAAAAAAJjb21tZW50AA0AAABUZXN0IENvbW1lbnQAAA==";
 
-    const ENCODED_HEADER: &str = "Q1JZUFRPUElB3gAAAAAAAAABAAAAygAAAAAAAADKAAAAAmVuY3J5cHRpb25fYWxnb3JpdGhtAAoAAABBRVMyNTZHQ00ABHBrZGZfc2FsdAA9AAAAEDAAAAAAABAxAAAAAAAQMgAAAAAAEDMAAAAAABA0AAAAAAAQNQAAAAAAEDYAAAAAABA3AAAAAAAAA3BrZGZfYWxnb3JpdGhtAC8AAAAEU2NyeXB0ACIAAAAQMAAKAAAAEjEACAAAAAAAAAASMgAKAAAAAAAAAAAAAmNvbW1lbnQADQAAAFRlc3QgQ29tbWVudAAAAAAAAAAAAAA=";
+    const ENCODED_HEADER: &str = "U0FSRUNSWVBU3gAAAAAAAAABAAAAygAAAAAAAADKAAAAAmVuY3J5cHRpb25fYWxnb3JpdGhtAAoAAABBRVMyNTZHQ00ABHBrZGZfc2FsdAA9AAAAEDAAAAAAABAxAAAAAAAQMgAAAAAAEDMAAAAAABA0AAAAAAAQNQAAAAAAEDYAAAAAABA3AAAAAAAAA3BrZGZfYWxnb3JpdGhtAC8AAAAEU2NyeXB0ACIAAAAQMAAKAAAAEjEACAAAAAAAAAASMgAKAAAAAAAAAAAAAmNvbW1lbnQADQAAAFRlc3QgQ29tbWVudAAAAAAAAAAAAAA=";
 
     #[test]
     fn metadata_format_encode() {
