@@ -2,7 +2,7 @@ use std::{fs, path::PathBuf};
 
 use argh::FromArgs;
 use colored::*;
-use sare_lib::{signing::Signing, SignatureHeaderFormat};
+use sare_lib::{format::signature::SignatureHeaderFormat, signing::Signing};
 
 use crate::{common, SareCLIError};
 

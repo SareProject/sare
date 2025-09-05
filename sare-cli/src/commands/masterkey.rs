@@ -9,8 +9,8 @@ use colored::*;
 use indicatif::ProgressBar;
 use sare_lib::{
     certificate::Certificate,
+    format::certificate::Issuer,
     keys::{HybridKEMAlgorithm, HybridSignAlgorithm, MasterKey, SharedPublicKey},
-    Issuer,
 };
 use secrecy::{ExposeSecret, SecretVec};
 

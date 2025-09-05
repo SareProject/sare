@@ -3,7 +3,8 @@ use std::fs::File;
 use argh::FromArgs;
 use colored::*;
 use sare_lib::{
-    certificate::Certificate, format::certificate::RevocationReason, keys::MasterKey, Issuer,
+    certificate::Certificate, format::certificate::Issuer, format::certificate::RevocationReason,
+    keys::MasterKey,
 };
 
 use crate::{common, db::SareDB, error::SareCLIError};

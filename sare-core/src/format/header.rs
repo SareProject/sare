@@ -114,7 +114,7 @@ impl HeaderFormat {
         let signature_length = Self::read_u64(header, &mut cursor)?;
         let signature = if signature_length > 0 {
             let signature_bson = &header[cursor..cursor + signature_length as usize];
-            cursor += signature_length as usize;
+            //cursor += signature_length as usize;
             Some(SignatureFormat::decode_bson(signature_bson)?)
         } else {
             None

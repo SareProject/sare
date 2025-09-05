@@ -13,7 +13,6 @@ use std::io::{Read, Write};
 use std::vec;
 
 const AEAD_BUFFER_LEN: usize = 2048;
-const XCHACHA20POLY1305_NONCE_LENGTH: usize = 24;
 
 #[derive(Copy, Debug, Clone, Serialize, Deserialize)]
 pub enum EncryptionAlgorithm {
@@ -80,8 +79,17 @@ impl Encryptor {
         }
     }
 
-    pub fn encrypt<R: Read, W: Write>(&self, _data: R, _output: W) -> Result<(), EncryptionError> {
-        todo!();
+    pub fn encrypt<R: Read, W: Write>(
+        &self,
+        mut data: R,
+        mut output: W,
+    ) -> Result<(), EncryptionError> {
+        match self.algorithm {
+            EncryptionAlgorithm::XCHACHA20POLY1305 => {
+                self.encrypt_xchacha20poly1305(&mut data, &mut output)
+            }
+            _ => unimplemented!(),
+        }
     }
 
     // TODO: Needs Error Handling
@@ -134,10 +142,15 @@ impl Decryptor {
 
     pub fn decrypt<R: Read, W: Write>(
         &self,
-        _encrypted_data: R,
-        _output: W,
+        mut encrypted_data: R,
+        mut output: W,
     ) -> Result<(), EncryptionError> {
-        todo!();
+        match self.algorithm {
+            EncryptionAlgorithm::XCHACHA20POLY1305 => {
+                self.decrypt_xchacha20poly1305(&mut encrypted_data, &mut output)
+            }
+            _ => unimplemented!(),
+        }
     }
 
     // TODO: Needs Error Handling

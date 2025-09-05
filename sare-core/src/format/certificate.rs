@@ -1,6 +1,5 @@
 use std::str::FromStr;
 
-
 use super::{EncodablePublic, FormatError};
 use serde::{Deserialize, Serialize};
 
@@ -111,7 +110,6 @@ impl EncodablePublic for CertificateFormat {
         let tag = match self.certificate_type {
             CertificateType::Revocation(_) => REVOCATION_PEM_TAG,
             CertificateType::Validation(_) => VALIDATION_PEM_TAG,
-            _ => CERTIFICATE_PEM_TAG,
         };
 
         let pem = pem::Pem::new(tag, self.encode_bson().as_slice());

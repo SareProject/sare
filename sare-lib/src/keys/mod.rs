@@ -267,8 +267,6 @@ impl MasterKey {
         let signature_public_key = self.get_signing_public_key();
         let encryption_public_key = self.get_encryption_public_key();
 
-        
-
         FullChainPublicKeyFormat {
             signature_public_key,
             encryption_public_key,

@@ -1,7 +1,7 @@
 pub mod error;
 
-use crate::seed::Seed;
 use crate::hybrid_sign::error::*;
+use crate::seed::Seed;
 use crystals_dilithium as dilithium;
 use ed25519_compact as ed25519;
 use secrecy::{ExposeSecret, SecretVec};
@@ -301,12 +301,6 @@ mod tests {
 
     #[test]
     fn ed25519_sign() {
-        let keypair = ECKeyPair::from_secret_key(
-            &SecretVec::from(BASE64_STANDARD.decode(ED25519_SECRET_KEY).unwrap()),
-            ECAlgorithm::Ed25519,
-        )
-        .unwrap();
-
         assert!(ECSignature::verify(
             &ECAlgorithm::Ed25519,
             &BASE64_STANDARD.decode(ED25519_PUBLIC_KEY).unwrap(),

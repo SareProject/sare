@@ -1,13 +1,11 @@
 use std::io::{Read, Seek, Write};
 
 use sare_core::{
-    encryption::{
-        Decryptor as CoreDecryptor, EncryptionAlgorithm, Encryptor as CoreEncryptor,
-    },
+    encryption::{Decryptor as CoreDecryptor, EncryptionAlgorithm, Encryptor as CoreEncryptor},
     format::{
         encryption::{EncryptionMetadataFormat, KEMMetadataFormat, PKDFMetadataFormat},
         header::{HeaderFormat, HeaderMetadataFormat},
-        signature::{SignatureFormat},
+        signature::SignatureFormat,
     },
     hybrid_kem::{Encapsulation, HybridKEM},
     kdf::{HKDFAlgorithm, PKDFAlgorithm, HKDF, KDF, PKDF},
@@ -16,7 +14,6 @@ use sare_core::{
 use secrecy::{ExposeSecret, SecretVec};
 
 use super::SARE_VERSION;
-
 use crate::{
     keys::{MasterKey, SharedPublicKey},
     signing, SareError,
@@ -25,9 +22,15 @@ use crate::{
 pub struct Encryptor(MasterKey);
 
 impl Encryptor {
+    /// Create a new encryptor with a master key
+    pub fn new(master_key: MasterKey) -> Self {
+        Self(master_key)
+    }
+
+    /// Compute SHA3-256 checksum of a data stream
     pub fn checksum<R: Read>(mut data: R) -> Result<[u8; 32], SareError> {
         let mut hasher = Sha3_256::new();
-        let mut buf = vec![0u8; 2048 * 2048];
+        let mut buf = vec![0u8; 2_048 * 2_048];
         loop {
             let n = data.read(&mut buf)?;
             if n == 0 {
@@ -38,26 +41,20 @@ impl Encryptor {
         let digest = hasher.finalize();
         let mut out = [0u8; 32];
         out.copy_from_slice(&digest);
-
         Ok(out)
     }
 
-    pub fn new(master_key: MasterKey) -> Self {
-        Encryptor(master_key)
-    }
-
+    /// Generate a PKDF from a passphrase
     pub fn get_pkdf(
         passphrase: &SecretVec<u8>,
         algorithm: PKDFAlgorithm,
         _scaling_factor: u32,
     ) -> PKDF {
         let salt = PKDF::generate_salt();
-
-        let pkdf = PKDF::new(passphrase, salt, algorithm);
-
-        pkdf
+        PKDF::new(passphrase, salt, algorithm)
     }
 
+    /// Encrypt data symmetrically using a passphrase
     pub fn encrypt_with_passphrase<R: Read, W: Write>(
         mut data: R,
         mut output: W,
@@ -65,7 +62,6 @@ impl Encryptor {
         algorithm: EncryptionAlgorithm,
     ) -> Result<(), SareError> {
         let encryption_key = pkdf.derive_key(32)?;
-
         let encryptor = CoreEncryptor::new(encryption_key, algorithm);
 
         let pkdf_metadata = PKDFMetadataFormat {
@@ -92,21 +88,14 @@ impl Encryptor {
             signature: None,
         };
 
-        let encoded_header = header.encode();
+        output.write_all(&header.encode())?;
 
-        output.write_all(&encoded_header)?;
-
-        match algorithm {
-            EncryptionAlgorithm::XCHACHA20POLY1305 => {
-                encryptor.encrypt_xchacha20poly1305(&mut data, &mut output)?
-            }
-            _ => unimplemented!(),
-        };
+        encryptor.encrypt(&mut data, &mut output)?;
 
         Ok(())
     }
 
-    // TODO: needs error handling
+    /// Encrypt data asymmetrically for a recipient
     pub fn encrypt_with_recipient<R: Read, W: Write>(
         &self,
         mut data: R,
@@ -115,27 +104,18 @@ impl Encryptor {
         algorithm: EncryptionAlgorithm,
     ) -> Result<(), SareError> {
         let (dh_keypair, kem_keypair) = self.0.get_encryption_keypair();
+        let encryption_pub = &recipient.fullchain_public_key.encryption_public_key;
 
-        let encryption_public_key = recipient
-            .fullchain_public_key
-            .encryption_public_key
-            .to_owned();
-
-        let kem = Encapsulation::new(
-            &encryption_public_key.kem_public_key,
-            encryption_public_key.kem_algorithm,
-        );
-        let kem_cipher_text = kem.encapsulate()?.cipher_text;
+        let kem = Encapsulation::new(&encryption_pub.kem_public_key, encryption_pub.kem_algorithm);
+        let kem_ciphertext = kem.encapsulate()?.cipher_text;
 
         let hybrid_kem = HybridKEM::new(dh_keypair, kem_keypair);
-
-        let shared_secret = hybrid_kem
-            .calculate_raw_shared_key(&kem_cipher_text, &encryption_public_key.dh_public_key)?;
-
+        let shared_secret =
+            hybrid_kem.calculate_raw_shared_key(&kem_ciphertext, &encryption_pub.dh_public_key)?;
         let concated_shared_secrets = SecretVec::new(
             [
                 shared_secret.0.expose_secret().as_slice(),
-                shared_secret.1.expose_secret().as_slice(),
+                &shared_secret.1.expose_secret().as_slice(),
             ]
             .concat(),
         );
@@ -152,31 +132,27 @@ impl Encryptor {
         let signature_header =
             signing::Signing::new(self.0.clone()).sign_attached(&message_checksum);
         let signature = signature_header.signature;
-        let signature_metadata = signature.signature_metadata.to_owned();
 
         let kem_metadata = KEMMetadataFormat {
             kem_algorithm: hybrid_kem.kem_keypair.algorithm,
             dh_algorithm: hybrid_kem.dh_keypair.algorithm,
             dh_sender_public_key: hybrid_kem.dh_keypair.public_key,
             hkdf_algorithm: HKDFAlgorithm::SHA256,
-            kem_ciphertext: kem_cipher_text,
+            kem_ciphertext,
             kdf_salt,
         };
 
-        let signature_metadata = signature_metadata;
-
         let encryptor = CoreEncryptor::new(encryption_key, algorithm);
-
         let encryption_metadata = EncryptionMetadataFormat {
             encryption_algorithm: algorithm,
             nonce: Some(encryptor.nonce.to_owned()),
-            kem_metadata: Some(kem_metadata.to_owned()),
+            kem_metadata: Some(kem_metadata),
             pkdf_metadata: None,
         };
 
         let header_metadata = HeaderMetadataFormat {
             encryption_metadata,
-            signature_metadata,
+            signature_metadata: signature.signature_metadata.clone(),
             comment: None,
         };
 
@@ -186,16 +162,10 @@ impl Encryptor {
             signature: Some(signature),
         };
 
-        let encoded_header = header.encode();
+        output.write_all(&header.encode())?;
 
-        output.write_all(&encoded_header)?;
+        encryptor.encrypt(&mut data, &mut output)?;
 
-        match algorithm {
-            EncryptionAlgorithm::XCHACHA20POLY1305 => {
-                encryptor.encrypt_xchacha20poly1305(&mut data, &mut output)?
-            }
-            _ => unimplemented!(),
-        };
         Ok(())
     }
 }
@@ -204,14 +174,13 @@ pub struct Decryptor(MasterKey);
 
 impl Decryptor {
     pub fn new(master_key: MasterKey) -> Self {
-        Decryptor(master_key)
+        Self(master_key)
     }
 
     pub fn decode_file_header_and_rewind<R: Read + Seek>(
         encrypted_data: &mut R,
     ) -> Result<HeaderFormat, SareError> {
         let header_bytes = HeaderFormat::peek_header_seek(encrypted_data)?;
-
         Ok(HeaderFormat::decode(&header_bytes)?)
     }
 
@@ -238,7 +207,7 @@ impl Decryptor {
             .metadata
             .encryption_metadata
             .pkdf_metadata
-            .ok_or(SareError::Unexpected("Missing PKDF metadata".into()))?;
+            .ok_or_else(|| SareError::Unexpected("Missing PKDF metadata".into()))?;
 
         let pkdf = PKDF::new(
             &passphrase_bytes,
@@ -252,16 +221,10 @@ impl Decryptor {
             .metadata
             .encryption_metadata
             .nonce
-            .ok_or(SareError::Unexpected("Missing nonce".into()))?;
+            .ok_or_else(|| SareError::Unexpected("Missing nonce".into()))?;
 
-        let decryptor = CoreDecryptor::new(encryption_key, nonce, algorithm);
-
-        match algorithm {
-            EncryptionAlgorithm::XCHACHA20POLY1305 => {
-                decryptor.decrypt_xchacha20poly1305(&mut encrypted_data, &mut output)?
-            }
-            _ => unimplemented!(),
-        };
+        CoreDecryptor::new(encryption_key, nonce, algorithm)
+            .decrypt(&mut encrypted_data, &mut output)?;
 
         Ok(())
     }
@@ -273,18 +236,15 @@ impl Decryptor {
     ) -> Result<Option<SignatureFormat>, SareError> {
         let header_bytes = HeaderFormat::separate_header(&mut encrypted_data)?;
         let header = HeaderFormat::decode(&header_bytes)?;
-
         let encryption_metadata = &header.metadata.encryption_metadata;
 
         let kem_metadata = encryption_metadata
             .kem_metadata
             .as_ref()
-            .ok_or(SareError::Unexpected("Missing KEM metadata".into()))?;
+            .ok_or_else(|| SareError::Unexpected("Missing KEM metadata".into()))?;
 
-        let hybrid_kem = HybridKEM::new(
-            self.0.get_encryption_keypair().0, // DH keypair
-            self.0.get_encryption_keypair().1, // KEM keypair
-        );
+        let (dh_keypair, kem_keypair) = self.0.get_encryption_keypair();
+        let hybrid_kem = HybridKEM::new(dh_keypair, kem_keypair);
 
         let shared_secret = hybrid_kem.calculate_raw_shared_key(
             &kem_metadata.kem_ciphertext,
@@ -299,29 +259,25 @@ impl Decryptor {
             .concat(),
         );
 
-        let kdf_salt = kem_metadata.kdf_salt.to_owned(); // Or use a salt stored in metadata
-        let encryption_key =
-            HKDF::new(&concated_shared_secrets, kdf_salt, HKDFAlgorithm::SHA256).expand(None)?;
+        let encryption_key = HKDF::new(
+            &concated_shared_secrets,
+            kem_metadata.kdf_salt.to_owned(),
+            HKDFAlgorithm::SHA256,
+        )
+        .expand(None)?;
 
-        // --- 6. Initialize decryptor
-        let algorithm = encryption_metadata.encryption_algorithm;
         let nonce = encryption_metadata
             .nonce
             .as_ref()
-            .ok_or(SareError::Unexpected("Missing nonce".into()))?;
+            .ok_or_else(|| SareError::Unexpected("Missing nonce".into()))?;
 
-        let decryptor = CoreDecryptor::new(encryption_key, nonce.to_owned(), algorithm);
+        CoreDecryptor::new(
+            encryption_key,
+            nonce.to_owned(),
+            encryption_metadata.encryption_algorithm,
+        )
+        .decrypt(&mut encrypted_data, &mut output)?;
 
-        let signature = &header.signature;
-
-        // --- 8. Decrypt payload
-        match algorithm {
-            EncryptionAlgorithm::XCHACHA20POLY1305 => {
-                decryptor.decrypt_xchacha20poly1305(&mut encrypted_data, &mut output)?
-            }
-            _ => unimplemented!(),
-        };
-
-        Ok(signature.to_owned())
+        Ok(header.signature)
     }
 }
