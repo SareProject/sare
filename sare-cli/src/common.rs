@@ -2,7 +2,7 @@ use std::{
     fs::{self, File},
     io::{self, Write},
     path::PathBuf,
-    time::{Duration, SystemTime},
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use chrono::DateTime;
@@ -15,6 +15,24 @@ use crate::{commands::recipient, db::SareDB, error::SareCLIError};
 
 pub const DEFAULT_SARE_DIRECTORY: &str = ".sare";
 pub const DB_FILE: &str = "saredb.json";
+
+pub fn random_confirmaton_string(len: usize) -> String {
+    let mut seed = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_nanos() as u64;
+
+    let charset = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let mut s = String::with_capacity(len);
+
+    for _ in 0..len {
+        seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
+        let idx = (seed % charset.len() as u64) as usize;
+        s.push(charset[idx] as char);
+    }
+
+    s
+}
 
 pub fn get_recipient_from_cli(
     recipient_id: &Option<String>,

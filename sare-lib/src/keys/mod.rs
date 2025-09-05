@@ -292,6 +292,10 @@ impl MasterKey {
     pub fn get_fullchain_private_fingerprint(&self) -> Vec<u8> {
         SecretKeyFormat::calculate_fingerprint(self.master_seed.clone_raw_seed())
     }
+
+    pub fn to_mnemonic(&self) -> SecretString {
+        self.master_seed.to_mnemonic()
+    }
 }
 
 #[derive(Clone)]

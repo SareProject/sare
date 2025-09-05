@@ -7,8 +7,8 @@ pub mod error;
 
 use crate::commands::{
     decrypt::DecryptCommand, encrypt::EncryptCommand, keygen::KeyGenCommand,
-    listkeys::ListKeysCommand, recipient::RecipientCommand, revocation::RevocationCommand,
-    signature::SignatureCommand,
+    listkeys::ListKeysCommand, masterkey::MasterkeyCommand, recipient::RecipientCommand,
+    revocation::RevocationCommand, signature::SignatureCommand,
 };
 use error::SareCLIError;
 
@@ -22,8 +22,7 @@ struct SareCli {
 #[derive(FromArgs)]
 #[argh(subcommand)]
 enum SubCommand {
-    KeyGen(KeyGenCommand),
-    ListKeys(ListKeysCommand),
+    MasterKey(MasterkeyCommand),
     Recipient(RecipientCommand),
     Signature(SignatureCommand),
     Encrypt(EncryptCommand),
@@ -37,8 +36,7 @@ fn main() -> Result<(), SareCLIError> {
     let args: SareCli = argh::from_env();
 
     match args.cmd {
-        SubCommand::KeyGen(keygen_command) => keygen_command.execute(),
-        SubCommand::ListKeys(listkeys_command) => listkeys_command.execute(),
+        SubCommand::MasterKey(masterkey_command) => masterkey_command.execute(),
         SubCommand::Recipient(recipient_command) => recipient_command.execute(),
         SubCommand::Signature(signature_command) => signature_command.execute(),
         SubCommand::Encrypt(encrypt_command) => encrypt_command.execute(),
