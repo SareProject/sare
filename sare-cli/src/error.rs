@@ -1,7 +1,8 @@
-use sare_lib::{FormatError, SareError};
-use serde_json::Error as JsonError;
+use colored::*;
 use std::fmt;
 use std::io::Error as IoError;
+use serde_json::Error as JsonError;
+use sare_lib::{FormatError, SareError};
 
 #[derive(Debug)]
 pub enum SareCLIError {
@@ -10,6 +11,7 @@ pub enum SareCLIError {
     SareLibError(SareError),
     JsonError(String),
 }
+
 impl From<String> for SareCLIError {
     fn from(err: String) -> Self {
         SareCLIError::Unexpected(err)
@@ -43,10 +45,35 @@ impl From<FormatError> for SareCLIError {
 impl fmt::Display for SareCLIError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            SareCLIError::IoError(err) => write!(f, "IO Error: {}", err),
-            SareCLIError::Unexpected(err) => write!(f, "Unexpected Error: {}", err),
-            SareCLIError::SareLibError(err) => write!(f, "SareLib Error: {}", err),
-            SareCLIError::JsonError(err) => write!(f, "Json Error: {}", err),
+            SareCLIError::IoError(err) => write!(f, "💾 {} {}", "IO Error:".red().bold(), err.red()),
+            SareCLIError::Unexpected(err) => {
+                let clean = err
+                    .lines()
+                    .map(|line| line.trim())
+                    .filter(|line| !line.is_empty())
+                    .collect::<Vec<_>>()
+                    .join("\n\t• ");
+
+                write!(
+                    f,
+                    "{}\n\t• {}",
+                    "❌ Unexpected Error:".bright_red().bold(),
+                    clean.bright_red()
+                )
+            }
+            SareCLIError::SareLibError(err) => {
+                write!(f, "🛠 {} {}", "SareLib Error:".yellow().bold(), err.to_string().yellow())
+            }
+            SareCLIError::JsonError(err) => {
+                write!(f, "📝 {} {}", "JSON Error:".blue().bold(), err.blue())
+            }
         }
+    }
+}
+
+impl SareCLIError {
+    /// Print the error in a pretty format
+    pub fn pretty(&self) {
+        eprintln!("{}", self);
     }
 }

@@ -1,22 +1,12 @@
-use std::{
-    fs::{self, File},
-    io::Cursor,
-    path::{Path, PathBuf},
-    time::Duration,
-};
+use std::{fs, io::Cursor, path::PathBuf};
 
 use argh::FromArgs;
-
-use indicatif::ProgressBar;
-use sare_lib::keys::{
-    FullChainPublicKeyFormat, HybridKEMAlgorithm, HybridSignAlgorithm, MasterKey, SharedPublicKey,
-};
-use secrecy::{ExposeSecret, SecretVec};
+use colored::*;
+use sare_lib::keys::SharedPublicKey;
 
 use crate::{
-    commands::{recipient, revocation::RevocationCommand},
     common::{self, prepare_sare_directory},
-    db::{self, SareDB, SareDBRecipient},
+    db::{SareDB, SareDBRecipient},
     SareCLIError,
 };
 
@@ -72,7 +62,6 @@ impl RecipientCommand {
         let pem_content = fs::read_to_string(&add.key)?;
         let recipient_key = SharedPublicKey::from_pem(pem_content)?;
         let fullchain_fingerprint = recipient_key.fullchain_public_key.calculate_fingerprint();
-
         let sare_directory = common::prepare_sare_directory()?;
         let temp_dir = sare_directory.join(".temp");
 
@@ -84,7 +73,7 @@ impl RecipientCommand {
         // Export to temp dirs
         let recipient_path_temp = temp_dir
             .join("recipients")
-            .join(format!("RECIPIENT_{}.pem", &fullchain_fingerprint.as_str()));
+            .join(format!("RECIPIENT_{}.pem", &fullchain_fingerprint));
         fs::write(&recipient_path_temp, &recipient_buffer.into_inner())?;
 
         let is_key_verified =
@@ -97,12 +86,12 @@ impl RecipientCommand {
         let recipient_final = sare_directory
             .join("recipients")
             .join(format!("RECIPIENT_{}.pem", &fullchain_fingerprint));
-
         fs::rename(recipient_path_temp, recipient_final)?;
 
-        let comment = common::get_confirmed_input(
-            "Add any comment or aditional information for this recipient: ",
-        );
+        let comment = common::get_confirmed_input(&format!(
+            "{} Add any comment or additional information for this recipient: ",
+            "📝".blue()
+        ));
 
         let recipient = SareDBRecipient::new(&fullchain_fingerprint, Some(comment));
 
@@ -111,12 +100,11 @@ impl RecipientCommand {
         sare_db.save_to_json_file()?;
 
         println!(
-            "\nPublicKey added as recipient
-        \n\tLOCATION: {:?},
-        \n\tPUB: {}\n\tVERIFIED: {}",
+            "\n{} Recipient added successfully!\n  📂 Location: {:?}\n  🔑 Fingerprint: {}\n  🔒 Verified: {}",
+            "✅".green(),
             sare_directory.join("recipients"),
-            fullchain_fingerprint,
-            is_key_verified
+            fullchain_fingerprint.cyan(),
+            if is_key_verified { "Yes".green() } else { "No".red() }
         );
 
         Ok(())
@@ -126,9 +114,13 @@ impl RecipientCommand {
         let mut sare_db = SareDB::import_from_json_file()?;
 
         if sare_db.recipients.remove(&remove.id).is_some() {
-            println!("Recipient {} removed successfully.", remove.id);
+            println!("{} Recipient {} removed.", "🗑️".yellow(), remove.id.red());
         } else {
-            println!("No recipient found with id: {}", remove.id);
+            println!(
+                "{} No recipient found with id: {}",
+                "⚠️".yellow(),
+                remove.id
+            );
         }
 
         sare_db.save_to_json_file()?;
@@ -149,19 +141,19 @@ impl RecipientCommand {
         let sare_db = SareDB::import_from_json_file()?;
 
         if sare_db.recipients.is_empty() {
-            println!("No recipients found.");
+            println!("{} No recipients found.", "⚠️".yellow());
             return Ok(());
         }
 
-        println!("Recipients:");
+        println!("{} Recipients:", "📋".blue());
         for (idx, (id, r)) in sare_db.recipients.iter().enumerate() {
             println!(
-                "{}. {}\n\tFingerprint: {}\n\tComment: {}\n\tAdded: {}\n",
+                "{}. {}\n   🔑 Fingerprint: {}\n   📝 Comment: {}\n   📅 Added: {}\n",
                 idx + 1,
-                id,
-                r.fullchain_fingerprint,
-                r.comment.as_deref().unwrap_or("None"),
-                common::format_expiry_date(Some(r.date_added))
+                id.cyan(),
+                r.fullchain_fingerprint.green(),
+                r.comment.as_deref().unwrap_or("None").yellow(),
+                common::format_expiry_date(Some(r.date_added)).blue(),
             );
         }
 

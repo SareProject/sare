@@ -1,23 +1,14 @@
-use std::{
-    fs::{self, File},
-    path::PathBuf,
-};
+use std::{fs::File, path::PathBuf};
 
 use argh::FromArgs;
+use colored::*;
 use sare_lib::{
-    certificate::SignatureFormat,
-    encryption::{self, Encryptor},
-    keys::{self, EncodablePublic, MasterKey},
+    encryption::Encryptor,
+    keys::{self, MasterKey, SharedPublicKey},
 };
-use sare_lib::{keys::SharedPublicKey, signing::Signing};
 use secrecy::{ExposeSecret, SecretVec};
 
-use crate::{
-    commands::{recipient, signature},
-    common,
-    db::SareDB,
-    error::SareCLIError,
-};
+use crate::{common, SareCLIError};
 
 #[derive(FromArgs, Debug)]
 #[argh(subcommand)]
@@ -28,7 +19,7 @@ enum EncryptionSubCommand {
 
 #[derive(FromArgs, Debug)]
 #[argh(subcommand, name = "symmetric")]
-/// Add a new recipient
+/// Symmetric encryption of a file
 struct SymmetricEncryption {
     #[argh(positional)]
     input_file: PathBuf,
@@ -44,7 +35,7 @@ struct SymmetricEncryption {
 
 #[derive(FromArgs, Debug)]
 #[argh(subcommand, name = "asymmetric")]
-/// Remove a recipient
+/// Asymmetric encryption of a file
 struct AsymmetricEncryption {
     #[argh(positional)]
     input_file: PathBuf,
@@ -59,7 +50,7 @@ struct AsymmetricEncryption {
 }
 
 #[derive(FromArgs)]
-/// Generates/Verifies Signatures
+/// Encrypt files symmetrically or asymmetrically
 #[argh(subcommand, name = "encrypt")]
 pub struct EncryptCommand {
     #[argh(subcommand)]
@@ -78,20 +69,25 @@ impl EncryptCommand {
         let mut input_file = File::open(&asym.input_file)?;
         let mut output_file = File::create(&asym.output_file)?;
 
-        let recipient = common::get_recipient_from_cli(&asym.recipient)?;
-
-        let masterkey = common::get_master_key_from_cli(&asym.masterkey_id)?;
-
+        let recipient: SharedPublicKey = common::get_recipient_from_cli(&asym.recipient)?;
+        let masterkey: MasterKey = common::get_master_key_from_cli(&asym.masterkey_id)?;
         let encryptor = Encryptor::new(masterkey);
 
-        println!("Starting the encryption!");
+        println!("{} Starting asymmetric encryption...", "🔒".blue());
 
         encryptor.encrypt_with_recipient(
             &mut input_file,
             &mut output_file,
             &recipient,
-            sare_lib::keys::EncryptionAlgorithm::XCHACHA20POLY1305,
+            keys::EncryptionAlgorithm::XCHACHA20POLY1305,
         )?;
+
+        println!(
+            "{} File successfully encrypted asymmetrically:\n  📄 Input: {:?}\n  🔏 Output: {:?}",
+            "✅".green(),
+            asym.input_file,
+            asym.output_file
+        );
 
         Ok(())
     }
@@ -100,16 +96,12 @@ impl EncryptCommand {
         let mut input_file = File::open(&sym.input_file)?;
         let mut output_file = File::create(&sym.output_file)?;
 
-        // Ask the user for a passphrase
         let passphrase = common::read_cli_secret("Enter passphrase for symmetric encryption: ")?;
         let passphrase_bytes: SecretVec<u8> =
             SecretVec::new(passphrase.expose_secret().to_string().into_bytes());
 
-        // Derive master key from the passphrase using the KDF
         let scaling_factor = sym.kdf_scaling_factor.unwrap_or(1);
-        let _kdf_algo = sym.kdf_algorithm.as_deref().unwrap_or("argon2"); // TODO: fix this too
-
-        // TODO: will ask the pkdf params from user
+        let kdf_algo = sym.kdf_algorithm.as_deref().unwrap_or("argon2");
 
         let pkdf = Encryptor::get_pkdf(
             &passphrase_bytes,
@@ -117,7 +109,11 @@ impl EncryptCommand {
             scaling_factor,
         );
 
-        println!("Starting symmetric encryption with AEAD...");
+        println!(
+            "{} Starting symmetric encryption with AEAD ({} KDF)...",
+            "🔐".blue(),
+            kdf_algo
+        );
 
         Encryptor::encrypt_with_passphrase(
             &mut input_file,
@@ -125,6 +121,13 @@ impl EncryptCommand {
             pkdf,
             keys::EncryptionAlgorithm::XCHACHA20POLY1305,
         )?;
+
+        println!(
+            "{} File successfully encrypted symmetrically:\n  📄 Input: {:?}\n  🔏 Output: {:?}",
+            "✅".green(),
+            sym.input_file,
+            sym.output_file
+        );
 
         Ok(())
     }

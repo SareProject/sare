@@ -31,14 +31,18 @@ impl Certificate {
         }
     }
 
-    pub fn new_validation(masterkey: MasterKey, expiry_timestamp: u64, issuer: &Issuer) -> Self {
+    pub fn new_validation(
+        masterkey: MasterKey,
+        expiry_timestamp: Option<u64>,
+        issuer: &Issuer,
+    ) -> Self {
         let validation = ValidationCertificateFormat {
             fullchain_public_key_fingerprint: masterkey.get_fullchain_public_fingerprint(),
         };
 
         let certificate = CertificateFormat {
             issuer: issuer.clone(),
-            expiry_date: Some(expiry_timestamp),
+            expiry_date: expiry_timestamp,
             certificate_type: CertificateType::Validation(validation),
         };
 

@@ -1,11 +1,11 @@
 use std::{
     fs::{self, File},
-    io::{Cursor, Read, Write},
+    io::{Cursor, Read},
     time::Duration,
 };
 
 use argh::FromArgs;
-
+use colored::*;
 use indicatif::ProgressBar;
 use sare_lib::{
     certificate::Certificate,
@@ -15,7 +15,7 @@ use sare_lib::{
 use secrecy::{ExposeSecret, SecretVec};
 
 use crate::{
-    commands::{masterkey, revocation::RevocationCommand},
+    commands::revocation::RevocationCommand,
     common,
     db::{self, SareDB},
     SareCLIError,
@@ -32,7 +32,7 @@ enum MasterkeySubCommand {
 
 #[derive(FromArgs, Debug)]
 #[argh(subcommand, name = "generate")]
-/// Add a new recipient
+/// Generate a new master key
 struct GenerateMasterkey {
     /// generates key files without encryption (Not recommended)
     #[argh(switch)]
@@ -53,7 +53,7 @@ struct GenerateMasterkey {
 
 #[derive(FromArgs, Debug)]
 #[argh(subcommand, name = "remove")]
-/// Add a new recipient
+/// Remove an existing master key
 struct RemoveMasterkey {
     /// masterkey id
     #[argh(positional)]
@@ -65,7 +65,7 @@ struct RemoveMasterkey {
 
 #[derive(FromArgs, Debug)]
 #[argh(subcommand, name = "export")]
-/// Add a new recipient
+/// Show information about a master key
 struct ExportMasterkey {
     /// masterkey id
     #[argh(positional)]
@@ -74,11 +74,11 @@ struct ExportMasterkey {
 
 #[derive(FromArgs, Debug)]
 #[argh(subcommand, name = "list")]
-/// Add a new recipient
+/// List all available master keys
 struct ListMasterkeys {}
 
 #[derive(FromArgs)]
-/// Generates a SARE keypair
+/// Manage SARE master keys
 #[argh(subcommand, name = "masterkey")]
 pub struct MasterkeyCommand {
     #[argh(subcommand)]
@@ -97,12 +97,24 @@ impl MasterkeyCommand {
 
     pub fn list_masterkeys(&self) -> Result<(), SareCLIError> {
         let sare_db = SareDB::import_from_json_file()?;
-
         let sare_directory = common::prepare_sare_directory()?;
 
+        println!(
+            "\n{}",
+            "=== 🔑 Available Master Keys ===".bold().underline()
+        );
+
         for (master_key_id, key) in sare_db.key_associations {
-            println!("Master Key ID: {}", master_key_id);
-            println!("\tPublic Key ID: {}", key.public_key_id);
+            println!(
+                "{} {}",
+                "Master Key ID:".bright_blue().bold(),
+                master_key_id
+            );
+            println!(
+                "   {} {}",
+                "Public Key ID:".bright_green(),
+                key.public_key_id
+            );
 
             let mut public_key_file = File::open(
                 sare_directory
@@ -119,15 +131,16 @@ impl MasterkeyCommand {
             if let Some(validation_data) = validation_cert {
                 let expiry_date =
                     common::format_expiry_date(validation_data.certificate.expiry_date);
-
                 println!(
-                    "\t\tIssuer: {} Expiry: {}\n",
+                    "   {} {} (expires: {})",
+                    "✔ Validation:".bright_green(),
                     validation_data.certificate.issuer.to_string(),
                     expiry_date
                 );
             } else {
-                println!("\t\tValidation Certificate Not Found!\n",);
+                println!("   {} Validation Certificate Not Found!", "⚠".yellow());
             }
+            println!();
         }
 
         Ok(())
@@ -135,13 +148,15 @@ impl MasterkeyCommand {
 
     fn remove_masterkey(&self, rem: &RemoveMasterkey) -> Result<(), SareCLIError> {
         let masterkey = common::get_master_key_from_cli(&rem.masterkey_id)?;
-        
         let confirmation_string = common::random_confirmaton_string(6);
 
-        println!("Confirmation Code: {confirmation_string}");
-
+        println!(
+            "{} {}",
+            "Confirmation Code:".bright_yellow().bold(),
+            confirmation_string
+        );
         let confirmed_input =
-            common::get_confirmed_input("Input the confirmation code (case sensitive): ");
+            common::get_confirmed_input("Type the confirmation code (case sensitive): ");
 
         if confirmation_string == confirmed_input {
             let sare_directory = common::prepare_sare_directory()?;
@@ -152,7 +167,6 @@ impl MasterkeyCommand {
                 hex::encode_upper(masterkey.get_fullchain_public_fingerprint());
 
             sare_db.key_associations.remove(&key_id);
-
             sare_db.save_to_json_file()?;
 
             if !rem.keep_key_files.unwrap_or(false) {
@@ -166,12 +180,25 @@ impl MasterkeyCommand {
                     .join("revocations")
                     .join(format!("REVOC_{fullchain_fingerprint}.asc"));
 
+                let progress = ProgressBar::new_spinner();
+                progress.set_message("Removing key files...");
+                progress.enable_steady_tick(Duration::from_millis(100));
+
                 fs::remove_file(masterkey_file)?;
                 fs::remove_file(publickey_file)?;
                 fs::remove_file(revoc_file)?;
+
+                progress.finish_with_message("✅ Key files removed");
             }
+
+            println!("{}", "✅ Masterkey successfully removed".green().bold());
         } else {
-            println!("Process canceled!");
+            println!(
+                "{}",
+                "❌ Operation canceled: confirmation code mismatch"
+                    .red()
+                    .bold()
+            );
         }
 
         Ok(())
@@ -183,28 +210,35 @@ impl MasterkeyCommand {
         let key_id = hex::encode_upper(masterkey.get_fullchain_private_fingerprint());
         let fullchain_fingerprint = hex::encode_upper(masterkey.get_fullchain_public_fingerprint());
 
-        println!("Key ID: {key_id}");
-        println!("\tPublic Key Fingerprint: {fullchain_fingerprint}");
+        println!(
+            "\n{}",
+            "=== ℹ Master Key Information ===".bold().underline()
+        );
+        println!("{} {}", "Key ID:".bright_blue(), key_id);
+        println!(
+            "{} {}",
+            "Public Key Fingerprint:".bright_green(),
+            fullchain_fingerprint
+        );
 
         let sare_directory = common::prepare_sare_directory()?;
-
         let publickey_file = sare_directory
             .join("public_keys")
             .join(format!("PUB_{fullchain_fingerprint}.pem"));
 
         let publickey_pem_content = fs::read_to_string(publickey_file)?;
-
         let shared_public_key = SharedPublicKey::from_pem(publickey_pem_content)?;
 
         if let Some(validation_cert) = shared_public_key.validation_certificate {
             println!(
-                "\t\tIssuer: {} Expiry: {}",
+                "{} {} (expires: {})",
+                "✔ Validation:".bright_green(),
                 validation_cert.certificate.issuer.to_string(),
                 common::format_expiry_date(validation_cert.certificate.expiry_date)
             );
         }
 
-        println!("Mnemonic Seed: ");
+        println!("{}", "Mnemonic Seed:".bright_yellow().bold());
         println!("{}", masterkey.to_mnemonic().expose_secret());
 
         Ok(())
@@ -227,7 +261,7 @@ impl MasterkeyCommand {
         let issuer_email = common::get_confirmed_input("Email: ");
         let issuer = Issuer::new(issuer_name, issuer_email);
         let expiry_duration = common::human_readable_duration_to_timestamp(
-            &common::get_confirmed_input("Key is valid for? "),
+            &common::get_confirmed_input("Key is valid for? (e.g. 1y, 6m, 30d): "),
         )?;
 
         let sare_directory = common::prepare_sare_directory()?;
@@ -251,7 +285,7 @@ impl MasterkeyCommand {
                 &mut master_buffer,
             )?;
 
-            progress_bar.finish_with_message("Masterkey encrypted!");
+            progress_bar.finish_with_message("✅ Masterkey encrypted");
         }
 
         // Export public key
@@ -281,8 +315,7 @@ impl MasterkeyCommand {
             .join(format!("PUB_{fullchain_fingerprint}.pem"));
         fs::write(&public_path_temp, public_buffer.into_inner())?;
 
-        // Move files to actual directories since everything went ok
-
+        // Move files to actual directories
         let master_final = sare_directory
             .join("private_keys")
             .join(format!("MASTER_{keyid}.pem"));
@@ -306,11 +339,18 @@ impl MasterkeyCommand {
         sare_db.add_key_association(&keyid, associated_key);
         sare_db.save_to_json_file()?;
 
+        println!("\n{}", "✅ Keypair generated successfully!".green().bold());
+        println!("   {} {:?}", "Location:".cyan(), sare_directory);
         println!(
-            "\nYour Keypair has been generated!
-        \n\tLOCATION: {:?},
-        \n\tPUB: {}\n\tMASTER: {}",
-            sare_directory, fullchain_fingerprint, keyid
+            "   {} {}",
+            "Public Fingerprint:".cyan(),
+            fullchain_fingerprint
+        );
+        println!("   {} {}", "Master Key ID:".cyan(), keyid);
+        println!(
+            "   {} {}",
+            "Expires:".cyan(),
+            common::format_expiry_date(expiry_duration)
         );
 
         Ok(())

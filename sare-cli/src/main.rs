@@ -6,9 +6,8 @@ pub mod db;
 pub mod error;
 
 use crate::commands::{
-    decrypt::DecryptCommand, encrypt::EncryptCommand, keygen::KeyGenCommand,
-    listkeys::ListKeysCommand, masterkey::MasterkeyCommand, recipient::RecipientCommand,
-    revocation::RevocationCommand, signature::SignatureCommand,
+    decrypt::DecryptCommand, encrypt::EncryptCommand, masterkey::MasterkeyCommand,
+    recipient::RecipientCommand, revocation::RevocationCommand, signature::SignatureCommand,
 };
 use error::SareCLIError;
 
@@ -30,17 +29,22 @@ enum SubCommand {
     Revocation(RevocationCommand),
 }
 
-fn main() -> Result<(), SareCLIError> {
+fn main() -> () {
     pretty_env_logger::init();
     // Parse command-line arguments
     let args: SareCli = argh::from_env();
 
-    match args.cmd {
+    let result = match args.cmd {
         SubCommand::MasterKey(masterkey_command) => masterkey_command.execute(),
         SubCommand::Recipient(recipient_command) => recipient_command.execute(),
         SubCommand::Signature(signature_command) => signature_command.execute(),
         SubCommand::Encrypt(encrypt_command) => encrypt_command.execute(),
         SubCommand::Decrypt(decrypt_command) => decrypt_command.execute(),
         SubCommand::Revocation(revocation_command) => revocation_command.execute(),
+    };
+
+    match result {
+        Ok(()) => (),
+        Err(e) => e.pretty(),
     }
 }

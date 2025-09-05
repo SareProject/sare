@@ -1,17 +1,10 @@
-use std::{
-    fs::{self, File},
-    path::PathBuf,
-};
+use std::{fs, path::PathBuf};
 
 use argh::FromArgs;
-use sare_lib::{
-    certificate::SignatureFormat,
-    keys::{EncodablePublic, MasterKey},
-};
+use colored::*;
 use sare_lib::{signing::Signing, SignatureHeaderFormat};
-use secrecy::ExposeSecret;
 
-use crate::{commands::signature, common, db::SareDB, error::SareCLIError};
+use crate::{common, SareCLIError};
 
 #[derive(FromArgs, Debug)]
 #[argh(subcommand)]
@@ -54,26 +47,27 @@ pub struct SignatureCommand {
 impl SignatureCommand {
     pub fn execute(&self) -> Result<(), SareCLIError> {
         match &self.sub {
-            SignatureSubCommand::Generate(gen) => self.generate(&gen)?,
-            SignatureSubCommand::Verify(verify) => self.verify(&verify)?,
+            SignatureSubCommand::Generate(gen) => self.generate(gen)?,
+            SignatureSubCommand::Verify(verify) => self.verify(verify)?,
         };
         Ok(())
     }
 
     fn generate(&self, gen: &GenerateSignature) -> Result<(), SareCLIError> {
         let masterkey = common::get_master_key_from_cli(&gen.masterkey_id)?;
-
         let sign_engine = Signing::new(masterkey);
 
         let message = fs::read(&gen.original_file)?;
-
         let signature = sign_engine.sign_detached(&message);
-
         let bson_signature = signature.encode_with_magic_byte();
-
         fs::write(&gen.sign_file, bson_signature)?;
 
-        println!("Signature successfully generated!");
+        println!(
+            "{} Signature successfully generated!\n  📄 Original: {:?}\n  🔏 Signature File: {:?}",
+            "✅".green(),
+            gen.original_file,
+            gen.sign_file
+        );
         Ok(())
     }
 
@@ -86,15 +80,17 @@ impl SignatureCommand {
         let signature_format = &signature_header_format.signature;
         let is_verified = Signing::verify_detached(&signature_header_format, &original_message)?;
 
+        println!("{} Verifying signature...", "🔎".blue());
+
         if is_verified {
-            println!("Verified: yes");
+            println!("  {} Signature is VALID", "✅".green());
         } else {
-            println!("Verified: no");
-        };
+            println!("  {} Signature is INVALID", "❌".red());
+        }
 
         println!(
-            "Signed by: {}",
-            hex::encode_upper(signature_format.fullchain_fingerprint)
+            "  👤 Signed by: {}",
+            hex::encode_upper(signature_format.fullchain_fingerprint).cyan()
         );
 
         Ok(())

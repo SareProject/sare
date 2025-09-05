@@ -1,31 +1,14 @@
-use std::{
-    fs::{self, File},
-    io::{BufReader, Cursor, Read, Write},
-    path::PathBuf,
-    process::Output,
-    time::Duration,
-};
+use std::{fs::File, path::PathBuf};
 
 use argh::FromArgs;
-
-use indicatif::ProgressBar;
-use sare_lib::{
-    certificate::Certificate,
-    encryption::Decryptor,
-    keys::{HybridKEMAlgorithm, HybridSignAlgorithm, MasterKey},
-    Issuer,
-};
+use colored::*;
+use sare_lib::encryption::Decryptor;
 use secrecy::{ExposeSecret, SecretVec};
 
-use crate::{
-    commands::{decrypt, revocation::RevocationCommand, signature},
-    common,
-    db::{self, SareDB},
-    SareCLIError,
-};
+use crate::{common, SareCLIError};
 
 #[derive(FromArgs)]
-/// Generates a SARE keypair
+/// Decrypt a SARE-encrypted file
 #[argh(subcommand, name = "decrypt")]
 pub struct DecryptCommand {
     #[argh(positional)]
@@ -48,32 +31,45 @@ impl DecryptCommand {
             let masterkey = common::get_master_key_from_cli(&self.masterkey_id)?;
             let decryptor = Decryptor::new(masterkey);
 
+            println!("{} Starting asymmetric decryption...", "🔒".blue());
             let signature = decryptor.decrypt_with_recipient(&mut input_file, &mut output_file)?;
 
-            println!("File Successfully decrypted!");
+            println!(
+                "{} File successfully decrypted!\n  📄 Input: {:?}\n  📂 Output: {:?}",
+                "✅".green(),
+                self.input_file,
+                self.output_file
+            );
 
             if let Some(signature) = signature {
                 if signature.fullchain_fingerprint
                     == file_header.signature.unwrap().fullchain_fingerprint
                 {
-                    println!("Signature attached to the file was valid! ");
+                    println!("  {} Signature attached to the file is VALID", "✅".green());
                 } else {
-                    println!("Signature attached to the file was NOT valid!");
+                    println!("  {} Signature attached to the file is INVALID", "❌".red());
                 }
             } else {
-                println!("No signature was attached to the file");
+                println!("  {} No signature was attached to the file", "⚠️".yellow());
             }
         } else {
             let passphrase = common::read_cli_secret("Please enter passphrase for the file: ")?;
             let passphrase_bytes =
                 SecretVec::new(passphrase.expose_secret().to_owned().into_bytes());
+
+            println!("{} Starting symmetric decryption...", "🔐".blue());
             Decryptor::decrypt_with_passphrase(
                 passphrase_bytes,
                 &mut input_file,
                 &mut output_file,
             )?;
 
-            println!("File successfully decrypted");
+            println!(
+                "{} File successfully decrypted\n  📄 Input: {:?}\n  📂 Output: {:?}",
+                "✅".green(),
+                self.input_file,
+                self.output_file
+            );
         }
 
         Ok(())

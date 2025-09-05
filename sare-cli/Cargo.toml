@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 argh = "0.1.12"
 chrono = "0.4.41"
+colored = "3.0.0"
 dirs = "5.0.1"
 duration-str = "0.11.2"
 hex = "0.4.3"
