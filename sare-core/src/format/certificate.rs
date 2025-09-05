@@ -1,6 +1,5 @@
-use std::{ops::Deref, str::FromStr};
+use std::str::FromStr;
 
-use crate::format::{keys::FullChainPublicKeyFormat, signature::SignatureFormat};
 
 use super::{EncodablePublic, FormatError};
 use serde::{Deserialize, Serialize};

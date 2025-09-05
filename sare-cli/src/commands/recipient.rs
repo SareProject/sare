@@ -74,7 +74,7 @@ impl RecipientCommand {
         let recipient_path_temp = temp_dir
             .join("recipients")
             .join(format!("RECIPIENT_{}.pem", &fullchain_fingerprint));
-        fs::write(&recipient_path_temp, &recipient_buffer.into_inner())?;
+        fs::write(&recipient_path_temp, recipient_buffer.into_inner())?;
 
         let is_key_verified =
             if let Some(verification_certificate) = recipient_key.validation_certificate {

@@ -1,10 +1,7 @@
 use super::certificate::Certificate;
 pub use sare_core::encryption::{EncryptionAlgorithm, KeyWrap};
-use sare_core::format::certificate::CertificateFormat;
-use sare_core::format::certificate::ValidationCertificateFormat;
 pub use sare_core::format::encryption::*;
 pub use sare_core::format::keys::*;
-use sare_core::format::signature::SignatureFormat;
 pub use sare_core::format::{EncodablePublic, EncodableSecret};
 pub use sare_core::hybrid_kem::{DHAlgorithm, DHKeyPair, KEMAlgorithm, KEMKeyPair};
 pub use sare_core::hybrid_sign::{ECAlgorithm, ECKeyPair, PQAlgorithm, PQKeyPair};
@@ -270,12 +267,12 @@ impl MasterKey {
         let signature_public_key = self.get_signing_public_key();
         let encryption_public_key = self.get_encryption_public_key();
 
-        let fullchain_public_key = FullChainPublicKeyFormat {
+        
+
+        FullChainPublicKeyFormat {
             signature_public_key,
             encryption_public_key,
-        };
-
-        fullchain_public_key
+        }
     }
 
     pub fn export_public<W: Write>(&self, mut output: W) -> Result<[u8; 32], SareError> {
@@ -324,10 +321,10 @@ impl SharedPublicKey {
             match block.tag() {
                 sare_core::format::keys::FULLCHAIN_PUBLIC_KEY_PEM_TAG => {
                     fullchain_public_key =
-                        Some(FullChainPublicKeyFormat::decode_bson(&block.contents())?);
+                        Some(FullChainPublicKeyFormat::decode_bson(block.contents())?);
                 }
                 sare_core::format::certificate::VALIDATION_PEM_TAG => {
-                    validation_certificate = Some(Certificate::decode_bson(&block.contents())?)
+                    validation_certificate = Some(Certificate::decode_bson(block.contents())?)
                 }
                 _ => {}
             }

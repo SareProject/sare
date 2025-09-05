@@ -5,13 +5,13 @@ pub use sare_core::format::{
 };
 use sare_core::format::{
     certificate::{
-        self, CertificateType, Issuer, RevocationCertificateFormat, RevocationReason,
+        CertificateType, Issuer, RevocationCertificateFormat, RevocationReason,
         ValidationCertificateFormat,
     },
-    signature::{self, SignatureHeaderFormat},
+    signature::{SignatureHeaderFormat},
 };
 
-use crate::{keys::MasterKey, signing, SareError};
+use crate::{keys::MasterKey, SareError};
 
 #[derive(Clone)]
 pub struct Certificate {
@@ -98,7 +98,7 @@ impl Certificate {
         let signature_message = raw_message
             .as_ref()
             .expect("Attached signature is missing the message");
-        let certificate = CertificateFormat::decode_bson(&signature_message)?;
+        let certificate = CertificateFormat::decode_bson(signature_message)?;
 
         Ok(Certificate {
             certificate,

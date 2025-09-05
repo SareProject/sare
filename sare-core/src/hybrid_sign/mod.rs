@@ -1,7 +1,7 @@
 pub mod error;
 
 use crate::seed::Seed;
-use crate::{format::signature, hybrid_sign::error::*};
+use crate::hybrid_sign::error::*;
 use crystals_dilithium as dilithium;
 use ed25519_compact as ed25519;
 use secrecy::{ExposeSecret, SecretVec};

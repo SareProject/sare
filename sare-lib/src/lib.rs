@@ -10,7 +10,7 @@ pub use sare_core::format::error::FormatError;
 pub use sare_core::format::header::HeaderFormat;
 pub use sare_core::format::signature::SignatureHeaderFormat;
 pub use sare_core::CoreErrorKind;
-use std::fmt::{self, Display};
+use std::fmt::{self};
 use std::io::Error as IoError;
 
 use sare_core::{

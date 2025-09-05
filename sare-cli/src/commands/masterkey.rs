@@ -88,10 +88,10 @@ pub struct MasterkeyCommand {
 impl MasterkeyCommand {
     pub fn execute(&self) -> Result<(), SareCLIError> {
         match &self.sub {
-            MasterkeySubCommand::Generate(gen) => self.generate_masterkey(&gen),
+            MasterkeySubCommand::Generate(gen) => self.generate_masterkey(gen),
             MasterkeySubCommand::List(_) => self.list_masterkeys(),
-            MasterkeySubCommand::Remove(rem) => self.remove_masterkey(&rem),
-            MasterkeySubCommand::Info(info) => self.masterkey_info(&info),
+            MasterkeySubCommand::Remove(rem) => self.remove_masterkey(rem),
+            MasterkeySubCommand::Info(info) => self.masterkey_info(info),
         }
     }
 
@@ -333,7 +333,7 @@ impl MasterkeyCommand {
         // Insert to DB
         let associated_key = db::SareDBAssociatedKey::new(
             &fullchain_fingerprint,
-            &format!("{fullchain_fingerprint}"),
+            &fullchain_fingerprint.to_string(),
         );
         let mut sare_db = SareDB::import_from_json_file()?;
         sare_db.add_key_association(&keyid, associated_key);

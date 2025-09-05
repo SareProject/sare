@@ -2,12 +2,12 @@ use std::io::{Read, Seek, Write};
 
 use sare_core::{
     encryption::{
-        self, Decryptor as CoreDecryptor, EncryptionAlgorithm, Encryptor as CoreEncryptor,
+        Decryptor as CoreDecryptor, EncryptionAlgorithm, Encryptor as CoreEncryptor,
     },
     format::{
         encryption::{EncryptionMetadataFormat, KEMMetadataFormat, PKDFMetadataFormat},
-        header::{self, HeaderFormat, HeaderMetadataFormat},
-        signature::{self, SignatureFormat},
+        header::{HeaderFormat, HeaderMetadataFormat},
+        signature::{SignatureFormat},
     },
     hybrid_kem::{Encapsulation, HybridKEM},
     kdf::{HKDFAlgorithm, PKDFAlgorithm, HKDF, KDF, PKDF},
@@ -18,7 +18,7 @@ use secrecy::{ExposeSecret, SecretVec};
 use super::SARE_VERSION;
 
 use crate::{
-    keys::{HybridKEMAlgorithm, MasterKey, SharedPublicKey},
+    keys::{MasterKey, SharedPublicKey},
     signing, SareError,
 };
 
@@ -82,7 +82,7 @@ impl Encryptor {
 
         let header_metadata = HeaderMetadataFormat {
             signature_metadata: None,
-            encryption_metadata: encryption_metadata,
+            encryption_metadata,
             comment: None,
         };
 
@@ -135,7 +135,7 @@ impl Encryptor {
         let concated_shared_secrets = SecretVec::new(
             [
                 shared_secret.0.expose_secret().as_slice(),
-                &shared_secret.1.expose_secret().as_slice(),
+                shared_secret.1.expose_secret().as_slice(),
             ]
             .concat(),
         );
@@ -160,7 +160,7 @@ impl Encryptor {
             dh_sender_public_key: hybrid_kem.dh_keypair.public_key,
             hkdf_algorithm: HKDFAlgorithm::SHA256,
             kem_ciphertext: kem_cipher_text,
-            kdf_salt: kdf_salt,
+            kdf_salt,
         };
 
         let signature_metadata = signature_metadata;

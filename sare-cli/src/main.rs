@@ -29,7 +29,7 @@ enum SubCommand {
     Revocation(RevocationCommand),
 }
 
-fn main() -> () {
+fn main() {
     pretty_env_logger::init();
     // Parse command-line arguments
     let args: SareCli = argh::from_env();

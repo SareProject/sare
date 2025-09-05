@@ -187,7 +187,7 @@ pub fn create_directory(path: &PathBuf) -> Result<PathBuf, SareCLIError> {
 }
 
 pub fn prepare_sare_directory() -> Result<PathBuf, SareCLIError> {
-    let home_directory = dirs::home_dir().unwrap_or(PathBuf::new());
+    let home_directory = dirs::home_dir().unwrap_or_default();
     let sare_directory = create_directory(&home_directory.join(DEFAULT_SARE_DIRECTORY))?;
 
     for sub in ["private_keys", "public_keys", "revocations", "recipients"] {

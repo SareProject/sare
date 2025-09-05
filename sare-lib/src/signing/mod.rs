@@ -1,14 +1,10 @@
 use sare_core::{
-    bson::raw,
-    format::{
-        header::HeaderMetadataFormat,
-        signature::{self, SignatureFormat, SignatureHeaderFormat, SignatureMetadataFormat},
-    },
+    format::signature::{SignatureFormat, SignatureHeaderFormat, SignatureMetadataFormat},
     hybrid_sign::{ECSignature, PQSignature},
     sha3::Digest,
 };
 
-use crate::{keys::MasterKey, signing, SareError, SARE_VERSION};
+use crate::{keys::MasterKey, SareError, SARE_VERSION};
 
 pub struct Signing(MasterKey);
 
@@ -124,6 +120,6 @@ impl Signing {
             )));
         };
 
-        Self::verify(signature_header, &raw_message)
+        Self::verify(signature_header, raw_message)
     }
 }
