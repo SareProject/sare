@@ -18,7 +18,7 @@ categories = ["cryptography", "command-line-utilities", "development-tools"]
 [dependencies]
 aead = "0.5.2"
 aes-kw = "0.2.1"
-bson = "2.7.0"
+bson = "3.0.0"
 byteorder = "1.5.0"
 chacha20poly1305 = { version = "0.10.1", features = ["stream"] }
 crystals-dilithium = "1.0.0"
