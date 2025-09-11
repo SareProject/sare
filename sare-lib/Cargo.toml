@@ -16,5 +16,5 @@ categories = ["cryptography", "command-line-utilities", "development-tools"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sare-core = { path = "../sare-core" }
+sare-core = "0.1.0"
 secrecy = "0.8.0"
