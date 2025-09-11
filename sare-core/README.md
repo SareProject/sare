@@ -85,7 +85,7 @@ SARE Core is designed with **modularity** in mind:
 
 ## Support
 
-If you want to help SARE grow, the best way is financially. Please check out our donation page: [https://sareproject.github.com/docs/support](https://sareproject.github.com/docs/support)
+If you want to help SARE grow, the best way is financially. Please check out our donation page: [https://sareproject.github.io/docs/support](https://sareproject.github.io/docs/support)
 
 But a share on social media, a star on our GitHub repo, or even a simple supporting message is enough motivation for us to keep going.
 

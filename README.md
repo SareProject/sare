@@ -93,7 +93,7 @@ Security and privacy aren’t just nice-to-haves—they’re the foundation for 
 
 SARE is my attempt to protect privacy and security online, with the hope that it helps protect these other civil and political rights too—especially in a world where privacy is basically invisible to governments and corporations.
 
-If you want to help SARE grow, the best way is financially—check out our donation page: [https://sareproject.github.com/docs/support](https://sareproject.github.com/docs/support)
+If you want to help SARE grow, the best way is financially—check out our donation page: [https://sareproject.github.io/docs/support](https://sareproject.github.io/docs/support)
 
 ---
 ## License
