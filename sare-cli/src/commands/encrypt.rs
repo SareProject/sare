@@ -105,7 +105,7 @@ impl EncryptCommand {
 
         let pkdf = Encryptor::get_pkdf(
             &passphrase_bytes,
-            keys::RECOMENDED_PKDF_PARAMS,
+            keys::RECOMMENDED_PKDF_PARAMS,
             scaling_factor,
         );
 

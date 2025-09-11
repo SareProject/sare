@@ -13,7 +13,7 @@ use std::io::{BufReader, Read, Write};
 
 use crate::SareError;
 
-pub const RECOMENDED_PKDF_PARAMS: PKDFAlgorithm = PKDFAlgorithm::Scrypt(17, 8, 12);
+pub const RECOMMENDED_PKDF_PARAMS: PKDFAlgorithm = PKDFAlgorithm::Scrypt(17, 8, 12);
 
 #[derive(Clone, Copy)]
 pub struct HybridSignAlgorithm {
@@ -106,11 +106,11 @@ impl MasterKey {
             Some(passphrase) => {
                 let pkdf_salt = PKDF::generate_salt();
 
-                let pkdf = PKDF::new(&passphrase, pkdf_salt.to_owned(), RECOMENDED_PKDF_PARAMS);
+                let pkdf = PKDF::new(&passphrase, pkdf_salt.to_owned(), RECOMMENDED_PKDF_PARAMS);
 
                 let pkdf_metadata = PKDFMetadataFormat {
                     pkdf_salt,
-                    pkdf_algorithm: RECOMENDED_PKDF_PARAMS,
+                    pkdf_algorithm: RECOMMENDED_PKDF_PARAMS,
                 };
 
                 // NOTE: Because length is exactly 32bytes and parsable into [u8; 32] KeyWrap won't return an error

@@ -54,7 +54,7 @@ cargo add sare-lib
 #### Symmetric Encryption
 
 ```rust
-use sare_lib::{encryption::Encryptor, keys::{EncryptionAlgorithm, RECOMENDED_PKDF_PARAMS}};
+use sare_lib::{encryption::Encryptor, keys::{EncryptionAlgorithm, RECOMMENDED_PKDF_PARAMS}};
 use secrecy::SecretVec;
 use std::fs::File;
 
@@ -63,7 +63,7 @@ let mut output_file = File::create("message.enc")?;
 let passphrase = SecretVec::new(b"supersecret".to_vec());
 
 // Generate key derivation function (KDF) using recommended parameters
-let pkdf = Encryptor::get_pkdf(&passphrase, RECOMENDED_PKDF_PARAMS, 1);
+let pkdf = Encryptor::get_pkdf(&passphrase, RECOMMENDED_PKDF_PARAMS, 1);
 
 // Encrypt the file symmetrically using XChaCha20-Poly1305 AEAD
 Encryptor::encrypt_with_passphrase(&mut input_file, &mut output_file, pkdf, EncryptionAlgorithm::XCHACHA20POLY1305)?;
