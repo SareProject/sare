@@ -1,7 +1,7 @@
 use std::fmt;
 
 use ed25519_compact::Error as X25519Error;
-use pqc_kyber::KyberError;
+use safe_pqc_kyber::KyberError;
 
 #[derive(Debug)]
 pub enum ErrSection {
@@ -54,9 +54,6 @@ impl fmt::Display for HybridKEMError {
 impl From<KyberError> for HybridKEMError {
     fn from(err: KyberError) -> Self {
         match err {
-            KyberError::RandomBytesGeneration => {
-                HybridKEMError::RandomBytesGeneration(ErrSection::KEM)
-            }
             KyberError::Decapsulation => HybridKEMError::Decapsulation(ErrSection::KEM),
             KyberError::InvalidInput => HybridKEMError::InvalidInput(ErrSection::KEM),
         }

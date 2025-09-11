@@ -3,6 +3,7 @@ pub mod error;
 use crate::seed::Seed;
 
 use ed25519_compact::x25519;
+use safe_pqc_kyber as pqc_kyber;
 use secrecy::{ExposeSecret, SecretVec};
 
 use serde::{Deserialize, Serialize};

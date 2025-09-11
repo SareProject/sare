@@ -1,6 +1,6 @@
 [package]
 name = "sare-lib"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 
 authors = ["Zola Gonano <zolagonano@protonmail.com>", "Sare Project"]
@@ -16,5 +16,5 @@ categories = ["cryptography", "command-line-utilities", "development-tools"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sare-core = "0.1.0"
+sare-core = "0.1.1"
 secrecy = "0.8.0"

@@ -1,6 +1,6 @@
 [package]
 name = "sare-core"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 
 authors = ["Zola Gonano <zolagonano@protonmail.com>", "Sare Project"]
@@ -26,7 +26,7 @@ ed25519-compact = "2.0.4"
 generic-array = "1.0.0"
 hkdf = "0.12.4"
 pem = "3.0.3"
-pqc_kyber = { version = "0.7.1", features = ["std", "rand", "kyber768"] }
+safe_pqc_kyber = { version = "0.6.3", features = ["std", "rand", "kyber768"] }
 rand = "0.8.5"
 scrypt = "0.11.0"
 secrecy = { version = "0.8.0" }
