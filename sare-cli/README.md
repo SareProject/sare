@@ -1,7 +1,6 @@
 # SARE CLI
 
 ![Crates.io Version](https://img.shields.io/crates/v/sare-cli)
-![Deps.rs Crate Dependencies (latest)](https://img.shields.io/deps-rs/sare-cli/latest)
 ![Crates.io License](https://img.shields.io/crates/l/sare-cli)
 ![Crates.io Size](https://img.shields.io/crates/size/sare-cli)
 ![Crates.io Total Downloads](https://img.shields.io/crates/d/sare-cli)

@@ -1,7 +1,6 @@
 # SARE Core
 
 ![Crates.io Version](https://img.shields.io/crates/v/sare-core)
-![Deps.rs Crate Dependencies (latest)](https://img.shields.io/deps-rs/sare-core/latest)
 ![Crates.io License](https://img.shields.io/crates/l/sare-core)
 ![Crates.io Size](https://img.shields.io/crates/size/sare-core)
 ![Crates.io Total Downloads](https://img.shields.io/crates/d/sare-core)

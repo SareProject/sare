@@ -1,7 +1,6 @@
 # SARE Lib
 
 ![Crates.io Version](https://img.shields.io/crates/v/sare-lib)
-![Deps.rs Crate Dependencies (latest)](https://img.shields.io/deps-rs/sare-lib/latest)
 ![Crates.io License](https://img.shields.io/crates/l/sare-lib)
 ![Crates.io Size](https://img.shields.io/crates/size/sare-lib)
 ![Crates.io Total Downloads](https://img.shields.io/crates/d/sare-lib)
