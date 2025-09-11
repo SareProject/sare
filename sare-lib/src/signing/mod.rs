@@ -3,7 +3,7 @@ use sare_core::{
     hybrid_sign::{ECSignature, PQSignature},
 };
 
-use crate::{keys::MasterKey, SareError, SARE_VERSION};
+use crate::{SARE_VERSION, SareError, keys::MasterKey};
 
 pub struct Signing(MasterKey);
 

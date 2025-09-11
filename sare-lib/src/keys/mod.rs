@@ -5,7 +5,7 @@ pub use sare_core::format::keys::*;
 pub use sare_core::format::{EncodablePublic, EncodableSecret};
 pub use sare_core::hybrid_kem::{DHAlgorithm, DHKeyPair, KEMAlgorithm, KEMKeyPair};
 pub use sare_core::hybrid_sign::{ECAlgorithm, ECKeyPair, PQAlgorithm, PQKeyPair};
-use sare_core::kdf::{PKDFAlgorithm, KDF, PKDF};
+use sare_core::kdf::{KDF, PKDF, PKDFAlgorithm};
 use sare_core::pem;
 pub use sare_core::seed::Seed;
 use secrecy::{ExposeSecret, SecretString, SecretVec};

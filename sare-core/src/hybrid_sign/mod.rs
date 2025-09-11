@@ -301,12 +301,14 @@ mod tests {
 
     #[test]
     fn ed25519_sign() {
-        assert!(ECSignature::verify(
-            &ECAlgorithm::Ed25519,
-            &BASE64_STANDARD.decode(ED25519_PUBLIC_KEY).unwrap(),
-            b"SARE",
-            &BASE64_STANDARD.decode(ED25519_SIGNATURE).unwrap()
-        )
-        .unwrap());
+        assert!(
+            ECSignature::verify(
+                &ECAlgorithm::Ed25519,
+                &BASE64_STANDARD.decode(ED25519_PUBLIC_KEY).unwrap(),
+                b"SARE",
+                &BASE64_STANDARD.decode(ED25519_SIGNATURE).unwrap()
+            )
+            .unwrap()
+        );
     }
 }

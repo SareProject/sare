@@ -5,9 +5,9 @@ use colored::*;
 use sare_lib::keys::SharedPublicKey;
 
 use crate::{
+    SareCLIError,
     common::{self, prepare_sare_directory},
     db::{SareDB, SareDBRecipient},
-    SareCLIError,
 };
 
 #[derive(FromArgs, Debug)]
@@ -104,7 +104,11 @@ impl RecipientCommand {
             "✅".green(),
             sare_directory.join("recipients"),
             fullchain_fingerprint.cyan(),
-            if is_key_verified { "Yes".green() } else { "No".red() }
+            if is_key_verified {
+                "Yes".green()
+            } else {
+                "No".red()
+            }
         );
 
         Ok(())

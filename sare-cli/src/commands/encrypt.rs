@@ -8,7 +8,7 @@ use sare_lib::{
 };
 use secrecy::{ExposeSecret, SecretVec};
 
-use crate::{common, SareCLIError};
+use crate::{SareCLIError, common};
 
 #[derive(FromArgs, Debug)]
 #[argh(subcommand)]

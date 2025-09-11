@@ -15,10 +15,10 @@ use sare_lib::{
 use secrecy::{ExposeSecret, SecretVec};
 
 use crate::{
+    SareCLIError,
     commands::revocation::RevocationCommand,
     common,
     db::{self, SareDB},
-    SareCLIError,
 };
 
 #[derive(FromArgs, Debug)]
@@ -247,10 +247,16 @@ impl MasterkeyCommand {
     fn generate_masterkey(&self, generate: &GenerateMasterkey) -> Result<(), SareCLIError> {
         let masterkey = MasterKey::generate(
             HybridKEMAlgorithm::from_string(
-                generate.hybrid_kem_algorithm.clone().unwrap_or("".to_string()),
+                generate
+                    .hybrid_kem_algorithm
+                    .clone()
+                    .unwrap_or("".to_string()),
             ),
             HybridSignAlgorithm::from_string(
-                generate.hybrid_sign_algorithm.clone().unwrap_or("".to_string()),
+                generate
+                    .hybrid_sign_algorithm
+                    .clone()
+                    .unwrap_or("".to_string()),
             ),
         );
 

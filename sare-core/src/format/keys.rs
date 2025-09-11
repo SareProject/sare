@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 
 use super::{EncodablePublic, EncodableSecret};
 
-use crate::format::encryption::EncryptionMetadataFormat;
 use crate::format::FormatError;
+use crate::format::encryption::EncryptionMetadataFormat;
 use crate::hybrid_kem::{DHAlgorithm, DHKeyPair, KEMAlgorithm, KEMKeyPair};
 use crate::hybrid_sign::{ECAlgorithm, ECKeyPair, PQAlgorithm, PQKeyPair};
 

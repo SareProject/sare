@@ -2,8 +2,8 @@ use std::io::Cursor;
 
 use serde::{Deserialize, Serialize};
 
-use crate::format::error::{ErrSection, FormatError};
 use crate::format::EncodablePublic;
+use crate::format::error::{ErrSection, FormatError};
 use crate::hybrid_sign::{ECAlgorithm, PQAlgorithm};
 use byteorder::{LittleEndian, ReadBytesExt};
 

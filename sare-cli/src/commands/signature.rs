@@ -4,7 +4,7 @@ use argh::FromArgs;
 use colored::*;
 use sare_lib::{format::signature::SignatureHeaderFormat, signing::Signing};
 
-use crate::{common, SareCLIError};
+use crate::{SareCLIError, common};
 
 #[derive(FromArgs, Debug)]
 #[argh(subcommand)]

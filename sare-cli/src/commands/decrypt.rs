@@ -5,7 +5,7 @@ use colored::*;
 use sare_lib::encryption::Decryptor;
 use secrecy::{ExposeSecret, SecretVec};
 
-use crate::{common, SareCLIError};
+use crate::{SareCLIError, common};
 
 #[derive(FromArgs)]
 /// Decrypt a SARE-encrypted file

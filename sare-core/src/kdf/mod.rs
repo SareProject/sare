@@ -1,6 +1,6 @@
 use hkdf::Hkdf;
-use rand::rngs::OsRng;
 use rand::RngCore;
+use rand::rngs::OsRng;
 use secrecy::{ExposeSecret, SecretVec};
 use serde::{Deserialize, Serialize};
 use sha2::{Sha256, Sha512};

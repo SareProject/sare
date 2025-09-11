@@ -1,5 +1,5 @@
 use colored::*;
-use sare_lib::{format::error::FormatError, SareError};
+use sare_lib::{SareError, format::error::FormatError};
 use serde_json::Error as JsonError;
 use std::fmt;
 use std::io::Error as IoError;

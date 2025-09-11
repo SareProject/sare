@@ -8,15 +8,16 @@ use sare_core::{
         signature::SignatureFormat,
     },
     hybrid_kem::{Encapsulation, HybridKEM},
-    kdf::{HKDFAlgorithm, PKDFAlgorithm, HKDF, KDF, PKDF},
+    kdf::{HKDF, HKDFAlgorithm, KDF, PKDF, PKDFAlgorithm},
     sha3::{Digest, Sha3_256},
 };
 use secrecy::{ExposeSecret, SecretVec};
 
 use super::SARE_VERSION;
 use crate::{
+    SareError,
     keys::{MasterKey, SharedPublicKey},
-    signing, SareError,
+    signing,
 };
 
 pub struct Encryptor(MasterKey);

@@ -1,7 +1,7 @@
 use std::io::{Read, Write};
 
 pub use sare_core::format::{
-    certificate::CertificateFormat, signature::SignatureFormat, EncodablePublic,
+    EncodablePublic, certificate::CertificateFormat, signature::SignatureFormat,
 };
 use sare_core::format::{
     certificate::{
@@ -11,7 +11,7 @@ use sare_core::format::{
     signature::SignatureHeaderFormat,
 };
 
-use crate::{keys::MasterKey, SareError};
+use crate::{SareError, keys::MasterKey};
 
 #[derive(Clone)]
 pub struct Certificate {

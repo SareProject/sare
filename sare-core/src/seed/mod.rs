@@ -1,15 +1,15 @@
 pub mod error;
 
 use bip39::{Language, Mnemonic};
-use rand::rngs::OsRng;
 use rand::RngCore;
+use rand::rngs::OsRng;
 use secrecy::{ExposeSecret, SecretString, SecretVec};
 use sha3::{
-    digest::{ExtendableOutput, Update, XofReader},
     Shake256,
+    digest::{ExtendableOutput, Update, XofReader},
 };
 
-use crate::kdf::{HKDFAlgorithm, HKDF};
+use crate::kdf::{HKDF, HKDFAlgorithm};
 
 use crate::seed::error::*;
 
