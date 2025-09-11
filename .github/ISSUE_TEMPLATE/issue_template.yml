@@ -1,0 +1,71 @@
+name: Issue Template
+description: Use this template for reporting bugs, requesting features, or asking questions
+title: "[ISSUE]"
+labels: ""
+assignees: ""
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Please select the type of issue:
+        - [ ] Bug Report
+        - [ ] Feature Request
+        - [ ] Question / Documentation
+
+  - type: input
+    attributes:
+      label: Short description
+      description: Provide a clear and concise description of the issue or feature request
+      placeholder: e.g., "CLI fails when decrypting a file with post-quantum keys"
+      required: true
+      value: ""
+
+  - type: textarea
+    attributes:
+      label: Steps to Reproduce / Detailed Description
+      description: Provide all necessary steps to reproduce the issue (for bugs), or a detailed explanation (for features)
+      placeholder: |
+        1. Open SARE CLI
+        2. Run `sare-cli decrypt ...`
+        3. Observe the error
+      required: true
+      value: ""
+
+  - type: textarea
+    attributes:
+      label: Expected Behavior
+      description: Describe what you expected to happen
+      placeholder: "The file should decrypt successfully"
+      required: false
+      value: ""
+
+  - type: textarea
+    attributes:
+      label: Actual Behavior
+      description: Describe what actually happened
+      placeholder: "The CLI crashes with a segmentation fault"
+      required: false
+      value: ""
+
+  - type: input
+    attributes:
+      label: Environment / Context
+      description: Include OS, Rust version, SARE version, crate (`sare-core`, `sare-lib`, `sare-cli`), etc.
+      placeholder: "OS: Ubuntu 22.04, Rust 1.78, SARE 0.1.0"
+      required: false
+      value: ""
+
+  - type: textarea
+    attributes:
+      label: Additional Notes / References
+      description: Anything else that may help (logs, links to docs, screenshots)
+      required: false
+      value: ""
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        **Security Note**: If you have discovered a security vulnerability, **do not report it here**. Please follow the [SARE Security Policy](https://github.com/SareProject/sare/security/policy) or use the [GitHub Security Advisories tool](https://github.com/SareProject/sare/security/advisories). 
+
