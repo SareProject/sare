@@ -30,7 +30,7 @@ Thank you for your interest in contributing to **SARE**! We welcome contribution
 - Use the **Issues** tab on GitHub to report bugs or unexpected behavior.
     
 - Provide detailed steps to reproduce the issue, including OS, Rust version, and SARE version.
-    
+ 
 - Include logs or error messages where applicable.
     
 
@@ -77,12 +77,13 @@ Thank you for your interest in contributing to **SARE**! We welcome contribution
 
 ## Code Style
 
-- SARE follows standard **Rust coding conventions** (use `rustfmt`).
-    
-- Write **clear, readable code** and avoid overly complex implementations.
-    
-- Document your functions and modules with Rust doc comments (`///`).
-    
+To keep the codebase consistent, please follow these guidelines:
+
+- Use `cargo fmt` before submitting a PR.  
+- Follow Rust 2021 idioms and avoid unnecessary unsafe code.  
+- Keep functions small, readable, and well-documented.  
+- Match the existing style of the codebase — when in doubt, copy the conventions you see in existing files.  
+- Write clear commit messages that describe *what* and *why*, not just *how*.  
 
 ---
 
