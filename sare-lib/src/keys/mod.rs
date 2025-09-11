@@ -32,7 +32,7 @@ impl Default for HybridSignAlgorithm {
 
 impl HybridSignAlgorithm {
     pub fn from_string(algo: String) -> Self {
-        match algo.as_str() {
+        match algo.to_ascii_uppercase().as_str() {
             "ED25519_DILITHIUM3" => HybridSignAlgorithm {
                 ec_algorithm: ECAlgorithm::Ed25519,
                 pq_algorithm: PQAlgorithm::Dilithium3,
@@ -59,7 +59,7 @@ impl Default for HybridKEMAlgorithm {
 
 impl HybridKEMAlgorithm {
     pub fn from_string(algo: String) -> Self {
-        match algo.as_str() {
+        match algo.to_ascii_uppercase().as_str() {
             "X25519_KYBER768" => HybridKEMAlgorithm {
                 dh_algorithm: DHAlgorithm::X25519,
                 kem_algorithm: KEMAlgorithm::Kyber768,
