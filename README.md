@@ -1,81 +1,103 @@
 # SARE (Safe At Rest Encryption)
 
-SARE is a hybrid post-quantum encryption system designed to protect files against both classical and future quantum attacks. It combines classical algorithms (e.g., X25519 or Ed25519) with post-quantum schemes (e.g., Kyber768) to provide strong security even if one scheme is compromised.
+**THIS SOFTWARE IS IN BETA, QUICKLY EVOLVING, AND HAS NOT BEEN AUDITED FOR SECURITY.**
+**USE AT YOUR OWN RISK. DO NOT USE FOR HIGHLY SENSITIVE DATA UNTIL IT UNDERGOES A FORMAL SECURITY REVIEW.**
+
+SARE(**S**afe **At** **R**est **E**ncryption) is a hybrid post-quantum encryption system designed to protect files against both classical and future quantum attacks. Its modular architecture allows easy integration of new encryption, signing, and KDF algorithms, ensuring the system can evolve alongside emerging cryptographic standards.
 
 The repository contains three Rust components:
 
-- [**sare-core**](sare-core) – Core cryptographic library.
-- [**sare-lib**](sare-lib) – High-level file encryption library.
-- [**sare-cli**](sare-cli) – Command-line interface.
+- [**sare-core**](https://github.com/SareProject/sare/blob/main/sare-core) – Core cryptographic library.
+    
+- [**sare-lib**](https://github.com/SareProject/sare/blob/main/sare-lib) – High-level file encryption library.
+    
+- [**sare-cli**](https://github.com/SareProject/sare/blob/main/sare-cli) – Command-line interface.
+    
 
-SARE uses a custom file format: a header starting with the ASCII magic `SARECRYPT`, followed by length fields, version, BSON metadata, and optional BSON signatures. Metadata contains all parameters needed to decrypt, including encryption algorithm, KDF, salt, nonce, and optional KEM/signature information.
+**NOTE:** SARE is **not a "roll your own crypto" project**—all core cryptographic operations (encryption, signing, key encapsulation, key derivations, etc) rely on well-vetted, standard, and widely audited algorithms and implementations.
 
-## Quick Example Using `sare-cli`
+## Documentations
 
-You can use the `--help` flag with any command to see detailed options and switches:
+Documentation for SARE, including use of CLI, libraries, formatting standards, and implementations exists at:
 
-```bash
-sare-cli <command> --help
-```
+[https://sareproject.github.io/docs](https://sareproject.github.io/docs)
 
-### 1. Key Management
+## Features
 
-#### Generate Master Key
+- **Post-Quantum Hybrid Security**: Combines classical and post-quantum algorithms to protect against both present and future threats.
 
-```bash
-sare-cli masterkey generate
-```
+- **Modular and Extensible**: Easily add or swap encryption, signing, and KDF algorithms without rewriting core logic.
 
-This command generates:
+- **Symmetric and Asymmetric Encryption**: Secure files with either passphrases or public/private key pairs.
 
-* **Validation Certificate** – Confirms that all your public keys are valid for a specified duration.
-* **Revocation Certificate** – Acts as a kill switch. Publishing this certificate tells others not to use your public key anymore.
+- **Master Key Management**: Generate, export, and manage master keys with **validation certificates** to prove ownership and authenticity.
 
-#### Add a Recipient
+- **Recipient Management**: Add, remove, and list recipients for secure asymmetric file sharing.
 
-```bash
-sare-cli recipient add <path-to-recipient-public-key.pem>
-```
+- **Digital Signatures**: Sign and verify files to guarantee authenticity and integrity.
 
-Adds a new recipient’s public key so that you can encrypt files for them.
+- **Revocation Certificates**: Create and manage revocations for compromised or obsolete keys.
+
+- **High-Level API via `sare-lib`**: Simplifies building secure applications on top of SARE.
+
+- **CLI Tool (`sare-cli`)**: Command-line interface for encryption, decryption, key management, and signing.
+
+- **Security-Focused**: Uses audited, standard, proven algorithms at the low-level; security and safety are foundational.
+
+## Installation and usage
+
+SARE can be used as a CLI tool or integrated into your Rust projects via the libraries.
+
+* For **quick examples and installation instructions**, see the individual component READMEs:
+
+* [`sare-lib`](https://github.com/SareProject/sare/tree/main/sare-lib) – library usage examples and high-level API.
+
+* [`sare-cli`](https://github.com/SareProject/sare/tree/main/sare-cli) – CLI usage examples.
+
+
+For detailed guidance and full documentation, including API reference and advanced usage, please check out [Getting Started with SARE](https://sareproject.github.io/docs/getting-started/installation.html)
+
+> Note: `sare-core` currently does not include usage examples as it is a low-level library intended to be used through `sare-lib`. Developers working directly with `sare-core` should be extremely cautious.
+
+----
+## Contributions
+
+All contributions to SARE, either in documents, code, security improvements, audits, or practically anything, are super welcome and really appreciated.
+
+To start contributing, please have a quick look at our contribution guide at [CONTRIBUTING.md](CONTRIBUTING.md)
+
+## Security Bug Reporting
+
+To report security vulnerabilities, please refer to our [Security Policy](https://github.com/SareProject/sare/security/policy) or email them directly to [zolagonano@protonmail.com](mailto:zolagonano@protonmail.com).
+
+You can also encrypt your report using the following PGP key:  
+`F22EB734505C76E59AFC95C4B4A4AEFDAFF48132`
+
+Or simply use SARE's security advisory reporting tool provided by Github: [https://github.com/SareProject/sare/security/advisories](https://github.com/SareProject/sare/security/advisories)
+
+For non-security bugs or feature requests, please use the repository's issue tracker or submit a pull request.
 
 ---
+## Release Notes
 
-### 2. File Encryption & Decryption
+SARE is actively developed, and new releases are regularly published. Each release includes updates, bug fixes, and security improvements.
 
-#### Encrypt a File
+You can view all releases on GitHub: [SARE Releases](https://github.com/SareProject/sare/releases)
 
-```bash
-sare-cli encrypt asymmetric <input-file> <output-file>
-```
-
-Encrypts the input file for one or more recipients using asymmetric encryption.
-
-#### Decrypt a File
-
-```bash
-sare-cli decrypt <input-file> <output-file>
-```
-
-Decrypts a file that was previously encrypted with `sare-cli`.
+All notable changes are documented in the [CHANGELOG.md](CHANGELOG.md) file, which follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) conventions.
 
 ---
+## Support / Donations
 
-### 3. File Signing & Verification
+Security and privacy aren’t just nice-to-haves—they’re the foundation for a lot of other rights. Protect them, and you’re protecting the **right to life**, stopping arbitrary detention, and defending the **right to liberty and security**. That, in turn, makes room for **freedom of thought, conscience, and religion**—even the freedom to change your beliefs—and **freedom of assembly and association**, the right to gather and organize. All of it feeds into having a **fair trial** and real access to justice.
 
-#### Generate a Signature
+SARE is my attempt to protect privacy and security online, with the hope that it helps protect these other civil and political rights too—especially in a world where privacy is basically invisible to governments and corporations.
 
-```bash
-sare-cli signature generate <input-file> <output-file>
-```
+If you want to help SARE grow, the best way is financially—check out our donation page: [https://sareproject.github.com/docs/support](https://sareproject.github.com/docs/support)
 
-Generates a digital signature for a file. The signature can be attached to or stored alongside the file.
+---
+## License
 
-#### Verify a Signature
+All executable code and libraries of SARE are released under a combination of the [MIT License](LICENSE-MIT) and the [Apache License](LICENSE-APACHE).
 
-```bash
-sare-cli signature verify <input-file> <output-file>
-```
-
-Verifies that a file’s signature is valid and matches the expected signer.
-
+The books, documents, wikis, and user guides of SARE are released under the Creative Commons Attribution 4.0 International (CC BY 4.0).
