@@ -1,7 +1,17 @@
 [package]
 name = "sare-lib"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
+
+authors = ["Zola Gonano <zolagonano@protonmail.com>", "Sare Project"]
+description = "Hybrid post-quantum encryption library providing SARE standard primitives and APIs."
+license = "MIT OR Apache-2.0"
+readme = "README.md"  
+repository = "https://github.com/SareProject/sare"  
+homepage = "https://sareproject.github.io"
+documentation = "https://sareproject.github.io/docs"
+keywords = ["crypto", "encryption", "post-quantum", "security", "rust"]  
+categories = ["cryptography", "command-line-utilities", "development-tools"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

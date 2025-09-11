@@ -88,7 +88,7 @@ pub struct MasterkeyCommand {
 impl MasterkeyCommand {
     pub fn execute(&self) -> Result<(), SareCLIError> {
         match &self.sub {
-            MasterkeySubCommand::Generate(gen) => self.generate_masterkey(gen),
+            MasterkeySubCommand::Generate(generate) => self.generate_masterkey(generate),
             MasterkeySubCommand::List(_) => self.list_masterkeys(),
             MasterkeySubCommand::Remove(rem) => self.remove_masterkey(rem),
             MasterkeySubCommand::Info(info) => self.masterkey_info(info),
@@ -244,13 +244,13 @@ impl MasterkeyCommand {
         Ok(())
     }
 
-    fn generate_masterkey(&self, gen: &GenerateMasterkey) -> Result<(), SareCLIError> {
+    fn generate_masterkey(&self, generate: &GenerateMasterkey) -> Result<(), SareCLIError> {
         let masterkey = MasterKey::generate(
             HybridKEMAlgorithm::from_string(
-                gen.hybrid_kem_algorithm.clone().unwrap_or("".to_string()),
+                generate.hybrid_kem_algorithm.clone().unwrap_or("".to_string()),
             ),
             HybridSignAlgorithm::from_string(
-                gen.hybrid_sign_algorithm.clone().unwrap_or("".to_string()),
+                generate.hybrid_sign_algorithm.clone().unwrap_or("".to_string()),
             ),
         );
 
@@ -269,7 +269,7 @@ impl MasterkeyCommand {
 
         // Export master key to memory
         let mut master_buffer = Cursor::new(Vec::new());
-        if gen.unencrypted_keyfiles.unwrap_or(false) {
+        if generate.unencrypted_keyfiles.unwrap_or(false) {
             masterkey.export(None, &mut master_buffer)?;
         } else {
             let passphrase = common::read_cli_secret("Enter your passphrase: ")?;
@@ -291,7 +291,7 @@ impl MasterkeyCommand {
         // Export public key
         let mut public_buffer = Cursor::new(Vec::new());
         masterkey.export_public(&mut public_buffer)?;
-        if !gen.no_validation_cert.unwrap_or(false) {
+        if !generate.no_validation_cert.unwrap_or(false) {
             let validation_certificate =
                 Certificate::new_validation(masterkey.clone(), expiry_duration, &issuer);
             validation_certificate.export(&mut public_buffer)?;

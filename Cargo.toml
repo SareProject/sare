@@ -6,3 +6,13 @@ members = [
     "sare-cli",
 ]
 
+[workspace.package]
+version = "0.1.0"
+authors = ["Zola Gonano <zolagonano@protonmail.com>", "Sare Project"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/SareProject/sare"
+homepage = "https://sareproject.github.io"
+documentation = "https://sareproject.github.io/docs"
+readme = "README.md"
+keywords = ["crypto", "encryption", "post-quantum", "security", "rust"]
+categories = ["cryptography", "command-line-utilities", "development-tools"]

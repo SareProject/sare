@@ -47,26 +47,26 @@ pub struct SignatureCommand {
 impl SignatureCommand {
     pub fn execute(&self) -> Result<(), SareCLIError> {
         match &self.sub {
-            SignatureSubCommand::Generate(gen) => self.generate(gen)?,
+            SignatureSubCommand::Generate(generate) => self.generate(generate)?,
             SignatureSubCommand::Verify(verify) => self.verify(verify)?,
         };
         Ok(())
     }
 
-    fn generate(&self, gen: &GenerateSignature) -> Result<(), SareCLIError> {
-        let masterkey = common::get_master_key_from_cli(&gen.masterkey_id)?;
+    fn generate(&self, generate: &GenerateSignature) -> Result<(), SareCLIError> {
+        let masterkey = common::get_master_key_from_cli(&generate.masterkey_id)?;
         let sign_engine = Signing::new(masterkey);
 
-        let message = fs::read(&gen.original_file)?;
+        let message = fs::read(&generate.original_file)?;
         let signature = sign_engine.sign_detached(&message);
         let bson_signature = signature.encode_with_magic_byte();
-        fs::write(&gen.sign_file, bson_signature)?;
+        fs::write(&generate.sign_file, bson_signature)?;
 
         println!(
             "{} Signature successfully generated!\n  📄 Original: {:?}\n  🔏 Signature File: {:?}",
             "✅".green(),
-            gen.original_file,
-            gen.sign_file
+            generate.original_file,
+            generate.sign_file
         );
         Ok(())
     }
