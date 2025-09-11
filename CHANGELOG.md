@@ -33,14 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - File encryption/decryption with symmetric and asymmetric support.
 - Master key management, recipient management, revocation, and digital signatures.
 
-### Changed
-- 
-
-### Fixed
-- 
-
-### Security
-- 
-
 ---
 
+## [0.1.1] - 2025-09-11 - Kyber Fix
+
+### Security
+- Replaced `pqc_kyber` with `safe_pqc_kyber` because of known security issues
