@@ -1,5 +1,11 @@
 # SARE CLI
 
+![Crates.io Version](https://img.shields.io/crates/v/sare-cli)
+![Deps.rs Crate Dependencies (latest)](https://img.shields.io/deps-rs/sare-cli/latest)
+![Crates.io License](https://img.shields.io/crates/l/sare-cli)
+![Crates.io Size](https://img.shields.io/crates/size/sare-cli)
+![Crates.io Total Downloads](https://img.shields.io/crates/d/sare-cli)
+
 **THIS TOOL IS IN BETA. IT IS QUICKLY EVOLVING AND HAS NOT BEEN FULLY AUDITED FOR SECURITY.**
 
 A command-line tool to stay safe in the quantum age. Built on top of [sare-lib](https://github.com/SareProject/sare/tree/main/sare-lib), SARE CLI allows users to encrypt, decrypt, sign, and manage cryptographic keys and recipients using a standardized and quantum-safe hybrid approach.
