@@ -17,4 +17,4 @@ categories = ["cryptography", "command-line-utilities", "development-tools"]
 
 [dependencies]
 sare-core = "0.1.1"
-secrecy = "0.8.0"
+secrecy = "0.10.3"
