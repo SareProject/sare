@@ -1,6 +1,6 @@
 [package]
 name = "sare-cli"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2024"
 
 authors = ["Zola Gonano <zolagonano@protonmail.com>", "Sare Project"]
@@ -34,7 +34,7 @@ pretty_env_logger = "0.5.0"
 read-stdin = "1.1.1"
 rpassword = "7.5.4"
 rand = "0.10.3"
-sare-lib = "0.1.1"
+sare-lib = "0.2.0"
 secrecy = "0.10.3"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
