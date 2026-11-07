@@ -13,6 +13,7 @@ use crate::format::{ErrSection, FormatError};
 use super::EncodablePublic;
 
 const MAGIC_BYTES: &[u8; 9] = b"SARECRYPT";
+const MAX_HEADER_LEN: usize = 4 * 1024 * 1024; // 4MiB, enough for signature and metadata
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct HeaderMetadataFormat {
@@ -26,14 +27,13 @@ pub struct HeaderMetadataFormat {
 
 impl HeaderMetadataFormat {
     pub fn encode(&self) -> Vec<u8> {
-        bson::to_vec(&self).unwrap()
+        bson::ser::serialize_to_vec(&self).unwrap()
     }
 
     pub fn decode(bson_metadata: &[u8]) -> Result<Self, FormatError> {
-        let metadata = bson::from_slice::<HeaderMetadataFormat>(bson_metadata);
+        let metadata = bson::de::deserialize_from_slice::<HeaderMetadataFormat>(bson_metadata)?;
 
-        // TODO: Needs Error Handling
-        Ok(metadata.unwrap())
+        Ok(metadata)
     }
 }
 
@@ -46,12 +46,20 @@ pub struct HeaderFormat {
 
 impl HeaderFormat {
     fn verify_magic_bytes(header: &[u8], cursor: &mut usize) -> Result<bool, FormatError> {
+        if header.len() < *cursor + MAGIC_BYTES.len() {
+            return Err(FormatError::InvalidHeader("Header is too short".into()));
+        }
+
         let magic_bytes = &header[*cursor..*cursor + MAGIC_BYTES.len()];
         *cursor += MAGIC_BYTES.len();
         Ok(magic_bytes == MAGIC_BYTES)
     }
 
     fn read_u64(header: &[u8], cursor: &mut usize) -> Result<u64, FormatError> {
+        if header.len() < *cursor + 8 {
+            return Err(FormatError::InvalidHeader("Header is too short".into()));
+        }
+
         let mut rdr = Cursor::new(&header[*cursor..*cursor + 8]);
         *cursor += 8;
         rdr.read_u64::<LittleEndian>()
@@ -59,6 +67,10 @@ impl HeaderFormat {
     }
 
     fn read_u32(header: &[u8], cursor: &mut usize) -> Result<u32, FormatError> {
+        if header.len() < *cursor + 4 {
+            return Err(FormatError::InvalidHeader("Header is too short".into()));
+        }
+
         let mut rdr = Cursor::new(&header[*cursor..*cursor + 4]);
         *cursor += 4;
         rdr.read_u32::<LittleEndian>()
@@ -105,16 +117,28 @@ impl HeaderFormat {
         }
 
         let version = Self::read_u32(header, &mut cursor)?;
-        let metadata_length = Self::read_u64(header, &mut cursor)?;
+        let metadata_length = Self::read_u64(header, &mut cursor)? as usize;
 
-        let metadata_bson = &header[cursor..cursor + metadata_length as usize];
+        if header.len() < cursor + metadata_length {
+            return Err(FormatError::InvalidHeader(
+                "Metadata length exceeds the header".into(),
+            ));
+        }
+
+        let metadata_bson = &header[cursor..cursor + metadata_length];
         let metadata = HeaderMetadataFormat::decode(metadata_bson)?;
-        cursor += metadata_length as usize;
+        cursor += metadata_length;
 
-        let signature_length = Self::read_u64(header, &mut cursor)?;
+        let signature_length = Self::read_u64(header, &mut cursor)? as usize;
+
         let signature = if signature_length > 0 {
-            let signature_bson = &header[cursor..cursor + signature_length as usize];
-            //cursor += signature_length as usize;
+            if header.len() < cursor + signature_length {
+                return Err(FormatError::InvalidHeader(
+                    "Signature length exceeds the header".into(),
+                ));
+            }
+
+            let signature_bson = &header[cursor..cursor + signature_length];
             Some(SignatureFormat::decode_bson(signature_bson)?)
         } else {
             None
@@ -137,6 +161,13 @@ impl HeaderFormat {
         reader.read_exact(&mut len_buf)?;
         let header_len = u64::from_le_bytes(len_buf) as usize;
 
+        if header_len > MAX_HEADER_LEN {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Header length exceeds the maximum allowed size",
+            ));
+        }
+
         let mut header_buf = vec![0u8; header_len];
         reader.read_exact(&mut header_buf)?;
 
@@ -158,6 +189,13 @@ impl HeaderFormat {
         reader.read_exact(&mut len_buf)?;
         let header_len = u64::from_le_bytes(len_buf) as usize;
 
+        if header_len > MAX_HEADER_LEN {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Header length exceeds the maximum allowed size",
+            ));
+        }
+
         let mut header_buf = vec![0u8; header_len];
         reader.read_exact(&mut header_buf)?;
 
@@ -173,6 +211,38 @@ impl HeaderFormat {
         let metadata = &self.metadata;
 
         metadata.encryption_metadata.kem_metadata.is_some()
+    }
+
+    /// Rebuild the header exactly as it was encoded without the signature,
+    /// the signature itself is never covered by the signature
+    pub fn rebuild_unsigned_header(header: &[u8]) -> Result<Vec<u8>, FormatError> {
+        let mut cursor = 0;
+
+        if !Self::verify_magic_bytes(header, &mut cursor)? {
+            return Err(FormatError::FailedToDecode(ErrSection::HEADER));
+        }
+
+        let _header_length = Self::read_u64(header, &mut cursor)?;
+        let _version = Self::read_u32(header, &mut cursor)?;
+        let metadata_length = Self::read_u64(header, &mut cursor)? as usize;
+
+        if header.len() < cursor + metadata_length {
+            return Err(FormatError::InvalidHeader(
+                "Metadata length exceeds the header".into(),
+            ));
+        }
+
+        // The unsigned header buffer ends right after the metadata,
+        // the signature section is replaced by a zero length
+        let unsigned_buffer_len = 4 + 8 + metadata_length + 8;
+
+        let mut unsigned_header = Vec::with_capacity(cursor + metadata_length + 8);
+        unsigned_header.extend_from_slice(&header[..MAGIC_BYTES.len()]);
+        unsigned_header.extend_from_slice(&(unsigned_buffer_len as u64).to_le_bytes());
+        unsigned_header.extend_from_slice(&header[MAGIC_BYTES.len() + 8..cursor + metadata_length]);
+        unsigned_header.extend_from_slice(&0u64.to_le_bytes());
+
+        Ok(unsigned_header)
     }
 
     pub fn is_signed(&self) -> bool {

@@ -12,7 +12,7 @@ use sare_lib::{
     format::certificate::Issuer,
     keys::{HybridKEMAlgorithm, HybridSignAlgorithm, MasterKey, SharedPublicKey},
 };
-use secrecy::{ExposeSecret, SecretVec};
+use secrecy::{ExposeSecret, SecretBox};
 
 use crate::{
     SareCLIError,
@@ -285,7 +285,7 @@ impl MasterkeyCommand {
             progress_bar.enable_steady_tick(Duration::from_millis(100));
 
             masterkey.export(
-                Some(SecretVec::<u8>::from(
+                Some(SecretBox::<[u8]>::from(
                     passphrase.expose_secret().as_bytes().to_vec(),
                 )),
                 &mut master_buffer,
@@ -298,9 +298,25 @@ impl MasterkeyCommand {
         let mut public_buffer = Cursor::new(Vec::new());
         masterkey.export_public(&mut public_buffer)?;
         if !generate.no_validation_cert.unwrap_or(false) {
-            let validation_certificate =
-                Certificate::new_validation(masterkey.clone(), expiry_duration, &issuer);
-            validation_certificate.export(&mut public_buffer)?;
+            // A validation certificate is only meaningful when it is issued by
+            // another key of the local wallet, it can never be self-signed
+            let sare_db = SareDB::import_from_json_file()?;
+
+            if sare_db.key_associations.is_empty() {
+                println!(
+                    "{}",
+                    "⚠ No issuer master key found, skipping the validation certificate".yellow()
+                );
+            } else {
+                let issuer_masterkey = common::get_master_key_from_cli(&None)?;
+                let validation_certificate = Certificate::new_validation(
+                    issuer_masterkey,
+                    &masterkey,
+                    expiry_duration,
+                    &issuer,
+                )?;
+                validation_certificate.export(&mut public_buffer)?;
+            }
         }
 
         // Export revocation file

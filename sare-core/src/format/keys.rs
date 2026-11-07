@@ -1,4 +1,4 @@
-use secrecy::{ExposeSecret, SecretString, SecretVec};
+use secrecy::{ExposeSecret, SecretString, SecretBox};
 use serde::{Deserialize, Serialize};
 
 use super::{EncodablePublic, EncodableSecret};
@@ -36,11 +36,11 @@ impl SignaturePublicKeyFormat {
 
 impl EncodablePublic for SignaturePublicKeyFormat {
     fn encode_bson(&self) -> Vec<u8> {
-        bson::to_vec(&self).unwrap()
+        bson::ser::serialize_to_vec(&self).unwrap()
     }
 
     fn decode_bson(bson_data: &[u8]) -> Result<Self, FormatError> {
-        let public_key = bson::from_slice::<SignaturePublicKeyFormat>(bson_data).unwrap();
+        let public_key = bson::de::deserialize_from_slice::<SignaturePublicKeyFormat>(bson_data).unwrap();
         Ok(public_key)
     }
 
@@ -78,11 +78,11 @@ impl EncryptionPublicKeyFormat {
 
 impl EncodablePublic for EncryptionPublicKeyFormat {
     fn encode_bson(&self) -> Vec<u8> {
-        bson::to_vec(&self).unwrap()
+        bson::ser::serialize_to_vec(&self).unwrap()
     }
 
     fn decode_bson(bson_data: &[u8]) -> Result<Self, FormatError> {
-        let public_key = bson::from_slice::<EncryptionPublicKeyFormat>(bson_data).unwrap();
+        let public_key = bson::de::deserialize_from_slice::<EncryptionPublicKeyFormat>(bson_data).unwrap();
         Ok(public_key)
     }
 
@@ -107,11 +107,11 @@ pub struct FullChainPublicKeyFormat {
 
 impl EncodablePublic for FullChainPublicKeyFormat {
     fn encode_bson(&self) -> Vec<u8> {
-        bson::to_vec(&self).unwrap()
+        bson::ser::serialize_to_vec(&self).unwrap()
     }
 
     fn decode_bson(bson_data: &[u8]) -> Result<Self, FormatError> {
-        let public_key = bson::from_slice::<FullChainPublicKeyFormat>(bson_data).unwrap();
+        let public_key = bson::de::deserialize_from_slice::<FullChainPublicKeyFormat>(bson_data).unwrap();
         Ok(public_key)
     }
 
@@ -164,13 +164,13 @@ pub struct SecretKeyFormat {
     pub dh_algorithm: DHAlgorithm,
     pub kem_algorithm: KEMAlgorithm,
     #[serde(with = "secret_vec_serde")]
-    pub master_seed: SecretVec<u8>,
+    pub master_seed: SecretBox<[u8]>,
     #[serde(skip_serializing_if = "Option::is_none", flatten)]
     pub encryption_metadata: Option<EncryptionMetadataFormat>,
 }
 
 impl SecretKeyFormat {
-    pub fn calculate_fingerprint(master_seed: SecretVec<u8>) -> Vec<u8> {
+    pub fn calculate_fingerprint(master_seed: SecretBox<[u8]>) -> Vec<u8> {
         let mut hasher = Sha256::new();
         hasher.update(master_seed.expose_secret());
 
@@ -181,12 +181,12 @@ impl SecretKeyFormat {
 }
 
 impl EncodableSecret for SecretKeyFormat {
-    fn encode_bson(&self) -> SecretVec<u8> {
-        SecretVec::from(bson::to_vec(&self).unwrap())
+    fn encode_bson(&self) -> SecretBox<[u8]> {
+        SecretBox::new(bson::ser::serialize_to_vec(&self).unwrap().into())
     }
 
-    fn decode_bson(bson_secretkey: &SecretVec<u8>) -> Result<Self, FormatError> {
-        let secret_key = bson::from_slice::<SecretKeyFormat>(bson_secretkey.expose_secret());
+    fn decode_bson(bson_secretkey: &SecretBox<[u8]>) -> Result<Self, FormatError> {
+        let secret_key = bson::de::deserialize_from_slice::<SecretKeyFormat>(bson_secretkey.expose_secret());
 
         Ok(secret_key?)
     }
@@ -194,7 +194,7 @@ impl EncodableSecret for SecretKeyFormat {
     fn encode_pem(&self) -> SecretString {
         let pem = pem::Pem::new(
             MASTER_KEY_PEM_TAG,
-            self.encode_bson().expose_secret().as_slice(),
+            self.encode_bson().expose_secret(),
         );
 
         SecretString::from(pem::encode(&pem))
@@ -203,29 +203,29 @@ impl EncodableSecret for SecretKeyFormat {
     fn decode_pem(pem_master_key: SecretString) -> Result<Self, FormatError> {
         let pem = pem::parse(pem_master_key.expose_secret())?;
 
-        let bson_data = SecretVec::from(pem.into_contents());
+        let bson_data = SecretBox::new(pem.into_contents().into());
 
         Self::decode_bson(&bson_data)
     }
 }
 
 mod secret_vec_serde {
-    use secrecy::{ExposeSecret, SecretVec};
+    use secrecy::{ExposeSecret, SecretBox};
     use serde::{self, Deserialize, Deserializer, Serializer};
     use serde_bytes::ByteBuf;
 
-    pub fn serialize<S>(data: &SecretVec<u8>, serializer: S) -> Result<S::Ok, S::Error>
+    pub fn serialize<S>(data: &SecretBox<[u8]>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         serializer.serialize_bytes(data.expose_secret())
     }
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<SecretVec<u8>, D::Error>
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<SecretBox<[u8]>, D::Error>
     where
         D: Deserializer<'de>,
     {
         let bytes: ByteBuf = ByteBuf::deserialize(deserializer)?;
-        Ok(SecretVec::new(bytes.into_vec()))
+        Ok(SecretBox::new(bytes.into_vec().into()))
     }
 }

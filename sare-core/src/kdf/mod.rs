@@ -1,7 +1,6 @@
 use hkdf::Hkdf;
-use rand::RngCore;
-use rand::rngs::OsRng;
-use secrecy::{ExposeSecret, SecretVec};
+use rand::Rng;
+use secrecy::{ExposeSecret, SecretBox};
 use serde::{Deserialize, Serialize};
 use sha2::{Sha256, Sha512};
 pub mod error;
@@ -27,20 +26,20 @@ pub trait KDF {
     fn generate_salt() -> Vec<u8> {
         let mut salt_buffer = [0u8; 8];
 
-        OsRng.fill_bytes(&mut salt_buffer);
+        rand::rng().fill_bytes(&mut salt_buffer);
 
         salt_buffer.to_vec()
     }
 }
 
 pub struct HKDF<'a> {
-    input_data: &'a SecretVec<u8>,
+    input_data: &'a SecretBox<[u8]>,
     salt: Vec<u8>,
     algorithm: HKDFAlgorithm,
 }
 
 impl<'a> HKDF<'a> {
-    pub fn new(input_data: &'a SecretVec<u8>, salt: Vec<u8>, algorithm: HKDFAlgorithm) -> Self {
+    pub fn new(input_data: &'a SecretBox<[u8]>, salt: Vec<u8>, algorithm: HKDFAlgorithm) -> Self {
         HKDF {
             input_data,
             salt,
@@ -70,7 +69,7 @@ impl<'a> HKDF<'a> {
         Ok(())
     }
 
-    pub fn expand(&self, additional_context: Option<&[u8]>) -> Result<SecretVec<u8>, KDFError> {
+    pub fn expand(&self, additional_context: Option<&[u8]>) -> Result<SecretBox<[u8]>, KDFError> {
         let mut okm = vec![0u8; self.algorithm.get_output_size()];
 
         match &self.algorithm {
@@ -82,7 +81,7 @@ impl<'a> HKDF<'a> {
             }
         }
 
-        Ok(SecretVec::from(okm))
+        Ok(SecretBox::new(okm.into()))
     }
 }
 
@@ -91,9 +90,24 @@ pub enum PKDFAlgorithm {
     Scrypt(u8, u32, u32),
 }
 
+impl PKDFAlgorithm {
+    /// The upper bounds are far above the recommended parameters but still cheap enough
+    /// that a crafted file can not tie up the machine for hours just by being opened
+    pub fn validate(&self) -> Result<(), KDFError> {
+        match self {
+            PKDFAlgorithm::Scrypt(log_n, r, p) => {
+                if *log_n > 20 || *r == 0 || *r > 1024 || *p == 0 || *p > 16 {
+                    return Err(KDFError::InvalidParams);
+                }
+                Ok(())
+            }
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct PKDF<'a> {
-    input_data: &'a SecretVec<u8>,
+    input_data: &'a SecretBox<[u8]>,
     pub salt: Vec<u8>,
     pub algorithm: PKDFAlgorithm,
 }
@@ -101,7 +115,7 @@ pub struct PKDF<'a> {
 impl KDF for PKDF<'_> {}
 
 impl<'a> PKDF<'a> {
-    pub fn new(input_data: &'a SecretVec<u8>, salt: Vec<u8>, algorithm: PKDFAlgorithm) -> Self {
+    pub fn new(input_data: &'a SecretBox<[u8]>, salt: Vec<u8>, algorithm: PKDFAlgorithm) -> Self {
         PKDF {
             input_data,
             salt,
@@ -119,10 +133,12 @@ impl<'a> PKDF<'a> {
     }
     */
 
-    pub fn derive_key(&self, key_length: usize) -> Result<SecretVec<u8>, KDFError> {
+    pub fn derive_key(&self, key_length: usize) -> Result<SecretBox<[u8]>, KDFError> {
         match &self.algorithm {
             PKDFAlgorithm::Scrypt(n, r, p) => {
-                let params = scrypt::Params::new(*n, *r, *p, key_length)?;
+                self.algorithm.validate()?;
+
+                let params = scrypt::Params::new(*n, *r, *p)?;
 
                 let mut output = vec![0u8; key_length];
                 scrypt::scrypt(
@@ -132,7 +148,7 @@ impl<'a> PKDF<'a> {
                     &mut output,
                 )?;
 
-                Ok(SecretVec::from(output))
+                Ok(SecretBox::new(output.into()))
             }
         }
     }
@@ -156,18 +172,18 @@ mod tests {
 
     #[test]
     fn hkdf() {
-        let binding = SecretVec::from(TEST_INPUT_DATA.to_vec());
+        let binding = SecretBox::new(TEST_INPUT_DATA.to_vec().into());
         let hkdf = HKDF::new(&binding, TEST_SALT.to_vec(), HKDFAlgorithm::SHA512);
 
         let output = hkdf.expand(None).unwrap();
 
-        assert_eq!(HKDF_SHA512_OUTPUT, output.expose_secret().as_slice());
+        assert_eq!(HKDF_SHA512_OUTPUT, output.expose_secret());
     }
 
     /*
     #[test]
     fn scrypt_workfactor_scale() {
-        let input_data = SecretVec::from(TEST_INPUT_DATA.to_vec());
+        let input_data = SecretBox::new(TEST_INPUT_DATA.to_vec().into());
         let pkdf = PKDF::new(&input_data, &TEST_SALT, 60, PKDFAlgorithm::Scrypt);
 
         let workfactor = pkdf.calculate_scrypt_workfactor();
@@ -178,7 +194,7 @@ mod tests {
 
     #[test]
     fn scrypt_key_derive() {
-        let input_data = SecretVec::from(TEST_INPUT_DATA.to_vec());
+        let input_data = SecretBox::new(TEST_INPUT_DATA.to_vec().into());
         let pkdf = PKDF::new(
             &input_data,
             TEST_SALT.to_vec(),
@@ -187,6 +203,6 @@ mod tests {
 
         let output = pkdf.derive_key(10).unwrap();
 
-        assert_eq!(SCRYPT_OUTPUT, output.expose_secret().as_slice());
+        assert_eq!(SCRYPT_OUTPUT, output.expose_secret());
     }
 }

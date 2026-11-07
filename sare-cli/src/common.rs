@@ -17,18 +17,25 @@ pub const DEFAULT_SARE_DIRECTORY: &str = ".sare";
 pub const DB_FILE: &str = "saredb.json";
 
 pub fn random_confirmaton_string(len: usize) -> String {
-    let mut seed = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_nanos() as u64;
+    use rand::Rng;
 
     let charset = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let mut s = String::with_capacity(len);
 
-    for _ in 0..len {
-        seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
-        let idx = (seed % charset.len() as u64) as usize;
-        s.push(charset[idx] as char);
+    while s.len() < len {
+        let mut buffer = [0u8; 32];
+        rand::rng().fill_bytes(&mut buffer);
+
+        for byte in buffer {
+            if s.len() == len {
+                break;
+            }
+
+            // Rejection sampling keeps every character equally likely
+            if (byte as usize) < (256 / charset.len()) * charset.len() {
+                s.push(charset[byte as usize % charset.len()] as char);
+            }
+        }
     }
 
     s
@@ -130,7 +137,7 @@ pub fn get_master_key_from_cli(masterkey_id: &Option<String>) -> Result<MasterKe
     let passphrase = if secret_key_format.encryption_metadata.is_some() {
         let input_passphrase = read_cli_secret("Please enter your passphrase: ")?;
         let passphrase_bytes =
-            secrecy::Secret::new(input_passphrase.expose_secret().clone().into_bytes());
+            secrecy::SecretBox::new(input_passphrase.expose_secret().as_bytes().into());
         Some(passphrase_bytes)
     } else {
         None

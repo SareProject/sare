@@ -61,11 +61,11 @@ impl RecipientCommand {
     fn add_recipient(&self, add: &AddRecipient) -> Result<(), SareCLIError> {
         let pem_content = fs::read_to_string(&add.key)?;
         let recipient_key = SharedPublicKey::from_pem(pem_content)?;
-        let fullchain_fingerprint = recipient_key.fullchain_public_key.calculate_fingerprint();
+        let recipient_fingerprint_bytes = recipient_key.fullchain_public_key.calculate_fingerprint();
         let sare_directory = common::prepare_sare_directory()?;
         let temp_dir = sare_directory.join(".temp");
 
-        let fullchain_fingerprint = hex::encode_upper(fullchain_fingerprint);
+        let fullchain_fingerprint = hex::encode_upper(recipient_fingerprint_bytes);
 
         let mut recipient_buffer = Cursor::new(Vec::new());
         recipient_key.export(recipient_buffer.get_mut())?;
@@ -76,12 +76,32 @@ impl RecipientCommand {
             .join(format!("RECIPIENT_{}.pem", &fullchain_fingerprint));
         fs::write(&recipient_path_temp, recipient_buffer.into_inner())?;
 
-        let is_key_verified =
-            if let Some(verification_certificate) = recipient_key.validation_certificate {
-                verification_certificate.verify()?
+        let is_key_verified = if let Some(verification_certificate) =
+            recipient_key.validation_certificate.as_ref()
+        {
+            let subject_matches = verification_certificate
+                .get_subject_fingerprint()
+                .is_some_and(|fingerprint| fingerprint == &recipient_fingerprint_bytes);
+
+            // The certificate only counts as verification when it was issued
+            // for exactly this key and checks out against a trusted issuer
+            // master key of the local wallet
+            if subject_matches {
+                match common::get_master_key_from_cli(&None) {
+                    Ok(issuer_masterkey) => verification_certificate
+                        .verify_with_issuer(
+                            &issuer_masterkey.get_signing_public_key(),
+                            common::get_now_timestamp(),
+                        )
+                        .unwrap_or(false),
+                    Err(_) => false,
+                }
             } else {
                 false
-            };
+            }
+        } else {
+            false
+        };
 
         let recipient_final = sare_directory
             .join("recipients")

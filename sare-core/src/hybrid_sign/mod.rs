@@ -4,7 +4,7 @@ use crate::hybrid_sign::error::*;
 use crate::seed::Seed;
 use crystals_dilithium as dilithium;
 use ed25519_compact as ed25519;
-use secrecy::{ExposeSecret, SecretVec};
+use secrecy::{ExposeSecret, SecretBox};
 
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
@@ -27,13 +27,13 @@ impl ToString for ECAlgorithm {
 
 pub struct ECKeyPair {
     pub public_key: Vec<u8>,
-    pub secret_key: SecretVec<u8>,
+    pub secret_key: SecretBox<[u8]>,
     pub algorithm: ECAlgorithm,
 }
 
 impl ECKeyPair {
     pub fn from_secret_key(
-        secret_key: &SecretVec<u8>,
+        secret_key: &SecretBox<[u8]>,
         ec_algorithm: ECAlgorithm,
     ) -> Result<Self, HybridSignError> {
         match ec_algorithm {
@@ -43,7 +43,7 @@ impl ECKeyPair {
 
                 Ok(ECKeyPair {
                     public_key: public_key.to_vec(),
-                    secret_key: SecretVec::from(secret_key.to_vec()),
+                    secret_key: SecretBox::new(secret_key.to_vec().into()),
                     algorithm: ec_algorithm,
                 })
             }
@@ -60,7 +60,7 @@ impl ECKeyPair {
 
                 ECKeyPair {
                     public_key: keypair.pk.to_vec(),
-                    secret_key: SecretVec::from(keypair.sk.to_vec()),
+                    secret_key: SecretBox::new(keypair.sk.to_vec().into()),
                     algorithm: ec_algorithm,
                 }
             }
@@ -152,7 +152,7 @@ impl ToString for PQAlgorithm {
 
 pub struct PQKeyPair {
     pub public_key: Vec<u8>,
-    pub secret_key: SecretVec<u8>,
+    pub secret_key: SecretBox<[u8]>,
     pub algorithm: PQAlgorithm,
 }
 
@@ -161,11 +161,12 @@ impl PQKeyPair {
         match pq_algorithm {
             PQAlgorithm::Dilithium3 => {
                 let child_seed = seed.derive_32bytes_child_seed(Some(&DILITHIUM3_MAGIC_BYTES));
-                let keypair =
-                    dilithium::dilithium3::Keypair::generate(Some(child_seed.expose_secret()));
+                // The child seed is always exactly 32 bytes, generation can not fail
+                let keypair = dilithium::dilithium3::Keypair::generate(Some(child_seed.expose_secret()))
+                    .unwrap();
                 PQKeyPair {
                     public_key: keypair.public.to_bytes().to_vec(),
-                    secret_key: SecretVec::from(keypair.secret.to_bytes().to_vec()),
+                    secret_key: SecretBox::new(keypair.secret.to_bytes().to_vec().into()),
                     algorithm: pq_algorithm,
                 }
             }
@@ -217,9 +218,11 @@ impl<'a> PQSignature<'a> {
 
         match signature_algorithm {
             PQAlgorithm::Dilithium3 => {
+                // The stored secret key was generated from the seed and is always valid
                 let secret_key = dilithium::dilithium3::SecretKey::from_bytes(
                     self.keypair.secret_key.expose_secret(),
-                );
+                )
+                .unwrap();
 
                 let signature = secret_key.sign(message);
 
@@ -236,7 +239,8 @@ impl<'a> PQSignature<'a> {
     ) -> Result<bool, HybridSignError> {
         match signature_algorithm {
             PQAlgorithm::Dilithium3 => {
-                let public_key = dilithium::dilithium3::PublicKey::from_bytes(public_key);
+                let public_key = dilithium::dilithium3::PublicKey::from_bytes(public_key)
+                    .map_err(|_| HybridSignError::InvalidPublicKey(ErrSection::PQ))?;
 
                 let does_verify = public_key.verify(message, signature);
 
@@ -271,7 +275,7 @@ mod tests {
     #[test]
     fn ed25519_keypair_from_seed() {
         let keypair = ECKeyPair::from_seed(
-            &Seed::new(SecretVec::from(TEST_SEED.to_vec())),
+            &Seed::new(SecretBox::new(TEST_SEED.to_vec().into())),
             ECAlgorithm::Ed25519,
         );
 
@@ -288,7 +292,7 @@ mod tests {
     #[test]
     fn ed25519_keypair_from_secret_key() {
         let keypair = ECKeyPair::from_secret_key(
-            &SecretVec::from(BASE64_STANDARD.decode(ED25519_SECRET_KEY).unwrap()),
+            &SecretBox::new(BASE64_STANDARD.decode(ED25519_SECRET_KEY).unwrap().into()),
             ECAlgorithm::Ed25519,
         )
         .unwrap();

@@ -1,4 +1,4 @@
-use secrecy::{SecretString, SecretVec};
+use secrecy::{SecretString, SecretBox};
 
 pub mod certificate;
 pub mod encryption;
@@ -21,8 +21,8 @@ pub trait EncodablePublic {
 }
 
 pub trait EncodableSecret {
-    fn encode_bson(&self) -> SecretVec<u8>;
-    fn decode_bson(bson_data: &SecretVec<u8>) -> Result<Self, FormatError>
+    fn encode_bson(&self) -> SecretBox<[u8]>;
+    fn decode_bson(bson_data: &SecretBox<[u8]>) -> Result<Self, FormatError>
     where
         Self: Sized;
     fn encode_pem(&self) -> SecretString;
