@@ -1,5 +1,8 @@
 use sare_core::{
-    format::signature::{SignatureFormat, SignatureHeaderFormat, SignatureMetadataFormat},
+    format::{
+        keys::SignaturePublicKeyFormat,
+        signature::{SignatureFormat, SignatureHeaderFormat, SignatureMetadataFormat},
+    },
     hybrid_sign::{ECSignature, PQSignature},
 };
 
@@ -103,6 +106,40 @@ impl Signing {
         raw_message: &[u8],
     ) -> Result<bool, SareError> {
         Self::verify(signature_header, raw_message)
+    }
+
+    /// Verify a signature with public keys of a known issuer instead of the
+    /// public keys embedded in the signature itself
+    pub fn verify_with_public_keys(
+        signature_header: &SignatureHeaderFormat,
+        raw_message: &[u8],
+        issuer_public_key: &SignaturePublicKeyFormat,
+    ) -> Result<bool, SareError> {
+        let signature = &signature_header.signature;
+        let merged_message =
+            Self::merge_message_with_fingerprint(raw_message, &signature.fullchain_fingerprint);
+
+        let signature_metadata = signature.signature_metadata.as_ref().ok_or_else(|| {
+            SareError::CoreError(sare_core::CoreErrorKind::HybridSign(
+                sare_core::hybrid_sign::error::HybridSignError::Unexpected,
+            ))
+        })?;
+
+        let ec_valid = ECSignature::hash_and_verify(
+            &signature_metadata.ec_algorithm,
+            &issuer_public_key.ec_public_key,
+            &merged_message,
+            &signature.ec_signature,
+        )?;
+
+        let pq_valid = PQSignature::hash_and_verify(
+            &signature_metadata.pq_algorithm,
+            &issuer_public_key.pq_public_key,
+            &merged_message,
+            &signature.pq_signature,
+        )?;
+
+        Ok(ec_valid && pq_valid)
     }
 
     /// Verify an attached signature

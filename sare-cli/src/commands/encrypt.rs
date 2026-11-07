@@ -4,7 +4,7 @@ use argh::FromArgs;
 use colored::*;
 use sare_lib::{
     encryption::Encryptor,
-    keys::{self, MasterKey, SharedPublicKey},
+    keys::{self, MasterKey, SharedPublicKey, PKDFAlgorithm},
 };
 use secrecy::{ExposeSecret, SecretVec};
 
@@ -25,9 +25,6 @@ struct SymmetricEncryption {
     input_file: PathBuf,
     #[argh(positional)]
     output_file: PathBuf,
-    /// kdf algorithm
-    #[argh(option)]
-    kdf_algorithm: Option<String>,
     /// kdf scaling factor
     #[argh(option)]
     kdf_scaling_factor: Option<u32>,
@@ -101,7 +98,9 @@ impl EncryptCommand {
             SecretVec::new(passphrase.expose_secret().to_string().into_bytes());
 
         let scaling_factor = sym.kdf_scaling_factor.unwrap_or(1);
-        let kdf_algo = sym.kdf_algorithm.as_deref().unwrap_or("argon2");
+        let kdf_algo = match keys::RECOMMENDED_PKDF_PARAMS {
+            PKDFAlgorithm::Scrypt(..) => "scrypt",
+        };
 
         let pkdf = Encryptor::get_pkdf(
             &passphrase_bytes,

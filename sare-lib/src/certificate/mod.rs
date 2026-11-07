@@ -8,6 +8,7 @@ use sare_core::format::{
         CertificateType, Issuer, RevocationCertificateFormat, RevocationReason,
         ValidationCertificateFormat,
     },
+    keys::SignaturePublicKeyFormat,
     signature::SignatureHeaderFormat,
 };
 
@@ -32,14 +33,25 @@ impl Certificate {
         }
     }
 
-    /// Create a validation certificate
+    /// Create a validation certificate.
+    /// It is issued by the issuer's master key and binds the subject's fingerprint,
+    /// a self-signed validation certificate would validate nothing but the key itself
     pub fn new_validation(
-        masterkey: MasterKey,
+        issuer_masterkey: MasterKey,
+        subject_masterkey: &MasterKey,
         expiry_timestamp: Option<u64>,
         issuer: &Issuer,
-    ) -> Self {
+    ) -> Result<Self, SareError> {
+        if issuer_masterkey.get_fullchain_public_fingerprint()
+            == subject_masterkey.get_fullchain_public_fingerprint()
+        {
+            return Err(SareError::Unexpected(
+                "A validation certificate can not be self-signed".into(),
+            ));
+        }
+
         let validation = ValidationCertificateFormat {
-            fullchain_public_key_fingerprint: masterkey.get_fullchain_public_fingerprint(),
+            fullchain_public_key_fingerprint: subject_masterkey.get_fullchain_public_fingerprint(),
         };
 
         let certificate = CertificateFormat {
@@ -48,10 +60,12 @@ impl Certificate {
             certificate_type: CertificateType::Validation(validation),
         };
 
-        Self::new(masterkey, certificate)
+        Ok(Self::new(issuer_masterkey, certificate))
     }
 
-    /// Create a revocation certificate
+    /// Create a revocation certificate.
+    /// Revocations are self-signed on purpose, the signature proves the
+    /// issuer is still in possession of the revoked key
     pub fn new_revocation(
         masterkey: MasterKey,
         timestamp: u64,
@@ -71,6 +85,46 @@ impl Certificate {
         };
 
         Self::new(masterkey, certificate)
+    }
+
+    /// Fingerprint of the key this certificate is about
+    pub fn get_subject_fingerprint(&self) -> Option<&[u8; 32]> {
+        match &self.certificate.certificate_type {
+            CertificateType::Validation(validation) => {
+                Some(&validation.fullchain_public_key_fingerprint)
+            }
+            CertificateType::Revocation(_) => None,
+        }
+    }
+
+    /// Check if the certificate expired
+    pub fn is_expired(&self, now_timestamp: u64) -> bool {
+        match self.certificate.expiry_date {
+            Some(expiry_date) => now_timestamp > expiry_date,
+            None => false,
+        }
+    }
+
+    /// Verify the attached signature against the public key of a known issuer.
+    /// A validation certificate is only worth the trust in the key that issued it
+    pub fn verify_with_issuer(
+        &self,
+        issuer_signature_public_key: &SignaturePublicKeyFormat,
+        now_timestamp: u64,
+    ) -> Result<bool, SareError> {
+        if self.is_expired(now_timestamp) {
+            return Ok(false);
+        }
+
+        let raw_message = self.signature.signature.message.as_ref().ok_or_else(|| {
+            SareError::IoError("Attached signature is missing the message".into())
+        })?;
+
+        super::signing::Signing::verify_with_public_keys(
+            &self.signature,
+            raw_message,
+            issuer_signature_public_key,
+        )
     }
 
     /// Encode the certificate as PEM with proper tag

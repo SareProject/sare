@@ -23,12 +23,18 @@ impl fmt::Display for ErrSection {
 #[derive(Debug)]
 pub enum FormatError {
     FailedToDecode(ErrSection),
+    InvalidHeader(String),
+    InvalidPKDFParameters(String),
 }
 
 impl fmt::Display for FormatError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             FormatError::FailedToDecode(err) => write!(f, "Failed to decode: {}", err),
+            FormatError::InvalidHeader(err) => write!(f, "Invalid header: {}", err),
+            FormatError::InvalidPKDFParameters(err) => {
+                write!(f, "Invalid PKDF parameters: {}", err)
+            }
         }
     }
 }

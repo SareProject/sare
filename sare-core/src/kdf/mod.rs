@@ -91,6 +91,21 @@ pub enum PKDFAlgorithm {
     Scrypt(u8, u32, u32),
 }
 
+impl PKDFAlgorithm {
+    /// The upper bounds are far above the recommended parameters but still cheap enough
+    /// that a crafted file can not tie up the machine for hours just by being opened
+    pub fn validate(&self) -> Result<(), KDFError> {
+        match self {
+            PKDFAlgorithm::Scrypt(log_n, r, p) => {
+                if *log_n > 20 || *r == 0 || *r > 1024 || *p == 0 || *p > 16 {
+                    return Err(KDFError::InvalidParams);
+                }
+                Ok(())
+            }
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct PKDF<'a> {
     input_data: &'a SecretVec<u8>,
@@ -122,6 +137,8 @@ impl<'a> PKDF<'a> {
     pub fn derive_key(&self, key_length: usize) -> Result<SecretVec<u8>, KDFError> {
         match &self.algorithm {
             PKDFAlgorithm::Scrypt(n, r, p) => {
+                self.algorithm.validate()?;
+
                 let params = scrypt::Params::new(*n, *r, *p, key_length)?;
 
                 let mut output = vec![0u8; key_length];

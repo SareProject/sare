@@ -298,9 +298,25 @@ impl MasterkeyCommand {
         let mut public_buffer = Cursor::new(Vec::new());
         masterkey.export_public(&mut public_buffer)?;
         if !generate.no_validation_cert.unwrap_or(false) {
-            let validation_certificate =
-                Certificate::new_validation(masterkey.clone(), expiry_duration, &issuer);
-            validation_certificate.export(&mut public_buffer)?;
+            // A validation certificate is only meaningful when it is issued by
+            // another key of the local wallet, it can never be self-signed
+            let sare_db = SareDB::import_from_json_file()?;
+
+            if sare_db.key_associations.is_empty() {
+                println!(
+                    "{}",
+                    "⚠ No issuer master key found, skipping the validation certificate".yellow()
+                );
+            } else {
+                let issuer_masterkey = common::get_master_key_from_cli(&None)?;
+                let validation_certificate = Certificate::new_validation(
+                    issuer_masterkey,
+                    &masterkey,
+                    expiry_duration,
+                    &issuer,
+                )?;
+                validation_certificate.export(&mut public_buffer)?;
+            }
         }
 
         // Export revocation file

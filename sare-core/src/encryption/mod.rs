@@ -13,6 +13,29 @@ use std::io::{Read, Write};
 use std::vec;
 
 const AEAD_BUFFER_LEN: usize = 2048;
+const AEAD_TAG_LEN: usize = 16;
+const XCHACHA20POLY1305_NONCE_LEN: usize = 19;
+
+// A STREAM frame must be filled completely before it can be processed,
+// a short read is only ever the last chunk of the stream
+fn read_chunk<R: Read>(data: &mut R, buffer: &mut [u8]) -> Result<usize, EncryptionError> {
+    let mut read_count = 0;
+
+    while read_count < buffer.len() {
+        let n = data.read(&mut buffer[read_count..])?;
+        if n == 0 {
+            break;
+        }
+        read_count += n;
+    }
+
+    Ok(read_count)
+}
+
+fn convert_input_key(input_key: &SecretVec<u8>) -> Result<[u8; 32], EncryptionError> {
+    <[u8; 32]>::try_from(input_key.expose_secret().as_slice())
+        .map_err(|_| EncryptionError::InvalidKeyLength)
+}
 
 #[derive(Copy, Debug, Clone, Serialize, Deserialize)]
 pub enum EncryptionAlgorithm {
@@ -47,7 +70,7 @@ impl KeyWrap {
     }
 
     pub fn dewrap(&self, wrapped_data: &SecretVec<u8>) -> Result<SecretVec<u8>, EncryptionError> {
-        let mut output: Vec<u8> = vec![0; wrapped_data.expose_secret().len() - 8];
+        let mut output: Vec<u8> = vec![0; wrapped_data.expose_secret().len().saturating_sub(8)];
 
         let input_key = <[u8; 32]>::try_from(self.input_key.expose_secret().as_slice()).unwrap();
 
@@ -88,17 +111,16 @@ impl Encryptor {
             EncryptionAlgorithm::XCHACHA20POLY1305 => {
                 self.encrypt_xchacha20poly1305(&mut data, &mut output)
             }
-            _ => unimplemented!(),
+            _ => Err(EncryptionError::UnsupportedAlgorithm),
         }
     }
 
-    // TODO: Needs Error Handling
     pub fn encrypt_xchacha20poly1305<R: Read, W: Write>(
         &self,
         mut data: R,
         mut output: W,
     ) -> Result<(), EncryptionError> {
-        let input_key = <[u8; 32]>::try_from(self.input_key.expose_secret().as_slice()).unwrap();
+        let input_key = convert_input_key(&self.input_key)?;
         let nonce = self.nonce.as_slice();
 
         let aead = XChaCha20Poly1305::new(input_key.as_ref().into());
@@ -106,16 +128,14 @@ impl Encryptor {
         let mut data_buffer = [0u8; AEAD_BUFFER_LEN];
 
         loop {
-            let read_count = data.read(&mut data_buffer)?;
+            let read_count = read_chunk(&mut data, &mut data_buffer)?;
 
             if read_count == AEAD_BUFFER_LEN {
-                let encrypted_data = stream_aead.encrypt_next(data_buffer.as_slice()).unwrap();
+                let encrypted_data = stream_aead.encrypt_next(data_buffer.as_slice())?;
 
                 output.write_all(&encrypted_data)?;
             } else {
-                let encrypted_data = stream_aead
-                    .encrypt_last(&data_buffer[..read_count])
-                    .unwrap();
+                let encrypted_data = stream_aead.encrypt_last(&data_buffer[..read_count])?;
 
                 output.write_all(&encrypted_data)?;
                 break;
@@ -149,38 +169,40 @@ impl Decryptor {
             EncryptionAlgorithm::XCHACHA20POLY1305 => {
                 self.decrypt_xchacha20poly1305(&mut encrypted_data, &mut output)
             }
-            _ => unimplemented!(),
+            _ => Err(EncryptionError::UnsupportedAlgorithm),
         }
     }
 
-    // TODO: Needs Error Handling
     pub fn decrypt_xchacha20poly1305<R: Read, W: Write>(
         &self,
         mut encrypted_data: R,
         mut output: W,
     ) -> Result<(), EncryptionError> {
-        let input_key = <[u8; 32]>::try_from(self.input_key.expose_secret().as_slice()).unwrap();
+        if self.nonce.len() != XCHACHA20POLY1305_NONCE_LEN {
+            return Err(EncryptionError::InvalidNonceLength);
+        }
+
+        let input_key = convert_input_key(&self.input_key)?;
         let nonce = self.nonce.as_slice();
 
         let aead = XChaCha20Poly1305::new(input_key.as_ref().into());
         let mut stream_aead = stream::DecryptorBE32::from_aead(aead, nonce.as_ref().into());
-        let mut encrypted_buffer = [0u8; AEAD_BUFFER_LEN + 16]; // 16bytes for AEAD tag
+        let mut encrypted_buffer = [0u8; AEAD_BUFFER_LEN + AEAD_TAG_LEN]; // 16bytes for AEAD tag
 
         loop {
-            let read_count = encrypted_data.read(&mut encrypted_buffer)?;
+            let read_count = read_chunk(&mut encrypted_data, &mut encrypted_buffer)?;
 
-            if read_count == AEAD_BUFFER_LEN {
-                let decrypted_data = stream_aead
-                    .decrypt_next(encrypted_buffer.as_slice())
-                    .unwrap();
+            // A full frame is 2048bytes of ciphertext + 16bytes of AEAD tag,
+            // only a short frame can ever be the last chunk of the stream
+            if read_count == AEAD_BUFFER_LEN + AEAD_TAG_LEN {
+                let decrypted_data = stream_aead.decrypt_next(encrypted_buffer.as_slice())?;
 
-                output.write(&decrypted_data)?;
+                output.write_all(&decrypted_data)?;
             } else {
-                let decrypted_data = stream_aead
-                    .decrypt_last(&encrypted_buffer[..read_count])
-                    .unwrap();
+                let decrypted_data =
+                    stream_aead.decrypt_last(&encrypted_buffer[..read_count])?;
 
-                output.write(&decrypted_data)?;
+                output.write_all(&decrypted_data)?;
                 break;
             }
         }

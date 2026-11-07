@@ -5,7 +5,8 @@ pub use sare_core::format::keys::*;
 pub use sare_core::format::{EncodablePublic, EncodableSecret};
 pub use sare_core::hybrid_kem::{DHAlgorithm, DHKeyPair, KEMAlgorithm, KEMKeyPair};
 pub use sare_core::hybrid_sign::{ECAlgorithm, ECKeyPair, PQAlgorithm, PQKeyPair};
-use sare_core::kdf::{KDF, PKDF, PKDFAlgorithm};
+pub use sare_core::kdf::PKDFAlgorithm;
+use sare_core::kdf::{KDF, PKDF};
 use sare_core::pem;
 pub use sare_core::seed::Seed;
 use secrecy::{ExposeSecret, SecretString, SecretVec};
@@ -184,11 +185,17 @@ impl MasterKey {
 
         match passphrase_bytes {
             Some(passphrase) => {
-                // NOTE: We'll check if it's encrypted first in CLI or other interfaces
-                // TODO: Mention this on code docs later
-                let encryption_metadata = decoded_master_key_format.encryption_metadata.unwrap();
-                // NOTE: It will not be None if it's encrypted
-                let pkdf_metadata = encryption_metadata.pkdf_metadata.unwrap();
+                let encryption_metadata = decoded_master_key_format
+                    .encryption_metadata
+                    .ok_or_else(|| {
+                        SareError::Unexpected(
+                            "Passphrase was provided for an unencrypted master key".into(),
+                        )
+                    })?;
+
+                let pkdf_metadata = encryption_metadata.pkdf_metadata.ok_or_else(|| {
+                    SareError::Unexpected("Missing PKDF metadata of the master key".into())
+                })?;
 
                 let pkdf = PKDF::new(
                     &passphrase,
@@ -257,7 +264,7 @@ impl MasterKey {
     }
 
     pub fn export_encryption_public<W: Write>(&self, mut output: W) -> Result<(), SareError> {
-        let encryption_public_key = self.get_signing_public_key();
+        let encryption_public_key = self.get_encryption_public_key();
 
         output.write_all(encryption_public_key.encode_pem().as_bytes())?;
         Ok(())

@@ -160,7 +160,7 @@ impl Encapsulation {
 
         let (cipher_text, shared_secret) = match self.algorithm {
             KEMAlgorithm::Kyber768 => {
-                pqc_kyber::encapsulate(&self.public_key, &mut random_generator).unwrap()
+                pqc_kyber::encapsulate(&self.public_key, &mut random_generator)?
             }
         };
 
@@ -191,7 +191,7 @@ impl<'a> Decapsulation<'a> {
     pub fn decapsulate(&self, cipher_text: &[u8]) -> Result<DecapsulatedSecret, HybridKEMError> {
         let shared_secret = match self.algorithm {
             KEMAlgorithm::Kyber768 => {
-                pqc_kyber::decapsulate(cipher_text, self.secret_key.expose_secret()).unwrap()
+                pqc_kyber::decapsulate(cipher_text, self.secret_key.expose_secret())?
             }
         };
 

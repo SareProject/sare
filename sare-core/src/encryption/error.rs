@@ -23,7 +23,9 @@ impl fmt::Display for ErrSection {
 pub enum EncryptionError {
     FailedToReadOrWrite(ErrSection),
     InvalidKeyLength,
+    InvalidNonceLength,
     FailedToEncryptOrDecrypt(ErrSection),
+    UnsupportedAlgorithm,
     Unexpected,
 }
 
@@ -52,9 +54,11 @@ impl fmt::Display for EncryptionError {
                 write!(f, "Failed to read or write: {}", err)
             }
             EncryptionError::InvalidKeyLength => write!(f, "Invalid key length"),
+            EncryptionError::InvalidNonceLength => write!(f, "Invalid nonce length"),
             EncryptionError::FailedToEncryptOrDecrypt(err) => {
                 write!(f, "Failed to encrypt or decrypt: {}", err)
             }
+            EncryptionError::UnsupportedAlgorithm => write!(f, "Unsupported encryption algorithm"),
             EncryptionError::Unexpected => write!(f, "Unexpected error"),
         }
     }

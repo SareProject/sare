@@ -6,6 +6,12 @@ members = [
     "sare-cli",
 ]
 
+# While the crates are developed in lockstep inside this repository,
+# the published versions must not shadow the local ones
+[patch.crates-io]
+sare-core = { path = "sare-core" }
+sare-lib = { path = "sare-lib" }
+
 [workspace.package]
 version = "0.1.0"
 authors = ["Zola Gonano <zolagonano@protonmail.com>", "Sare Project"]

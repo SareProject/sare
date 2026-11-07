@@ -22,6 +22,17 @@ pub struct DecryptCommand {
 
 impl DecryptCommand {
     pub fn execute(&self) -> Result<(), SareCLIError> {
+        let result = self.decrypt();
+
+        // A failed decryption must never leave a partial output behind
+        if result.is_err() {
+            let _ = std::fs::remove_file(&self.output_file);
+        }
+
+        result
+    }
+
+    fn decrypt(&self) -> Result<(), SareCLIError> {
         let mut input_file = File::open(&self.input_file)?;
         let mut output_file = File::create(&self.output_file)?;
 
@@ -41,14 +52,15 @@ impl DecryptCommand {
                 self.output_file
             );
 
+            // The signature is already verified against the header and the
+            // checksum of the decrypted file by the decryption itself
             if let Some(signature) = signature {
-                if signature.fullchain_fingerprint
-                    == file_header.signature.unwrap().fullchain_fingerprint
-                {
-                    println!("  {} Signature attached to the file is VALID", "✅".green());
-                } else {
-                    println!("  {} Signature attached to the file is INVALID", "❌".red());
-                }
+                println!(
+                    "  {} Signature attached to the file is VALID\n  {} Signed by: {}",
+                    "✅".green(),
+                    "👤".blue(),
+                    hex::encode_upper(signature.fullchain_fingerprint).cyan()
+                );
             } else {
                 println!("  {} No signature was attached to the file", "⚠️".yellow());
             }
