@@ -27,11 +27,11 @@ pub struct HeaderMetadataFormat {
 
 impl HeaderMetadataFormat {
     pub fn encode(&self) -> Vec<u8> {
-        bson::to_vec(&self).unwrap()
+        bson::ser::serialize_to_vec(&self).unwrap()
     }
 
     pub fn decode(bson_metadata: &[u8]) -> Result<Self, FormatError> {
-        let metadata = bson::from_slice::<HeaderMetadataFormat>(bson_metadata)?;
+        let metadata = bson::de::deserialize_from_slice::<HeaderMetadataFormat>(bson_metadata)?;
 
         Ok(metadata)
     }

@@ -9,7 +9,7 @@ pub use sare_core::kdf::PKDFAlgorithm;
 use sare_core::kdf::{KDF, PKDF};
 use sare_core::pem;
 pub use sare_core::seed::Seed;
-use secrecy::{ExposeSecret, SecretString, SecretVec};
+use secrecy::{ExposeSecret, SecretString, SecretBox};
 use std::io::{BufReader, Read, Write};
 
 use crate::SareError;
@@ -100,7 +100,7 @@ impl MasterKey {
 
     pub fn export<W: Write>(
         &self,
-        passphrase_bytes: Option<SecretVec<u8>>,
+        passphrase_bytes: Option<SecretBox<[u8]>>,
         mut output: W,
     ) -> Result<(), SareError> {
         match passphrase_bytes {
@@ -133,7 +133,7 @@ impl MasterKey {
                     pq_algorithm: self.hybrid_sign_algorithm.pq_algorithm,
                     dh_algorithm: self.hybrid_kem_algorithm.dh_algorithm,
                     kem_algorithm: self.hybrid_kem_algorithm.kem_algorithm,
-                    master_seed: SecretVec::from(encrypted_seed),
+                    master_seed: SecretBox::new(encrypted_seed.into()),
                     encryption_metadata: Some(encryption_metadata),
                 };
 
@@ -171,7 +171,7 @@ impl MasterKey {
 
     pub fn import(
         decoded_master_key_format: SecretKeyFormat,
-        passphrase_bytes: Option<SecretVec<u8>>,
+        passphrase_bytes: Option<SecretBox<[u8]>>,
     ) -> Result<Self, SareError> {
         let hybrid_sign_algorithm = HybridSignAlgorithm {
             ec_algorithm: decoded_master_key_format.ec_algorithm,

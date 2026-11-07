@@ -16,25 +16,27 @@ categories = ["cryptography", "command-line-utilities", "development-tools"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-aead = "0.5.2"
-aes-kw = "0.2.1"
-bson = "2.7.0"
+aead = "0.6.1"
+aes-kw = "0.3.1"
+bson = { version = "3.1.0", features = ["serde"] }
 byteorder = "1.5.0"
-chacha20poly1305 = { version = "0.10.1", features = ["stream"] }
-crystals-dilithium = "1.0.0"
-ed25519-compact = "2.0.4"
-generic-array = "1.0.0"
-hkdf = "0.12.4"
-pem = "3.0.3"
+chacha20poly1305 = "0.11.0"
+crystals-dilithium = "2.0.0"
+ed25519-compact = "2.6.0"
+hkdf = "0.13.0"
+pem = "4.0.0"
 safe_pqc_kyber = { version = "0.6.3", features = ["std", "rand", "kyber768"] }
-rand = "0.8.5"
-scrypt = "0.11.0"
-secrecy = { version = "0.8.0" }
-serde = { version = "1.0.193", features = ["derive"] }
-serde_bytes = "0.11.17"
-sha2 = "0.10.8"
-sha3 = "0.10.8"
+rand = "0.10.3"
+# safe_pqc_kyber still expects the rand_core 0.6 traits
+rand_core = "0.6.4"
+scrypt = "0.12.0"
+secrecy = { version = "0.10.3" }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_bytes = "0.11.19"
+sha2 = "0.11.1"
+sha3 = "0.12.0"
+shake = "0.1.0"
 tiny-bip39 = { version = "2.0.0", default-features = false }
 
 [dev-dependencies]
-base64 = "0.21.5"
+base64 = "0.23.1"

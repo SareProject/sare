@@ -3,7 +3,7 @@ use std::{fs::File, path::PathBuf};
 use argh::FromArgs;
 use colored::*;
 use sare_lib::encryption::Decryptor;
-use secrecy::{ExposeSecret, SecretVec};
+use secrecy::{ExposeSecret, SecretBox};
 
 use crate::{SareCLIError, common};
 
@@ -67,7 +67,7 @@ impl DecryptCommand {
         } else {
             let passphrase = common::read_cli_secret("Please enter passphrase for the file: ")?;
             let passphrase_bytes =
-                SecretVec::new(passphrase.expose_secret().to_owned().into_bytes());
+                SecretBox::new(passphrase.expose_secret().to_owned().into_bytes().into());
 
             println!("{} Starting symmetric decryption...", "🔐".blue());
             Decryptor::decrypt_with_passphrase(

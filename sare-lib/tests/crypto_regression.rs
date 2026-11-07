@@ -6,7 +6,7 @@ use sare_lib::{
     format::certificate::Issuer,
     keys::{HybridKEMAlgorithm, HybridSignAlgorithm, MasterKey, SharedPublicKey},
 };
-use secrecy::SecretVec;
+use secrecy::SecretBox;
 
 /// The tests exercise the streaming and framing logic, not the KDF strength,
 /// so the key derivation runs with cheap scrypt parameters
@@ -82,7 +82,7 @@ fn symmetric_roundtrip_chunk_boundaries() {
         100_000,
     ] {
         let plaintext: Vec<u8> = (0..size).map(|i| (i % 251) as u8).collect();
-        let passphrase = SecretVec::new(b"correct horse battery staple".to_vec());
+        let passphrase = SecretBox::new(b"correct horse battery staple".to_vec().into());
 
         let mut encrypted = Cursor::new(Vec::new());
         let pkdf = Encryptor::get_pkdf(
@@ -100,7 +100,7 @@ fn symmetric_roundtrip_chunk_boundaries() {
 
         let mut decrypted = Cursor::new(Vec::new());
         Decryptor::decrypt_with_passphrase(
-            SecretVec::new(b"correct horse battery staple".to_vec()),
+            SecretBox::new(b"correct horse battery staple".to_vec().into()),
             Cursor::new(encrypted.into_inner()),
             &mut decrypted,
         )
@@ -118,7 +118,7 @@ fn symmetric_roundtrip_chunk_boundaries() {
 /// SARE-04: a wrong passphrase must return an error, never a panic
 #[test]
 fn symmetric_wrong_passphrase_is_an_error() {
-    let passphrase = SecretVec::new(b"correct horse battery staple".to_vec());
+    let passphrase = SecretBox::new(b"correct horse battery staple".to_vec().into());
 
     let mut encrypted = Cursor::new(Vec::new());
     let pkdf = Encryptor::get_pkdf(
@@ -136,7 +136,7 @@ fn symmetric_wrong_passphrase_is_an_error() {
 
     let mut decrypted = Cursor::new(Vec::new());
     let result = Decryptor::decrypt_with_passphrase(
-        SecretVec::new(b"wrong passphrase".to_vec()),
+        SecretBox::new(b"wrong passphrase".to_vec().into()),
         Cursor::new(encrypted.into_inner()),
         &mut decrypted,
     );
@@ -260,7 +260,7 @@ fn tampered_header_fails_decryption() {
 /// SARE-07: a corrupted header must return an error, never a panic
 #[test]
 fn corrupted_header_is_an_error() {
-    let passphrase = SecretVec::new(b"correct horse battery staple".to_vec());
+    let passphrase = SecretBox::new(b"correct horse battery staple".to_vec().into());
 
     let mut encrypted = Cursor::new(Vec::new());
     let pkdf = Encryptor::get_pkdf(
@@ -283,7 +283,7 @@ fn corrupted_header_is_an_error() {
 
     let mut decrypted = Cursor::new(Vec::new());
     let result = Decryptor::decrypt_with_passphrase(
-        SecretVec::new(b"correct horse battery staple".to_vec()),
+        SecretBox::new(b"correct horse battery staple".to_vec().into()),
         Cursor::new(corrupted),
         &mut decrypted,
     );
@@ -301,7 +301,7 @@ fn huge_header_length_is_an_error() {
 
     let mut decrypted = Cursor::new(Vec::new());
     let result = Decryptor::decrypt_with_passphrase(
-        SecretVec::new(b"whatever".to_vec()),
+        SecretBox::new(b"whatever".to_vec().into()),
         Cursor::new(forged),
         &mut decrypted,
     );
@@ -312,7 +312,7 @@ fn huge_header_length_is_an_error() {
 /// SARE-07: exaggerated KDF parameters from a header must be rejected
 #[test]
 fn exaggerated_kdf_parameters_are_rejected() {
-    let passphrase = SecretVec::new(b"passphrase".to_vec());
+    let passphrase = SecretBox::new(b"passphrase".to_vec().into());
 
     let mut encrypted = Cursor::new(Vec::new());
     let pkdf = Encryptor::get_pkdf(
@@ -354,7 +354,7 @@ fn exaggerated_kdf_parameters_are_rejected() {
 
     let mut decrypted = Cursor::new(Vec::new());
     let result = Decryptor::decrypt_with_passphrase(
-        SecretVec::new(b"passphrase".to_vec()),
+        SecretBox::new(b"passphrase".to_vec().into()),
         Cursor::new(amplified),
         &mut decrypted,
     );
@@ -453,7 +453,7 @@ fn masterkey_import_roundtrip() {
 
     let secret_key_format = MasterKey::decode_pem(Cursor::new(exported.into_inner())).unwrap();
     let result =
-        MasterKey::import(secret_key_format, Some(SecretVec::new(b"passphrase".to_vec())));
+        MasterKey::import(secret_key_format, Some(SecretBox::new(b"passphrase".to_vec().into())));
 
     assert!(result.is_err());
 }

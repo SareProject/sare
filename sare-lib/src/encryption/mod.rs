@@ -11,7 +11,7 @@ use sare_core::{
     kdf::{HKDF, HKDFAlgorithm, KDF, PKDF, PKDFAlgorithm},
     sha3::{Digest, Sha3_256},
 };
-use secrecy::{ExposeSecret, SecretVec};
+use secrecy::{ExposeSecret, SecretBox};
 
 use super::SARE_VERSION;
 use crate::{
@@ -62,7 +62,7 @@ impl Encryptor {
 
     /// Generate a PKDF from a passphrase
     pub fn get_pkdf<'a>(
-        passphrase: &'a SecretVec<u8>,
+        passphrase: &'a SecretBox<[u8]>,
         algorithm: PKDFAlgorithm,
         _scaling_factor: u32,
     ) -> PKDF<'a> {
@@ -129,18 +129,13 @@ impl Encryptor {
         let kem_ciphertext = encapsulated_secret.cipher_text;
 
         let diffie_hellman = DiffieHellman::new(&dh_keypair, &encryption_pub.dh_public_key);
-        let concated_shared_secrets = SecretVec::new(
+        let concated_shared_secrets = SecretBox::new(
             [
-                diffie_hellman
-                    .calculate_shared_key()?
-                    .expose_secret()
-                    .as_slice(),
-                encapsulated_secret
-                    .shared_secret
-                    .expose_secret()
-                    .as_slice(),
+                diffie_hellman.calculate_shared_key()?.expose_secret(),
+                encapsulated_secret.shared_secret.expose_secret(),
             ]
-            .concat(),
+            .concat()
+            .into(),
         );
 
         let kdf_salt = PKDF::generate_salt();
@@ -231,7 +226,7 @@ impl Decryptor {
     }
 
     pub fn decrypt_with_passphrase<R: Read, W: Write>(
-        passphrase_bytes: SecretVec<u8>,
+        passphrase_bytes: SecretBox<[u8]>,
         mut encrypted_data: R,
         mut output: W,
     ) -> Result<(), SareError> {
@@ -299,12 +294,13 @@ impl Decryptor {
             &kem_metadata.dh_sender_public_key,
         )?;
 
-        let concated_shared_secrets = SecretVec::new(
+        let concated_shared_secrets = SecretBox::new(
             [
-                shared_secret.0.expose_secret().as_slice(),
-                &shared_secret.1.expose_secret().as_slice(),
+                shared_secret.0.expose_secret(),
+                shared_secret.1.expose_secret(),
             ]
-            .concat(),
+            .concat()
+            .into(),
         );
 
         let encryption_key = HKDF::new(

@@ -17,14 +17,14 @@ pub const DEFAULT_SARE_DIRECTORY: &str = ".sare";
 pub const DB_FILE: &str = "saredb.json";
 
 pub fn random_confirmaton_string(len: usize) -> String {
-    use rand::RngCore;
+    use rand::Rng;
 
     let charset = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let mut s = String::with_capacity(len);
 
     while s.len() < len {
         let mut buffer = [0u8; 32];
-        rand::rngs::OsRng.fill_bytes(&mut buffer);
+        rand::rng().fill_bytes(&mut buffer);
 
         for byte in buffer {
             if s.len() == len {
@@ -137,7 +137,7 @@ pub fn get_master_key_from_cli(masterkey_id: &Option<String>) -> Result<MasterKe
     let passphrase = if secret_key_format.encryption_metadata.is_some() {
         let input_passphrase = read_cli_secret("Please enter your passphrase: ")?;
         let passphrase_bytes =
-            secrecy::Secret::new(input_passphrase.expose_secret().clone().into_bytes());
+            secrecy::SecretBox::new(input_passphrase.expose_secret().as_bytes().into());
         Some(passphrase_bytes)
     } else {
         None

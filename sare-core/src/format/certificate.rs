@@ -98,11 +98,11 @@ impl CertificateFormat {
 
 impl EncodablePublic for CertificateFormat {
     fn encode_bson(&self) -> Vec<u8> {
-        bson::to_vec(&self).unwrap()
+        bson::ser::serialize_to_vec(&self).unwrap()
     }
 
     fn decode_bson(bson_data: &[u8]) -> Result<Self, FormatError> {
-        let public_key = bson::from_slice::<CertificateFormat>(bson_data).unwrap();
+        let public_key = bson::de::deserialize_from_slice::<CertificateFormat>(bson_data).unwrap();
         Ok(public_key)
     }
 

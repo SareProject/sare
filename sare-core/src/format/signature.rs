@@ -75,11 +75,11 @@ impl SignatureHeaderFormat {
 
 impl EncodablePublic for SignatureFormat {
     fn encode_bson(&self) -> Vec<u8> {
-        bson::to_vec(&self).unwrap()
+        bson::ser::serialize_to_vec(&self).unwrap()
     }
 
     fn decode_bson(data: &[u8]) -> Result<Self, FormatError> {
-        let metadata = bson::from_slice::<SignatureFormat>(data);
+        let metadata = bson::de::deserialize_from_slice::<SignatureFormat>(data);
 
         Ok(metadata?)
     }

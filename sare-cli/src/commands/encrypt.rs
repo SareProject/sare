@@ -6,7 +6,7 @@ use sare_lib::{
     encryption::Encryptor,
     keys::{self, MasterKey, SharedPublicKey, PKDFAlgorithm},
 };
-use secrecy::{ExposeSecret, SecretVec};
+use secrecy::{ExposeSecret, SecretBox};
 
 use crate::{SareCLIError, common};
 
@@ -94,8 +94,8 @@ impl EncryptCommand {
         let mut output_file = File::create(&sym.output_file)?;
 
         let passphrase = common::read_cli_secret("Enter passphrase for symmetric encryption: ")?;
-        let passphrase_bytes: SecretVec<u8> =
-            SecretVec::new(passphrase.expose_secret().to_string().into_bytes());
+        let passphrase_bytes: SecretBox<[u8]> =
+            SecretBox::new(passphrase.expose_secret().to_string().into_bytes().into());
 
         let scaling_factor = sym.kdf_scaling_factor.unwrap_or(1);
         let kdf_algo = match keys::RECOMMENDED_PKDF_PARAMS {

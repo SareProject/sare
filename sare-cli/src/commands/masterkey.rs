@@ -12,7 +12,7 @@ use sare_lib::{
     format::certificate::Issuer,
     keys::{HybridKEMAlgorithm, HybridSignAlgorithm, MasterKey, SharedPublicKey},
 };
-use secrecy::{ExposeSecret, SecretVec};
+use secrecy::{ExposeSecret, SecretBox};
 
 use crate::{
     SareCLIError,
@@ -285,7 +285,7 @@ impl MasterkeyCommand {
             progress_bar.enable_steady_tick(Duration::from_millis(100));
 
             masterkey.export(
-                Some(SecretVec::<u8>::from(
+                Some(SecretBox::<[u8]>::from(
                     passphrase.expose_secret().as_bytes().to_vec(),
                 )),
                 &mut master_buffer,

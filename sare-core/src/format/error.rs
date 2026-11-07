@@ -1,6 +1,6 @@
 use std::fmt;
 
-use bson::de::Error as BsonError;
+use bson::error::Error as BsonError;
 use pem::PemError;
 
 #[derive(Debug)]
