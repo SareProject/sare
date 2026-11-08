@@ -23,6 +23,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.0] - 2025-09-11 - Initial Release
+### Added
+- Core post-quantum hybrid encryption and signing algorithms.
+- `sare-core` library handling encryption/decryption engines, KDFs, hybrid KEM/Sign, seed management, and formatting.
+- `sare-lib` library providing user-friendly high-level API.
+- CLI tool `sare-cli` built on top of `sare-lib`.
+- Security policy, contribution guidelines, and manifesto.
+- File encryption/decryption with symmetric and asymmetric support.
+- Master key management, recipient management, revocation, and digital signatures.
+
+---
+
+## [0.1.1] - 2025-09-11 - Kyber Fix
+
+### Security
+- Replaced `pqc_kyber` with `safe_pqc_kyber` because of known security issues
+
+---
+
 ## [0.2.0] - 2026-11-07 - Cryptographic Fixes and Dependency Updates
 
 ### Added
@@ -48,21 +67,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - scrypt parameters read from a file are capped (log_n <= 20, r <= 1024, p <= 16) so a crafted file can not amplify the KDF cost without bound.
 - The confirmation code comes from `OsRng` with rejection sampling instead of a timestamp seeded LCG.
 
----
 
-## [0.1.0] - 2025-09-11 - Initial Release
-### Added
-- Core post-quantum hybrid encryption and signing algorithms.
-- `sare-core` library handling encryption/decryption engines, KDFs, hybrid KEM/Sign, seed management, and formatting.
-- `sare-lib` library providing user-friendly high-level API.
-- CLI tool `sare-cli` built on top of `sare-lib`.
-- Security policy, contribution guidelines, and manifesto.
-- File encryption/decryption with symmetric and asymmetric support.
-- Master key management, recipient management, revocation, and digital signatures.
-
----
-
-## [0.1.1] - 2025-09-11 - Kyber Fix
-
-### Security
-- Replaced `pqc_kyber` with `safe_pqc_kyber` because of known security issues
