@@ -45,6 +45,9 @@ fn main() {
 
     match result {
         Ok(()) => (),
-        Err(e) => e.pretty(),
+        Err(e) => {
+            e.pretty();
+            std::process::exit(1);
+        }
     }
 }
