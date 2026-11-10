@@ -13,10 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 
 
 ### Changed
-- 
+- The encryption and decryption engines process the STREAM frames of a 2 MiB batch in place and spread the batch over worker threads, every frame carries its own counter in the nonce so the frames are independent. The frame buffers are reused across the stream, a large file no longer allocates a buffer per frame.
+- The input and output of the encryption and decryption engines is buffered, a 2048 byte frame no longer costs one read and one write syscall.
 
 ### Fixed
-- 
+- The CLI exited with status 0 when a command failed, a failed command now exits with a non zero status.
 
 ### Security
 - 
