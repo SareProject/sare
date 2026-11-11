@@ -13,7 +13,7 @@ sare-core = { path = "sare-core" }
 sare-lib = { path = "sare-lib" }
 
 [workspace.package]
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Zola Gonano <zolagonano@protonmail.com>", "Sare Project"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/SareProject/sare"
